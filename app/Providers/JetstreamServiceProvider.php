@@ -36,6 +36,9 @@ class JetstreamServiceProvider extends ServiceProvider
         Jetstream::removeTeamMembersUsing(RemoveTeamMember::class);
         Jetstream::deleteTeamsUsing(DeleteTeam::class);
         Jetstream::deleteUsersUsing(DeleteUser::class);
+        
+        // Personalizar os textos relacionados a Teams
+        /* Jetstream::useTeamsTerms('Unidade Policial', 'Unidades Policiais'); */
     }
 
     /**
@@ -50,12 +53,15 @@ class JetstreamServiceProvider extends ServiceProvider
             'read',
             'update',
             'delete',
-        ])->description('Administradores podem realizar qualquer ação.');
+            'view-all-units',
+            'evaluate-units'
+        ])->description('Administradores podem realizar qualquer ação e visualizar todas as unidades.');
 
         Jetstream::role('servidor', 'Servidor', [
             'read',
             'create',
             'update',
-        ])->description('Servidores podem ler, criar e atualizar informações.');
+            'manage-own-unit'
+        ])->description('Servidores podem ler, criar e atualizar informações apenas da sua própria unidade.');
     }
 }

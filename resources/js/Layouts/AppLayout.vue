@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -8,11 +8,20 @@ import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 
-defineProps({
+const props = defineProps({
     title: String,
 });
 
+const page = usePage();
 const showingNavigationDropdown = ref(false);
+
+const isAdmin = computed(() => {
+    if (!page.props.auth.user?.current_team) {
+        return false;
+    }
+    return page.props.auth.user.currentTeam && 
+           page.props.auth.user.hasTeamRole(page.props.auth.user.currentTeam, 'admin');
+});
 
 const switchToTeam = (team) => {
     router.put(route('current-team.update'), {
@@ -51,6 +60,21 @@ const logout = () => {
                                 <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
                                     Dashboard
                                 </NavLink>
+                                
+                                <!-- Link para unidades -->
+                                <NavLink :href="$page.props.auth.user.current_team 
+                                    ? route('teams.show', $page.props.auth.user.current_team_id) 
+                                    : route('teams.create')" 
+                                    :active="route().current('teams.show') || route().current('teams.create')">
+                                    Minha Unidade Policial
+                                </NavLink>
+                                
+                                <!-- Links apenas para administradores -->
+                                <template v-if="isAdmin">
+                                    <NavLink :href="route('admin.unidades.index')" :active="route().current('admin.unidades.index')">
+                                        Gerenciar Unidades
+                                    </NavLink>
+                                </template>
                             </div>
                         </div>
 
@@ -74,16 +98,16 @@ const logout = () => {
                                         <div class="w-60">
                                             <!-- Team Management -->
                                             <div class="block px-4 py-2 text-xs text-gray-400">
-                                                Manage Team
+                                                Gerenciar Unidade Policial
                                             </div>
 
                                             <!-- Team Settings -->
                                             <DropdownLink :href="route('teams.show', $page.props.auth.user.current_team)">
-                                                Team Settings
+                                                Configurações da Unidade
                                             </DropdownLink>
 
                                             <DropdownLink v-if="$page.props.jetstream.canCreateTeams" :href="route('teams.create')">
-                                                Create New Team
+                                                Criar Nova Unidade
                                             </DropdownLink>
 
                                             <!-- Team Switcher -->
@@ -91,7 +115,7 @@ const logout = () => {
                                                 <div class="border-t border-gray-200" />
 
                                                 <div class="block px-4 py-2 text-xs text-gray-400">
-                                                    Switch Teams
+                                                    Alternar Unidades
                                                 </div>
 
                                                 <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">
@@ -135,11 +159,11 @@ const logout = () => {
                                     <template #content>
                                         <!-- Account Management -->
                                         <div class="block px-4 py-2 text-xs text-gray-400">
-                                            Manage Account
+                                            Gerenciar Conta
                                         </div>
 
                                         <DropdownLink :href="route('profile.show')">
-                                            Profile
+                                            Perfil
                                         </DropdownLink>
 
                                         <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">
@@ -151,7 +175,7 @@ const logout = () => {
                                         <!-- Authentication -->
                                         <form @submit.prevent="logout">
                                             <DropdownLink as="button">
-                                                Log Out
+                                                Sair
                                             </DropdownLink>
                                         </form>
                                     </template>
@@ -194,6 +218,21 @@ const logout = () => {
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Dashboard
                         </ResponsiveNavLink>
+                        
+                        <!-- Link para unidades -->
+                        <ResponsiveNavLink :href="$page.props.auth.user.current_team 
+                            ? route('teams.show', $page.props.auth.user.current_team_id) 
+                            : route('teams.create')" 
+                            :active="route().current('teams.show') || route().current('teams.create')">
+                            Minha Unidade Policial
+                        </ResponsiveNavLink>
+                        
+                        <!-- Links apenas para administradores -->
+                        <template v-if="isAdmin">
+                            <ResponsiveNavLink :href="route('admin.unidades.index')" :active="route().current('admin.unidades.index')">
+                                Gerenciar Unidades
+                            </ResponsiveNavLink>
+                        </template>
                     </div>
 
                     <!-- Responsive Settings Options -->
@@ -215,7 +254,7 @@ const logout = () => {
 
                         <div class="mt-3 space-y-1">
                             <ResponsiveNavLink :href="route('profile.show')" :active="route().current('profile.show')">
-                                Profile
+                                Perfil
                             </ResponsiveNavLink>
 
                             <ResponsiveNavLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')" :active="route().current('api-tokens.index')">
@@ -225,7 +264,7 @@ const logout = () => {
                             <!-- Authentication -->
                             <form method="POST" @submit.prevent="logout">
                                 <ResponsiveNavLink as="button">
-                                    Log Out
+                                    Sair
                                 </ResponsiveNavLink>
                             </form>
 
@@ -234,16 +273,16 @@ const logout = () => {
                                 <div class="border-t border-gray-200" />
 
                                 <div class="block px-4 py-2 text-xs text-gray-400">
-                                    Manage Team
+                                    Gerenciar Unidade
                                 </div>
 
                                 <!-- Team Settings -->
                                 <ResponsiveNavLink :href="route('teams.show', $page.props.auth.user.current_team)" :active="route().current('teams.show')">
-                                    Team Settings
+                                    Configurações da Unidade
                                 </ResponsiveNavLink>
 
                                 <ResponsiveNavLink v-if="$page.props.jetstream.canCreateTeams" :href="route('teams.create')" :active="route().current('teams.create')">
-                                    Create New Team
+                                    Criar Nova Unidade
                                 </ResponsiveNavLink>
 
                                 <!-- Team Switcher -->
@@ -251,7 +290,7 @@ const logout = () => {
                                     <div class="border-t border-gray-200" />
 
                                     <div class="block px-4 py-2 text-xs text-gray-400">
-                                        Switch Teams
+                                        Alternar Unidades
                                     </div>
 
                                     <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">

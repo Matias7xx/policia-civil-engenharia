@@ -8,6 +8,13 @@ import TextInput from '@/Components/TextInput.vue';
 
 const form = useForm({
     name: '',
+    codigo: '',
+    tipo_estrutural: '',
+    cep: '',
+    rua: '',
+    numero: '',
+    bairro: '',
+    complemento: '',
 });
 
 const createTeam = () => {
@@ -21,16 +28,16 @@ const createTeam = () => {
 <template>
     <FormSection @submitted="createTeam">
         <template #title>
-            Team Details
+            Dados da Unidade Policial
         </template>
 
         <template #description>
-            Create a new team to collaborate with others on projects.
+            Cadastre uma nova unidade policial no sistema para o censo anual da engenharia.
         </template>
 
         <template #form>
             <div class="col-span-6">
-                <InputLabel value="Team Owner" />
+                <InputLabel value="Responsável pelo Cadastro" />
 
                 <div class="flex items-center mt-2">
                     <img class="object-cover size-12 rounded-full" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name">
@@ -45,7 +52,7 @@ const createTeam = () => {
             </div>
 
             <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="name" value="Team Name" />
+                <InputLabel for="name" value="Nome da Unidade" />
                 <TextInput
                     id="name"
                     v-model="form.name"
@@ -55,11 +62,88 @@ const createTeam = () => {
                 />
                 <InputError :message="form.errors.name" class="mt-2" />
             </div>
+
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="codigo" value="Código da Unidade" />
+                <TextInput
+                    id="codigo"
+                    v-model="form.codigo"
+                    type="text"
+                    class="block w-full mt-1"
+                />
+                <InputError :message="form.errors.codigo" class="mt-2" />
+            </div>
+
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="tipo_estrutural" value="Tipo Estrutural" />
+                <TextInput
+                    id="tipo_estrutural"
+                    v-model="form.tipo_estrutural"
+                    type="text"
+                    class="block w-full mt-1"
+                />
+                <InputError :message="form.errors.tipo_estrutural" class="mt-2" />
+            </div>
+
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="cep" value="CEP" />
+                <TextInput
+                    id="cep"
+                    v-model="form.cep"
+                    type="text"
+                    class="block w-full mt-1"
+                />
+                <InputError :message="form.errors.cep" class="mt-2" />
+            </div>
+
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="rua" value="Rua" />
+                <TextInput
+                    id="rua"
+                    v-model="form.rua"
+                    type="text"
+                    class="block w-full mt-1"
+                />
+                <InputError :message="form.errors.rua" class="mt-2" />
+            </div>
+
+            <div class="col-span-6 sm:col-span-2">
+                <InputLabel for="numero" value="Número" />
+                <TextInput
+                    id="numero"
+                    v-model="form.numero"
+                    type="text"
+                    class="block w-full mt-1"
+                />
+                <InputError :message="form.errors.numero" class="mt-2" />
+            </div>
+
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="bairro" value="Bairro" />
+                <TextInput
+                    id="bairro"
+                    v-model="form.bairro"
+                    type="text"
+                    class="block w-full mt-1"
+                />
+                <InputError :message="form.errors.bairro" class="mt-2" />
+            </div>
+
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="complemento" value="Complemento" />
+                <TextInput
+                    id="complemento"
+                    v-model="form.complemento"
+                    type="text"
+                    class="block w-full mt-1"
+                />
+                <InputError :message="form.errors.complemento" class="mt-2" />
+            </div>
         </template>
 
         <template #actions>
             <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                Create
+                Cadastrar Unidade
             </PrimaryButton>
         </template>
     </FormSection>
