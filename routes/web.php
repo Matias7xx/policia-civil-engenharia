@@ -49,6 +49,11 @@ Route::middleware([
     // Rotas das unidades (teams)
     Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
     
+    // Middleware para verificar se já existe unidade
+    Route::middleware(['verify.no.unit'])->group(function () {
+        Route::get('/teams/create', [TeamController::class, 'create'])->name('teams.create');
+    });
+
     // Rotas para gerenciar unidades
     Route::post('/unidades', [UnidadeController::class, 'store'])->name('unidades.store');
     Route::put('/unidades/{unidade}', [UnidadeController::class, 'update'])->name('unidades.update');

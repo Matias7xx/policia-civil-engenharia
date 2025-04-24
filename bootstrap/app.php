@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'verify.no.unit' => \App\Http\Middleware\VerifyNoUnit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

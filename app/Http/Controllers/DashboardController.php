@@ -16,6 +16,14 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $isAdmin = RoleHelper::isAdmin($user);
+
+        //Verificar se já existe uma unidade cadastrada
+        $unidadeCadastrada = false;
+
+        if ($user->currentTeam) {
+            $unidade = Unidade::where('team_id', $user->currentTeam->id)->first();
+            $unidadeCadastrada = !is_null($unidade);
+        }
         
         // Verificar se o usuário é um administrador
         if ($isAdmin) {
@@ -30,14 +38,6 @@ class DashboardController extends Controller
                 'unidadesCount' => $unidadesCount,
                 'unidadesPendentes' => $unidadesPendentes,
             ]);
-        }
-        
-        // Para servidores, verificar se já existe uma unidade cadastrada para o current_team
-        $unidadeCadastrada = false;
-        
-        if ($user->currentTeam) {
-            $unidade = Unidade::where('team_id', $user->currentTeam->id)->first();
-            $unidadeCadastrada = !is_null($unidade);
         }
         
         return Inertia::render('Dashboard', [

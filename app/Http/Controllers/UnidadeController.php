@@ -21,7 +21,6 @@ class UnidadeController extends Controller
         
         // Validar os dados
         $validatedData = $request->validate([
-            'team_id' => 'required|exists:teams,id',
             'nome' => 'required|string|max:255',
             'codigo' => 'nullable|string|max:50',
             'tipo_estrutural' => 'nullable|string|max:100',
@@ -50,11 +49,16 @@ class UnidadeController extends Controller
         // Se estiver criando uma nova unidade, definir o status como pendente de avaliação
         $validatedData['status'] = 'pendente_avaliacao';
         $validatedData['team_id'] = $team->id;
+
+        // Garantir que team_id não seja nulo
+        if (!$validatedData['team_id']) {
+            return redirect()->back()->with('flash.banner', 'Erro: Time atual não encontrado.')->with('flash.bannerStyle', 'danger');
+        }
         
         // Criar a unidade
         $unidade = Unidade::create($validatedData);
         
-        return redirect()->back()->with('flash.banner', 'Informações da unidade foram salvas com sucesso.');
+        return redirect()->route('dashboard')->with('flash.banner', 'Unidade cadastrada com sucesso!');
     }
 
     /**

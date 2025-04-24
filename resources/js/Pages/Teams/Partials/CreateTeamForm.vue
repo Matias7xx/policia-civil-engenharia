@@ -8,7 +8,6 @@ import TextInput from '@/Components/TextInput.vue';
 
 const page = usePage();
 const form = useForm({
-    team_id: page.props.auth.user.current_team_id,
     nome: '',
     codigo: '',
     tipo_estrutural: '',
@@ -20,12 +19,18 @@ const form = useForm({
 });
 
 const submitForm = () => {
+    const teamId = page.props.auth.user.current_team_id;
+
     // Enviar para a rota de unidades
-    form.post(route('unidades.store'), {
+    form.post(route('unidades.store', { team_id: teamId }), {
         errorBag: 'createUnidade',
-        preserveScroll: true,
+        preserveScroll: false, //Permite que a página faça redirecionamento
+        onSuccess: () => {
+            //O redirecionamento será tratado pelo controller
+        },
     });
 };
+
 </script>
 
 <template>

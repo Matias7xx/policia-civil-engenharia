@@ -26,6 +26,7 @@ class Unidade extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'team_id',
         'nome',
         'codigo',
         'tipo_estrutural',
