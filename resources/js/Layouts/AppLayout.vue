@@ -16,11 +16,22 @@ const page = usePage();
 const showingNavigationDropdown = ref(false);
 
 const isAdmin = computed(() => {
-    if (!page.props.auth.user?.current_team) {
+    const user = page.props.auth.user;
+    
+    // Verifica se o usuário está autenticado e tem um time
+    if (!user || !user.current_team) {
         return false;
     }
-    return page.props.auth.user.currentTeam && 
-           page.props.auth.user.hasTeamRole(page.props.auth.user.currentTeam, 'admin');
+    
+    // Verifica se o usuário tem acesso a todas as propriedades necessárias
+    if (!user.current_team_id || typeof user.hasTeamRole !== 'function') {
+        console.error('Propriedades ou métodos necessários não encontrados no usuário');
+        return false;
+    }
+    
+    // Verifica se o usuário tem apenas a role 'admin' e não a role 'servidor'
+    return user.hasTeamRole(user.currentTeam, 'admin') && 
+           !user.hasTeamRole(user.currentTeam, 'servidor');
 });
 
 const switchToTeam = (team) => {
@@ -43,7 +54,7 @@ const logout = () => {
         <Banner />
 
         <div class="min-h-screen bg-gray-100">
-            <nav class="bg-white border-b border-gray-100">
+            <nav class="bg-white border-b border-gray-100"> <!-- HEAD 1 -->
                 <!-- Primary Navigation Menu -->
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16">
@@ -313,7 +324,7 @@ const logout = () => {
             </nav>
 
             <!-- Page Heading -->
-            <header v-if="$slots.header" class="bg-white shadow">
+            <header v-if="$slots.header" class="bg-white shadow"> <!-- HEAD 2 -->
                 <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                     <slot name="header" />
                 </div>

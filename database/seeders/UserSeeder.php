@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\Team;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Jetstream\Jetstream;
 
@@ -53,12 +54,15 @@ class UserSeeder extends Seeder
         $servidor->current_team_id = $servidorTeam->id;
         $servidor->save();
 
-        /* // Adicionar servidor ao time do admin com a role "servidor"
-        $adminTeam->users()->attach(
-            $servidor->id, ['role' => 'servidor']
-        ); */
+        // Definir explicitamente a role para o servidor
+        $servidor->teams()->updateExistingPivot($servidorTeam->id, ['role' => 'servidor']);
 
-        // Definir role "admin" para o admin no seu próprio time
-        Jetstream::findUserByIdOrFail($admin->id)->teamRole($adminTeam, 'admin');
+        // Definir role "admin" para o admin
+        $admin->teams()->updateExistingPivot($adminTeam->id, ['role' => 'admin']);
+
+            DB::table('team_user')
+        ->where('team_id', $adminTeam->id)
+        ->where('user_id', $admin->id)
+        ->update(['role' => 'admin']);
     }
 }

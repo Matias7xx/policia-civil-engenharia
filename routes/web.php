@@ -19,6 +19,24 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/debug/user-role', function () {
+    $user = auth()->user();
+    return [
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ],
+        'team' => [
+            'id' => $user->currentTeam->id,
+            'name' => $user->currentTeam->name,
+        ],
+        'isAdmin_helper' => \App\Helpers\RoleHelper::isAdmin($user),
+        'isServidor_helper' => \App\Helpers\RoleHelper::isServidor($user),
+        'teamRole' => $user->teamRole($user->currentTeam) ? $user->teamRole($user->currentTeam)->key : null,
+    ];
+});
+
 // Rotas protegidas por autenticação
 Route::middleware([
     'auth:sanctum',

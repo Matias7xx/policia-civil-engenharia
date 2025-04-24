@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,6 +11,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -52,6 +54,8 @@ class User extends Authenticatable
      */
     protected $appends = [
         'profile_photo_url',
+        'isAdmin',
+        'isServidor',
     ];
 
     /**
@@ -65,5 +69,48 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+        /**
+     * Verifica se o usuário tem a role especificada no time atual
+     * consultando diretamente o banco de dados
+     *
+     * @param string $role
+     * @return bool
+     */
+    public function hasRoleInCurrentTeam(string $role): bool
+    {
+        if (!$this->currentTeam) {
+            return false;
+        }
+        
+        // Consulta diretamente a tabela pivot para verificar a role
+        $teamUser = DB::table('team_user')
+            ->where('team_id', $this->currentTeam->id)
+            ->where('user_id', $this->id)
+            ->first();
+        
+        return $teamUser && $teamUser->role === $role;
+    }
+
+    /**
+     * Atributo que indica se o usuário é admin no time atual
+     *
+     * @return bool
+     */
+    public function getIsAdminAttribute(): bool
+    {
+        return $this->hasRoleInCurrentTeam('admin') || 
+            ($this->ownsTeam($this->currentTeam) && $this->currentTeam->name === 'Engenharia');
+    }
+
+    /**
+     * Atributo que indica se o usuário é servidor no time atual
+     *
+     * @return bool
+     */
+    public function getIsServidorAttribute(): bool
+    {
+        return $this->hasRoleInCurrentTeam('servidor');
     }
 }

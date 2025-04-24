@@ -249,4 +249,28 @@ class Unidade extends Model
         
         return !empty($endereco) ? implode(' - ', $endereco) : 'Endereço não informado';
     }
+
+        public function team()
+    {
+        return $this->belongsTo(Team::class);
+    }
+
+    public function usuarios()
+    {
+        return $this->team->users();
+    }
+
+    /* Verificar se um usuário pertence à uma unidade
+     $unidade = Unidade::find($id);
+        $usuario = Auth::user();
+
+if ($unidade->usuarios->contains($usuario->id)) {
+    // O usuário pertence à unidade
+}   
+    */
+
+    /* Verificar unidades que o usuário pertence
+    $usuario = Auth::user();
+        $teams = $usuario->allTeams(); // Todos os times do usuário
+        $unidades = Unidade::whereIn('team_id', $teams->pluck('id'))->get(); */
 }

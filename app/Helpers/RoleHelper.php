@@ -5,34 +5,38 @@ namespace App\Helpers;
 class RoleHelper
 {
     /**
-     * Verifica se o usuário tem a role de administrador
+     * Verifica se o usuário tem APENAS a role de administrador
      *
      * @param \App\Models\User $user
      * @return bool
      */
     public static function isAdmin($user)
-    {
-        if (!$user || !$user->currentTeam) {
-            return false;
-        }
-        
-        return $user->hasTeamRole($user->currentTeam, 'admin');
+{
+    if (!$user || !$user->currentTeam) {
+        return false;
     }
     
-    /**
-     * Verifica se o usuário tem a role de servidor
-     *
-     * @param \App\Models\User $user
-     * @return bool
-     */
-    public static function isServidor($user)
-    {
-        if (!$user || !$user->currentTeam) {
-            return false;
-        }
-        
-        return $user->hasTeamRole($user->currentTeam, 'servidor');
+    return $user->isAdmin && !$user->isServidor;
+}
+
+    /* Para verificar se o usuário é ADMIN no frontend
+    <div v-if="$page.props.auth.user.isAdmin">
+        <!-- Conteúdo apenas para administradores -->
+    </div> */
+
+public static function isServidor($user)
+{
+    if (!$user || !$user->currentTeam) {
+        return false;
     }
+    
+    return $user->isServidor && !$user->isAdmin;
+}
+
+    /* Para verificar se o usuário é SERVIDOR no frontend
+    <div v-if="$page.props.auth.user.isServidor">
+        <!-- Conteúdo apenas para administradores -->
+    </div> */
     
     /**
      * Verifica se o usuário tem qualquer uma das roles especificadas

@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('unidades', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('team_id')->nullable(); // Adicionando a coluna team_id
             $table->string('nome');
             $table->string('codigo')->nullable();
             $table->string('tipo_estrutural')->nullable();
@@ -36,7 +37,8 @@ return new class extends Migration
             $table->string('numero_medidor_agua')->nullable();
             $table->string('numero_medidor_energia')->nullable();
             $table->timestamps();
-
+            
+            $table->foreign('team_id')->references('id')->on('teams');
             $table->foreign('imovel_compartilhado_orgao_id')->references('id')->on('orgaos');
         });
     }
