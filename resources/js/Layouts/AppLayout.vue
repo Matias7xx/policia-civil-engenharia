@@ -18,20 +18,13 @@ const showingNavigationDropdown = ref(false);
 const isAdmin = computed(() => {
     const user = page.props.auth.user;
     
-    // Verifica se o usuário está autenticado e tem um time
-    if (!user || !user.current_team) {
+    // Verifica se o usuário está autenticado
+    if (!user) {
         return false;
     }
     
-    // Verifica se o usuário tem acesso a todas as propriedades necessárias
-    if (!user.current_team_id || typeof user.hasTeamRole !== 'function') {
-        console.error('Propriedades ou métodos necessários não encontrados no usuário');
-        return false;
-    }
-    
-    // Verifica se o usuário tem apenas a role 'admin' e não a role 'servidor'
-    return user.hasTeamRole(user.currentTeam, 'admin') && 
-           !user.hasTeamRole(user.currentTeam, 'servidor');
+    // Usa o atributo isAdmin
+    return user.isAdmin === true;
 });
 
 const switchToTeam = (team) => {

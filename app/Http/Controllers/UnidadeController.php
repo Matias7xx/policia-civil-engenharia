@@ -14,7 +14,7 @@ class UnidadeController extends Controller
      */
     public function store(Request $request)
     {
-        $team = Team::findOrFail($request->team_id);
+        $team = $request->user()->currentTeam;
         
         // Verificar permissão de atualização
         Gate::authorize('update', $team);
@@ -49,6 +49,7 @@ class UnidadeController extends Controller
         
         // Se estiver criando uma nova unidade, definir o status como pendente de avaliação
         $validatedData['status'] = 'pendente_avaliacao';
+        $validatedData['team_id'] = $team->id;
         
         // Criar a unidade
         $unidade = Unidade::create($validatedData);

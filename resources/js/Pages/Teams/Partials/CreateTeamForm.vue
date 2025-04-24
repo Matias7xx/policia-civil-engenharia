@@ -1,13 +1,15 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import FormSection from '@/Components/FormSection.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 
+const page = usePage();
 const form = useForm({
-    name: '',
+    team_id: page.props.auth.user.current_team_id,
+    nome: '',
     codigo: '',
     tipo_estrutural: '',
     cep: '',
@@ -17,16 +19,17 @@ const form = useForm({
     complemento: '',
 });
 
-const createTeam = () => {
-    form.post(route('teams.store'), {
-        errorBag: 'createTeam',
+const submitForm = () => {
+    // Enviar para a rota de unidades
+    form.post(route('unidades.store'), {
+        errorBag: 'createUnidade',
         preserveScroll: true,
     });
 };
 </script>
 
 <template>
-    <FormSection @submitted="createTeam">
+    <FormSection @submitted="submitForm">
         <template #title>
             Dados da Unidade Policial
         </template>
@@ -52,15 +55,15 @@ const createTeam = () => {
             </div>
 
             <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="name" value="Nome da Unidade" />
+                <InputLabel for="nome" value="Nome da Unidade" />
                 <TextInput
-                    id="name"
-                    v-model="form.name"
+                    id="nome"
+                    v-model="form.nome"
                     type="text"
                     class="block w-full mt-1"
                     autofocus
                 />
-                <InputError :message="form.errors.name" class="mt-2" />
+                <InputError :message="form.errors.nome" class="mt-2" />
             </div>
 
             <div class="col-span-6 sm:col-span-4">
