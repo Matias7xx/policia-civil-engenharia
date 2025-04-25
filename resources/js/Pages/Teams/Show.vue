@@ -8,6 +8,7 @@ import UnidadeDetailsForm from '@/Pages/Teams/Partials/UnidadeDetailsForm.vue';
 import AcessibilidadeForm from '@/Pages/Teams/Partials/AcessibilidadeForm.vue';
 import InformacoesUnidadeForm from '@/Pages/Teams/Partials/InformacoesUnidadeForm.vue';
 import { ref, computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
     team: Object,
@@ -37,9 +38,13 @@ const setTab = (tab) => {
     <AppLayout title="Detalhes da Unidade Policial">
         <template #header>
             <div class="flex justify-between items-center">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    {{ team.name }} - Detalhes da Unidade Policial
-                </h2>
+                <div class="flex items-center space-x-4">
+                <Link href="/dashboard">
+                    <img src="/images/logo-pc-branca.png" alt="Logo da Polícia Civil" class="h-14 w-auto" />
+                </Link>
+                    <div class="border-l border-white h-8"></div>
+                    <span class="text-white text-xl font-semibold pl-2">{{ team.name }} - Detalhes da Unidade Policial</span>
+                </div>
                 <div v-if="unidade && unidade.status" class="flex items-center">
                     <span 
                         class="px-3 py-1 rounded-full text-sm font-semibold"

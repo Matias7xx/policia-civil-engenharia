@@ -15,7 +15,9 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $isAdmin = RoleHelper::isAdmin($user);
+        $isSuperAdmin = RoleHelper::isSuperAdmin($user);
+        $isAdmin = RoleHelper::isAdmin($user) && !$isSuperAdmin;
+        $isServidor = RoleHelper::isServidor($user);
 
         //Verificar se já existe uma unidade cadastrada
         $unidadeCadastrada = false;
@@ -25,8 +27,8 @@ class DashboardController extends Controller
             $unidadeCadastrada = !is_null($unidade);
         }
         
-        // Verificar se o usuário é um administrador
-        if ($isAdmin) {
+        // Verificar qual o tipo de usuário e renderizar a visualização apropriada
+        if ($isSuperAdmin) {
             // Contagem de unidades
             $unidadesCount = Unidade::count();
             
@@ -34,15 +36,28 @@ class DashboardController extends Controller
             $unidadesPendentes = Unidade::where('status', 'pendente_avaliacao')->count();
             
             return Inertia::render('Dashboard', [
-                'isAdmin' => true,
+                'isSuperAdmin' => true,
+                'isAdmin' => false,
+                'isServidor' => false,
                 'unidadesCount' => $unidadesCount,
                 'unidadesPendentes' => $unidadesPendentes,
+                'unidadeCadastrada' => $unidadeCadastrada,
+            ]);
+        } elseif ($isAdmin) {
+            return Inertia::render('Dashboard', [
+                'isSuperAdmin' => false,
+                'isAdmin' => true,
+                'isServidor' => false,
+                'unidadeCadastrada' => $unidadeCadastrada,
+            ]);
+        } else {
+            // Usuário servidor - apenas visualização
+            return Inertia::render('Dashboard', [
+                'isSuperAdmin' => false,
+                'isAdmin' => false,
+                'isServidor' => true,
+                'unidadeCadastrada' => $unidadeCadastrada,
             ]);
         }
-        
-        return Inertia::render('Dashboard', [
-            'isAdmin' => false,
-            'unidadeCadastrada' => $unidadeCadastrada,
-        ]);
     }
 }

@@ -54,6 +54,7 @@ class User extends Authenticatable
      */
     protected $appends = [
         'profile_photo_url',
+        'isSuperAdmin',
         'isAdmin',
         'isServidor',
     ];
@@ -71,14 +72,14 @@ class User extends Authenticatable
         ];
     }
 
-        /**
+    /**
      * Verifica se o usuário tem a role especificada no time atual
-     * consultando diretamente o banco de dados
+     * Consulta diretamente a tabela pivot para verificar a role exata
      *
      * @param string $role
      * @return bool
      */
-    public function hasRoleInCurrentTeam(string $role): bool
+    public function hasExactRole(string $role): bool
     {
         if (!$this->currentTeam) {
             return false;
@@ -94,14 +95,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Atributo que indica se o usuário é superadmin no time atual
+     *
+     * @return bool
+     */
+    public function getIsSuperAdminAttribute(): bool
+    {
+        return $this->hasExactRole('superadmin') || 
+            ($this->ownsTeam($this->currentTeam) && $this->currentTeam->name === 'Engenharia');
+    }
+
+    /**
      * Atributo que indica se o usuário é admin no time atual
      *
      * @return bool
      */
     public function getIsAdminAttribute(): bool
     {
-        return $this->hasRoleInCurrentTeam('admin') || 
-            ($this->ownsTeam($this->currentTeam) && $this->currentTeam->name === 'Engenharia');
+        return $this->hasExactRole('admin');
     }
 
     /**
@@ -111,6 +122,6 @@ class User extends Authenticatable
      */
     public function getIsServidorAttribute(): bool
     {
-        return $this->hasRoleInCurrentTeam('servidor');
+        return $this->hasExactRole('servidor');
     }
 }

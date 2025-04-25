@@ -48,20 +48,26 @@ class JetstreamServiceProvider extends ServiceProvider
     {
         Jetstream::defaultApiTokenPermissions(['read']);
 
-        Jetstream::role('admin', 'Administrador', [
+        Jetstream::role('superadmin', 'Super Administrador', [
             'create',
             'read',
             'update',
             'delete',
             'view-all-units',
-            'evaluate-units'
-        ])->description('Administradores podem realizar qualquer ação e visualizar todas as unidades.');
+            'evaluate-units',
+            'manage-all-units'
+        ])->description('Super Administradores podem realizar qualquer ação, gerenciar e avaliar todas as unidades.');
 
-        Jetstream::role('servidor', 'Servidor', [
+        Jetstream::role('admin', 'Administrador', [
             'read',
             'create',
             'update',
             'manage-own-unit'
-        ])->description('Servidores podem ler, criar e atualizar informações apenas da sua própria unidade.');
+        ])->description('Administradores podem ler, criar e atualizar informações apenas da sua própria unidade.');
+
+        Jetstream::role('servidor', 'Servidor', [
+            'read',
+            'view-own-unit'
+        ])->description('Servidores podem apenas visualizar informações da sua própria unidade.');
     }
 }

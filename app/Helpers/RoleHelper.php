@@ -5,39 +5,50 @@ namespace App\Helpers;
 class RoleHelper
 {
     /**
-     * Verifica se o usuário tem APENAS a role de administrador
+     * Verifica se o usuário tem o papel de superadministrador
+     *
+     * @param \App\Models\User $user
+     * @return bool
+     */
+    public static function isSuperAdmin($user)
+    {
+        if (!$user || !$user->currentTeam) {
+            return false;
+        }
+        
+        return $user->isSuperAdmin;
+    }
+
+    /**
+     * Verifica se o usuário tem o papel de administrador
      *
      * @param \App\Models\User $user
      * @return bool
      */
     public static function isAdmin($user)
-{
-    if (!$user || !$user->currentTeam) {
-        return false;
+    {
+        if (!$user || !$user->currentTeam) {
+            return false;
+        }
+        
+        return $user->isAdmin || $user->isSuperAdmin;
     }
-    
-    return $user->isAdmin && !$user->isServidor;
-}
 
-    /* Para verificar se o usuário é ADMIN no frontend
-    <div v-if="$page.props.auth.user.isAdmin">
-        <!-- Conteúdo apenas para administradores -->
-    </div> */
-
-public static function isServidor($user)
-{
-    if (!$user || !$user->currentTeam) {
-        return false;
+    /**
+     * Verifica se o usuário tem o papel de servidor
+     *
+     * @param \App\Models\User $user
+     * @return bool
+     */
+    public static function isServidor($user)
+    {
+        if (!$user || !$user->currentTeam) {
+            return false;
+        }
+        
+        return $user->isServidor;
     }
-    
-    return $user->isServidor && !$user->isAdmin;
-}
 
-    /* Para verificar se o usuário é SERVIDOR no frontend
-    <div v-if="$page.props.auth.user.isServidor">
-        <!-- Conteúdo apenas para administradores -->
-    </div> */
-    
     /**
      * Verifica se o usuário tem qualquer uma das roles especificadas
      *
@@ -59,7 +70,7 @@ public static function isServidor($user)
         
         return false;
     }
-    
+
     /**
      * Verifica se o usuário tem todas as roles especificadas
      *

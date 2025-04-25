@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\RoleHelper;
 use App\Models\Team;
 use App\Models\Unidade;
 use Illuminate\Http\Request;
@@ -17,7 +18,10 @@ class UnidadeController extends Controller
         $team = $request->user()->currentTeam;
         
         // Verificar permissão de atualização
-        Gate::authorize('update', $team);
+        // Verificar se o usuário é admin ou superadmin
+        if (!RoleHelper::isAdmin($request->user())) {
+            return redirect()->back()->with('flash.banner', 'Você não tem permissão para cadastrar unidades.')->with('flash.bannerStyle', 'danger');
+        }
         
         // Validar os dados
         $validatedData = $request->validate([
@@ -67,9 +71,14 @@ class UnidadeController extends Controller
     public function update(Request $request, Unidade $unidade)
     {
         $team = Team::findOrFail($unidade->team_id);
+        $user = $request->user();
         
         // Verificar permissão de atualização
-        Gate::authorize('update', $team);
+        // Apenas superadmin ou admin do próprio time pode atualizar
+        if (!RoleHelper::isSuperAdmin($user) && 
+            (!RoleHelper::isAdmin($user) || $user->currentTeam->id !== $team->id)) {
+            return redirect()->back()->with('flash.banner', 'Você não tem permissão para atualizar esta unidade.')->with('flash.bannerStyle', 'danger');
+        }
         
         // Validar os dados
         $validatedData = $request->validate([
@@ -97,11 +106,11 @@ class UnidadeController extends Controller
             'numero_medidor_energia' => 'nullable|string|max:50',
         ]);
 
-        // Se não for admin, não permitir a mudança do status
-        if (!auth()->user()->hasTeamRole($team, 'admin')) {
+        // Se não for superadmin, não permitir a mudança do status
+        if (!RoleHelper::isSuperAdmin($user)) {
             unset($validatedData['status']);
             
-            // Após edição por um servidor, retornar o status para pendente de avaliação
+            // Após edição por um admin, retornar o status para pendente de avaliação
             $validatedData['status'] = 'pendente_avaliacao';
         }
         

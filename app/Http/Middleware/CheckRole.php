@@ -22,11 +22,15 @@ class CheckRole
             abort(403, 'Acesso não autorizado.');
         }
         
+        if ($role === 'superadmin' && !RoleHelper::isSuperAdmin($user)) {
+            abort(403, 'Acesso não autorizado. Apenas super administradores podem acessar esta página.');
+        }
+        
         if ($role === 'admin' && !RoleHelper::isAdmin($user)) {
             abort(403, 'Acesso não autorizado. Apenas administradores podem acessar esta página.');
         }
         
-        if ($role === 'servidor' && !RoleHelper::isServidor($user)) {
+        if ($role === 'servidor' && !RoleHelper::isAdmin($user) && !RoleHelper::isServidor($user)) {
             abort(403, 'Acesso não autorizado. Apenas servidores podem acessar esta página.');
         }
 
