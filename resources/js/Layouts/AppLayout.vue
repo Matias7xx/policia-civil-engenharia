@@ -15,7 +15,7 @@ const props = defineProps({
 const page = usePage();
 const showingNavigationDropdown = ref(false);
 
-const isAdmin = computed(() => {
+const isSuperAdmin = computed(() => {
     const user = page.props.auth.user;
     
     // Verifica se o usuário está autenticado
@@ -23,8 +23,8 @@ const isAdmin = computed(() => {
         return false;
     }
     
-    // Usa o atributo isAdmin
-    return user.isAdmin === true;
+    // Usa o atributo isSuperAdmin
+    return user.isSuperAdmin === true;
 });
 
 const switchToTeam = (team) => {
@@ -74,9 +74,15 @@ const logout = () => {
                                     :active="route().current('teams.show') || route().current('teams.create')">
                                     Minha Unidade Policial
                                 </NavLink>
+
+                                <!-- Links apenas para SuperAdmin -->
+                                <template v-if="isSuperAdmin">
+                                    <NavLink :href="route('admin.users.index')" :active="route().current('admin.users.index')">
+                                        Gerenciar Usuários
+                                    </NavLink>
+                                </template>
                                 
-                                <!-- Links apenas para administradores -->
-                                <template v-if="isAdmin">
+                                <template v-if="isSuperAdmin">
                                     <NavLink :href="route('admin.unidades.index')" :active="route().current('admin.unidades.index')">
                                         Gerenciar Unidades
                                     </NavLink>
@@ -233,8 +239,8 @@ const logout = () => {
                             Minha Unidade Policial
                         </ResponsiveNavLink>
                         
-                        <!-- Links apenas para administradores -->
-                        <template v-if="isAdmin">
+                        <!-- Links apenas para super administradores -->
+                        <template v-if="isSuperAdmin">
                             <ResponsiveNavLink :href="route('admin.unidades.index')" :active="route().current('admin.unidades.index')">
                                 Gerenciar Unidades
                             </ResponsiveNavLink>

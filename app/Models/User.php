@@ -16,8 +16,6 @@ use Illuminate\Support\Facades\DB;
 class User extends Authenticatable
 {
     use HasApiTokens;
-
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use HasProfilePhoto;
     use HasTeams;
@@ -33,6 +31,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'matricula',
+        'cargo',
+        'telefone',
     ];
 
     /**
@@ -124,4 +125,9 @@ class User extends Authenticatable
     {
         return $this->hasExactRole('servidor');
     }
+
+    /* public function currentTeam()
+    {
+        return $this->belongsTo(Team::class, 'current_team_id');
+    } */
 }
