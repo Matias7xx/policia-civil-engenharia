@@ -67,7 +67,7 @@ const updateUser = () => {
                     </template>
 
                     <template #form>
-                        <!-- Seção: Informações do Usuário -->
+                        <!-- Informações do Usuário -->
                         <div class="col-span-6">
                             <h3 class="text-lg font-medium text-gray-900 flex items-center">
                                 <UserIcon class="h-5 w-5 text-gray-400 mr-2" />
@@ -186,7 +186,7 @@ const updateUser = () => {
                             <InputError :message="form.errors.password_confirmation" class="mt-2" />
                         </div>
 
-                        <!-- Seção: Lotação e Permissões -->
+                        <!-- Lotação e Permissões -->
                         <div class="col-span-6 pt-4 border-t border-gray-200">
                             <h3 class="text-lg font-medium text-gray-900 flex items-center">
                                 <BuildingOfficeIcon class="h-5 w-5 text-gray-400 mr-2" />
@@ -244,18 +244,31 @@ const updateUser = () => {
                     </template>
 
                     <template #actions>
+                        <div class="mt-8 flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0">
                         <ActionMessage :on="form.recentlySuccessful" class="me-3">
                             Usuário atualizado com sucesso.
                         </ActionMessage>
 
+                        <Link 
+                            :href="route('admin.users.index')"
+                            class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 uppercase tracking-widest hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition ease-in-out duration-150"
+                        >
+                            <svg class="h-5 w-5 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Voltar
+                        </Link>
+
                         <PrimaryButton 
                             :class="{ 'opacity-25': form.processing }" 
                             :disabled="form.processing"
-                            class="inline-flex items-center px-4 py-2 bg-[#bea55a] border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-[#d4bf7a] focus:outline-none focus:ring-2 focus:ring-indigo-300 transition ease-in-out duration-150"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md font-semibold text-sm uppercase tracking-widest focus:outline-none focus:ring-2 transition ease-in-out duration-150"
+                            color="gold"
                         >
                             <PencilIcon class="h-5 w-5 mr-2 -ml-1" />
                             Atualizar Usuário
                         </PrimaryButton>
+                    </div>
                     </template>
                 </FormSection>
             </div>

@@ -173,7 +173,7 @@ const closeModal = () => {
                         <div class="mb-6">
                             <Link 
                                 :href="route('admin.users.create')"
-                                class="inline-flex items-center px-4 py-2 bg-[#bea55a] border border-transparent rounded-md font-semibold text-sm text-black uppercase tracking-widest hover:bg-[#d4bf7a] hover:text-black focus:outline-none focus:ring-2 focus:ring-indigo-300 transition ease-in-out duration-150"
+                                class="inline-flex items-center px-4 py-2 bg-[#bea55a] border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-[#d4bf7a] hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-300 transition ease-in-out duration-150"
                             >
                                 <PlusIcon class="h-5 w-5 mr-2 -ml-1" />
                                 Criar Novo Usuário

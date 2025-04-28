@@ -43,7 +43,7 @@ const setTab = (tab) => {
                     <img src="/images/logo-pc-branca.png" alt="Logo da Polícia Civil" class="h-14 w-auto" />
                 </Link>
                     <div class="border-l border-white h-8"></div>
-                    <span class="text-white font-serif text-xl font-semibold pl-2">{{ team.name }} - Detalhes da Unidade Policial</span>
+                    <span class="text-white text-xl font-semibold pl-2">{{ team.name.toUpperCase() }} - Detalhes da Unidade Policial</span>
                 </div>
                 <div v-if="unidade && unidade.status" class="flex items-center">
                     <span 

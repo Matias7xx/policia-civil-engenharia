@@ -47,7 +47,7 @@ const welcomeMessage = computed(() => {
 </script>
 
 <template>
-    <AppLayout title="Dashboard">
+    <AppLayout title="Home">
         <template #header>
             <div class="flex items-center space-x-4">
                 <Link href="/dashboard">
@@ -62,7 +62,7 @@ const welcomeMessage = computed(() => {
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
                 <!-- Mensagem de boas-vindas -->
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
-                    <h1 class="text-2xl font-bold text-gray-900 mb-4 flex items-center font-serif">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
                         <BuildingOfficeIcon class="h-6 w-6 text-[#bea55a] mr-2" />
                         {{ welcomeMessage }}
                     </h1>

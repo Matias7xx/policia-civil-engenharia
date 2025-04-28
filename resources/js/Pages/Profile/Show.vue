@@ -15,7 +15,7 @@ defineProps({
 </script>
 
 <template>
-    <AppLayout title="Profile">
+    <AppLayout title="Perfil">
         <template #header>
             <div class="flex items-center space-x-4">
             <Link href="/dashboard">

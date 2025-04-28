@@ -80,9 +80,13 @@ const formatStatus = (status) => {
 <template>
     <AppLayout title="Gerenciar Unidades Policiais">
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Gerenciar Unidades Policiais
-            </h2>
+            <div class="flex items-center space-x-4">
+                <Link href="/dashboard">
+                    <img src="/images/logo-pc-branca.png" alt="Logo da Polícia Civil" class="h-14 w-auto" />
+                </Link>
+                <div class="border-l border-white h-8"></div>
+                <span class="text-white text-xl font-semibold pl-2">ENGENHARIA - Gerenciar Unidades</span>
+            </div>
         </template>
 
         <div class="py-12">
