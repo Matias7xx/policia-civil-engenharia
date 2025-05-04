@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Storage;
 
 class Midia extends Model
 {
@@ -24,8 +24,9 @@ class Midia extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'unidade_id',
         'midia_tipo_id',
-        'arquivo',
+        'path', // Substitui 'arquivo' para alinhar com o controlador
         'mime_type',
         'tamanho',
     ];
@@ -42,27 +43,28 @@ class Midia extends Model
     /**
      * Obtém o tipo da mídia.
      */
-    public function tipo(): BelongsTo
-    {
-        return $this->belongsTo(MidiaTipo::class, 'midia_tipo_id');
-    }
+    public function midia_tipo()
+{
+    return $this->belongsTo(MidiaTipo::class, 'midia_tipo_id');
+}
 
     /**
-     * Obtém as unidades associadas a esta mídia.
+     * Obtém a unidade associada a esta mídia.
      */
-    public function unidades(): BelongsToMany
+    public function unidade(): BelongsTo
     {
-        return $this->belongsToMany(Unidade::class, 'midia_unidade')
-                    ->withTimestamps();
+        return $this->belongsTo(Unidade::class, 'unidade_id');
     }
 
     /**
      * Retorna o URL para acessar o arquivo da mídia.
      */
-    public function getUrlAttribute(): string
+    public function getUrlAttribute()
     {
-        return asset('storage/' . $this->arquivo);
+        return $this->path ? Storage::url($this->path) : null;
     }
+
+    protected $appends = ['url'];
 
     /**
      * Verifica se esta mídia é uma imagem.

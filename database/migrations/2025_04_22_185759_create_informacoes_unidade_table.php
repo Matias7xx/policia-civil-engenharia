@@ -26,7 +26,7 @@ return new class extends Migration
             
             // Características do imóvel
             $table->string('tipo_imovel')->nullable();
-            $table->string('contrato_locacao_id')->nullable();
+            $table->unsignedBigInteger('contrato_locacao_id')->nullable();
             $table->string('responsavel_locacao_cessao')->nullable();
             $table->string('escritura_publica')->nullable();
             

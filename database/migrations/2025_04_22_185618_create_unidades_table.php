@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('dspc')->nullable()->comment('Delegacia Seccional de Polícia Civil');
             $table->string('nivel')->nullable();
             $table->boolean('sede')->default(false);
-            $table->unsignedBigInteger('cidade_id')->nullable();
+            $table->string('cidade')->nullable();
             $table->string('cep')->nullable();
             $table->string('rua')->nullable();
             $table->string('numero')->nullable();
@@ -36,6 +36,10 @@ return new class extends Migration
             $table->string('observacoes')->nullable();
             $table->string('numero_medidor_agua')->nullable();
             $table->string('numero_medidor_energia')->nullable();
+            $table->boolean('is_draft')->default(true); // Indica que a unidade está em rascunho (ainda não finalizada).
+            $table->string('orgao_cedente')->nullable()->after('numero_medidor_energia');
+            $table->string('termo_cessao')->nullable()->after('orgao_cedente');
+            $table->date('prazo_cessao')->nullable()->after('termo_cessao');
             $table->timestamps();
             
             $table->foreign('team_id')->references('id')->on('teams');

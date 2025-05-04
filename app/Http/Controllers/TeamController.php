@@ -26,10 +26,32 @@ class TeamController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
-    {
-        return Inertia::render('Teams/Create');
+    public function create(Request $request)
+{
+    $team = $request->user()->currentTeam;
+    if (!$team) {
+        return redirect()->route('teams.index')->with('error', 'Você precisa selecionar ou criar um time antes de prosseguir.');
     }
+
+    return Inertia::render('Teams/Create', [
+        'team' => [
+            'id' => $team->id,
+            'name' => $team->name,
+            'personal_team' => $team->personal_team,
+            'owner' => $team->owner,
+            'users' => $team->users,
+            'team_invitations' => $team->teamInvitations,
+        ],
+        'availableRoles' => array_values(Jetstream::$roles),
+        'permissions' => [
+            'canAddTeamMembers' => Gate::allows('addTeamMember', $team),
+            'canDeleteTeam' => Gate::allows('delete', $team),
+            'canRemoveTeamMembers' => Gate::allows('removeTeamMember', $team),
+            'canUpdateTeam' => Gate::allows('update', $team),
+            'canUpdateTeamMembers' => Gate::allows('updateTeamMember', $team),
+        ],
+    ]);
+}
 
     /**
      * Show the team management screen for the given team.

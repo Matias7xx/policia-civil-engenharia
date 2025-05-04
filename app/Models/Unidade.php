@@ -34,7 +34,7 @@ class Unidade extends Model
         'dspc',
         'nivel',
         'sede',
-        'cidade_id',
+        'cidade',
         'cep',
         'rua',
         'numero',
@@ -52,6 +52,10 @@ class Unidade extends Model
         'observacoes',
         'numero_medidor_agua',
         'numero_medidor_energia',
+        'orgao_cedente',
+        'termo_cessao',
+        'prazo_cessao',
+        'is_draft',
     ];
 
     /**
@@ -72,14 +76,6 @@ class Unidade extends Model
     public function orgaoCompartilhado(): BelongsTo
     {
         return $this->belongsTo(Orgao::class, 'imovel_compartilhado_orgao_id');
-    }
-
-    /**
-     * Obtém a cidade da unidade.
-     */
-    public function cidade(): BelongsTo
-    {
-        return $this->belongsTo(Cidade::class);
     }
 
     /**
@@ -182,9 +178,9 @@ class Unidade extends Model
     /**
      * Escopo para filtrar unidades por cidade.
      */
-    public function scopeCidade($query, $cidadeId)
+    public function scopeCidade($query, $cidade)
     {
-        return $query->where('cidade_id', $cidadeId);
+        return $query->where('cidade', $cidade);
     }
 
     /**
@@ -240,8 +236,8 @@ class Unidade extends Model
             $endereco[] = $this->bairro;
         }
         
-        if ($this->cidade_id) {
-            $endereco[] = 'Cidade: ' . $this->cidade_id;
+        if ($this->cidade) {
+            $endereco[] = 'Cidade: ' . $this->cidade;
         }
         
         if ($this->cep) {
@@ -251,9 +247,9 @@ class Unidade extends Model
         return !empty($endereco) ? implode(' - ', $endereco) : 'Endereço não informado';
     }
 
-        public function team()
+    public function team()
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsTo(Team::class, 'team_id');
     }
 
     public function usuarios()

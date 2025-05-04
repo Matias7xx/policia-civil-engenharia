@@ -125,8 +125,8 @@ class InformacoesUnidade extends Model
     /**
      * Obtém o contrato de locação referenciado, se houver.
      */
-    public function contratoLocacao(): BelongsTo
+        public function contratoLocacao(): BelongsTo
     {
-        return $this->belongsTo(ContratoLocacaoUnidade::class, 'contrato_locacao_id');
+        return $this->belongsTo(ContratoLocacaoUnidade::class, 'contrato_locacao_id', 'id');
     }
 }

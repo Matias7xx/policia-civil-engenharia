@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('anexo')->nullable();
             $table->timestamps();
 
-            $table->foreign('unidade_id')->references('id')->on('unidades');
+            $table->foreign('unidade_id')->references('id')->on('unidades')->onDelete('cascade');
         });
     }
 

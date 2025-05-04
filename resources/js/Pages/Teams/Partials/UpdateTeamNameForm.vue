@@ -6,14 +6,17 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { computed } from 'vue';
 
 const props = defineProps({
     team: Object,
     permissions: Object,
 });
 
+const teamName = computed(() => props.team?.name || '');
+
 const form = useForm({
-    name: props.team.name,
+    name: teamName.value,
 });
 
 const updateTeamName = () => {
@@ -27,53 +30,60 @@ const updateTeamName = () => {
 <template>
     <FormSection @submitted="updateTeamName">
         <template #title>
-            Team Name
+            Nome da Equipe
         </template>
 
         <template #description>
-            The team's name and owner information.
+            O nome da equipe e as informações do proprietário.
         </template>
 
         <template #form>
             <!-- Team Owner Information -->
             <div class="col-span-6">
-                <InputLabel value="Team Owner" />
+                <InputLabel value="Proprietário da Equipe" />
 
-                <div class="flex items-center mt-2">
-                    <img class="size-12 rounded-full object-cover" :src="team.owner.profile_photo_url" :alt="team.owner.name">
+                <div v-if="team" class="flex items-center mt-2">
+                    <img
+                        class="size-12 rounded-full object-cover"
+                        :src="team.owner?.profile_photo_url || '/images/default-avatar.png'"
+                        :alt="team.owner?.name || 'Carregando...'"
+                    >
 
                     <div class="ms-4 leading-tight">
-                        <div class="text-gray-900">{{ team.owner.name }}</div>
+                        <div class="text-gray-900">{{ team.owner?.name || 'Carregando...' }}</div>
                         <div class="text-gray-700 text-sm">
-                            {{ team.owner.email }}
+                            {{ team.owner?.email || 'Carregando...' }}
                         </div>
                     </div>
+                </div>
+                <div v-else class="mt-2 text-gray-600">
+                    Carregando informações do proprietário...
                 </div>
             </div>
 
             <!-- Team Name -->
             <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="name" value="Team Name" />
+                <InputLabel for="name" value="Nome da Equipe" />
 
                 <TextInput
                     id="name"
                     v-model="form.name"
                     type="text"
                     class="mt-1 block w-full"
-                    :disabled="! permissions.canUpdateTeam"
+                    :disabled="!permissions?.canUpdateTeam"
                 />
 
                 <InputError :message="form.errors.name" class="mt-2" />
             </div>
         </template>
 
-        <template v-if="permissions.canUpdateTeam" #actions>
+        <template v-if="permissions?.canUpdateTeam" #actions>
             <ActionMessage :on="form.recentlySuccessful" class="me-3">
-                Saved.
+                Salvo.
             </ActionMessage>
 
             <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                Save
+                Salvar
             </PrimaryButton>
         </template>
     </FormSection>

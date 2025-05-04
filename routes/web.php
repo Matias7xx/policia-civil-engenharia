@@ -1,16 +1,19 @@
 <?php
 
 use App\Http\Controllers\AcessibilidadeUnidadeController;
+use App\Http\Controllers\Admin\UnidadeController as AdminUnidadeController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AvaliacaoUnidadeController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GeocodingController;
 use App\Http\Controllers\InformacoesUnidadeController;
+use App\Http\Controllers\MidiaController;
+use App\Http\Controllers\MidiaTipoController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UnidadeController;
-use App\Http\Controllers\AvaliacaoUnidadeController;
-use App\Http\Controllers\Admin\UnidadeController as AdminUnidadeController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\Admin\UserController;
 
 Route::get('/', function () {
     return Inertia::render('Auth/Login', [
@@ -19,8 +22,15 @@ Route::get('/', function () {
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
+})->name('home');
+
+// Rotas públicas
+Route::prefix('geocoding')->name('geocoding.')->group(function () {
+    Route::get('/search', [GeocodingController::class, 'search'])->name('search');
+    Route::get('/reverse', [GeocodingController::class, 'reverse'])->name('reverse');
 });
 
+// Rota de depuração
 Route::get('/debug/user-role', function () {
     $user = auth()->user();
     return [
@@ -38,77 +48,74 @@ Route::get('/debug/user-role', function () {
         'isServidor' => \App\Helpers\RoleHelper::isServidor($user),
         'teamRole' => $user->teamRole($user->currentTeam) ? $user->teamRole($user->currentTeam)->key : null,
     ];
-});
+})->name('debug.user-role');
 
-// Rotas protegidas por autenticação
+// Rotas autenticadas
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    // Rota do dashboard
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // Rotas das unidades (teams)
-    Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
-    
-    // Middleware para verificar se já existe unidade
-    Route::middleware(['verify.no.unit'])->group(function () {
-        Route::get('/teams/create', [TeamController::class, 'create'])->name('teams.create');
+
+    // Rotas de mídias
+    Route::get('/midia-tipos/ativos', [MidiaTipoController::class, 'ativos'])->name('api.midia-tipos.ativos');
+
+    // Rotas de equipes (teams)
+    Route::prefix('teams')->name('teams.')->group(function () {
+        Route::get('/', [TeamController::class, 'index'])->name('index');
+        Route::get('/{team}', [TeamController::class, 'show'])->name('show');
+        
+        Route::middleware('verify.no.unit')->group(function () {
+            Route::get('/create', [TeamController::class, 'create'])->name('create');
+        });
     });
 
-    // Rotas para visualizar unidades (todos os níveis)
-    Route::get('/teams/{team}', [TeamController::class, 'show'])->name('teams.show');
-    
-    // Rotas que requerem permissão de admin ou superadmin
-    Route::middleware(['role:admin'])->group(function () {
-        // Rotas para gerenciar unidades
-        Route::post('/unidades', [UnidadeController::class, 'store'])->name('unidades.store');
-        Route::put('/unidades/{unidade}', [UnidadeController::class, 'update'])->name('unidades.update');
-        
-        // Rotas para gerenciar acessibilidade
-        Route::post('/acessibilidade', [AcessibilidadeUnidadeController::class, 'store'])->name('acessibilidade.store');
-        Route::put('/acessibilidade/{acessibilidade}', [AcessibilidadeUnidadeController::class, 'update'])->name('acessibilidade.update');
-        
-        // Rotas para gerenciar informações estruturais
-        Route::post('/informacoes-unidade', [InformacoesUnidadeController::class, 'store'])->name('informacoes-unidade.store');
-        Route::put('/informacoes-unidade/{informacoesUnidade}', [InformacoesUnidadeController::class, 'update'])->name('informacoes-unidade.update');
+    // Rotas de administração (admin e superadmin)
+    Route::middleware('role:admin')->group(function () {
+        // Gerenciamento de unidades
+        Route::prefix('unidades')->name('unidades.')->group(function () {
+            Route::get('/create/{teamId?}', [UnidadeController::class, 'create'])->name('create');
+            Route::get('/{team}/{unidade}', [UnidadeController::class, 'show'])->name('show');
+            Route::post('/dados-gerais', [UnidadeController::class, 'saveDadosGerais'])->name('saveDadosGerais');
+            Route::post('/acessibilidade', [UnidadeController::class, 'saveAcessibilidade'])->name('saveAcessibilidade');
+            Route::post('/informacoes-estruturais', [UnidadeController::class, 'saveInformacoesEstruturais'])->name('saveInformacoesEstruturais');
+            Route::post('/finalize/{unidade}', [UnidadeController::class, 'finalize'])->name('finalize');
+        });
+
+        // Gerenciamento de mídias
+        Route::post('/midias/store', [MidiaController::class, 'store'])->name('midias.store');
     });
-    
-    // Rotas apenas para superadministradores
-    Route::middleware(['role:superadmin'])->prefix('admin')->group(function () {
-        Route::get('/dashboard', function () {
-            return Inertia::render('Admin/Dashboard');
-        })->name('admin.dashboard');
-        
-        // Rota para gerenciar todas as unidades
-        Route::get('/unidades', [AdminUnidadeController::class, 'index'])->name('admin.unidades.index');
-        
-        // Rota para visualizar uma unidade específica
-        Route::get('/unidades/{id}', [AdminUnidadeController::class, 'show'])->name('admin.unidades.show');
-        
-        // Rotas para avaliação de unidades
-        Route::post('/unidades/{unidade}/avaliar', [AvaliacaoUnidadeController::class, 'store'])
-            ->name('admin.unidades.avaliar');
 
-        Route::put('/avaliacoes/{avaliacao}', [AvaliacaoUnidadeController::class, 'update'])
-            ->name('admin.avaliacoes.update');
+    // Rotas de superadministrador
+    Route::middleware('role:superadmin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', fn() => Inertia::render('Admin/Dashboard'))->name('dashboard');
 
+        // Gerenciamento de unidades
+        Route::prefix('unidades')->name('unidades.')->group(function () {
+            Route::get('/', [AdminUnidadeController::class, 'index'])->name('index');
+            Route::get('/{id}', [AdminUnidadeController::class, 'show'])->name('show');
+            Route::post('/{unidade}/avaliar', [AvaliacaoUnidadeController::class, 'store'])->name('avaliar');
+        });
 
-            // Rotas de gerenciamento de usuários
-            Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
-            Route::get('/users/create', [UserController::class, 'create'])->name('admin.users.create');
-            Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
-            Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('admin.users.edit');
-            Route::put('/users/{user}', [UserController::class, 'update'])->name('admin.users.update');
-            Route::get('/users/{user}', [UserController::class, 'show'])->name('admin.users.show');
-            Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+        // Gerenciamento de avaliações
+        Route::put('/avaliacoes/{avaliacao}', [AvaliacaoUnidadeController::class, 'update'])->name('avaliacoes.update');
+
+        // Gerenciamento de usuários
+        Route::prefix('users')->name('users.')->group(function () {
+            Route::get('/', [UserController::class, 'index'])->name('index');
+            Route::get('/create', [UserController::class, 'create'])->name('create');
+            Route::post('/', [UserController::class, 'store'])->name('store');
+            Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
+            Route::put('/{user}', [UserController::class, 'update'])->name('update');
+            Route::get('/{user}', [UserController::class, 'show'])->name('show');
+            Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+        });
     });
-    
-    // Rotas apenas para servidores comuns (visualização)
-    Route::middleware(['role:servidor'])->prefix('servidor')->group(function () {
-        Route::get('/dashboard', function () {
-            return Inertia::render('Dashboard');
-        })->name('servidor.dashboard');
+
+    // Rotas para servidores
+    Route::middleware('role:servidor')->prefix('servidor')->name('servidor.')->group(function () {
+        Route::get('/dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
     });
 });

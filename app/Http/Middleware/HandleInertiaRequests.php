@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use App\Models\Unidade;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -35,9 +36,21 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        return [
-            ...parent::share($request),
-            //
-        ];
+        $user = $request->user();
+        $unidadeId = null;
+
+        // Verificar se há um usuário autenticado e um time atual
+        if ($user && $user->currentTeam) {
+            // Buscar a unidade associada ao time atual do usuário
+            $unidade = Unidade::where('team_id', $user->currentTeam->id)->first();
+            $unidadeId = $unidade ? $unidade->id : null;
+        }
+
+        return array_merge(parent::share($request), [
+            'auth' => [
+                'user' => $user,
+                'unidade_id' => $unidadeId, // Compartilhar o unidade_id
+            ],
+        ]);
     }
 }

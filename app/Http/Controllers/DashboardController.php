@@ -19,44 +19,43 @@ class DashboardController extends Controller
         $isAdmin = RoleHelper::isAdmin($user) && !$isSuperAdmin;
         $isServidor = RoleHelper::isServidor($user);
 
-        //Verificar se já existe uma unidade cadastrada
+        // Verificar se já existe uma unidade cadastrada (apenas se is_draft for false)
         $unidadeCadastrada = false;
-
-        if ($user->currentTeam) {
+        if ($user && $user->currentTeam) {
             $unidade = Unidade::where('team_id', $user->currentTeam->id)->first();
-            $unidadeCadastrada = !is_null($unidade);
+            $unidadeCadastrada = $unidade && !$unidade->is_draft;
         }
-        
-        // Verificar qual o tipo de usuário e renderizar a visualização apropriada
+
+        // Dados para Super Administrador
         if ($isSuperAdmin) {
-            // Contagem de unidades
             $unidadesCount = Unidade::count();
-            
-            // Contagem de unidades pendentes de avaliação
             $unidadesPendentes = Unidade::where('status', 'pendente_avaliacao')->count();
-            
+
             return Inertia::render('Dashboard', [
                 'isSuperAdmin' => true,
                 'isAdmin' => false,
                 'isServidor' => false,
                 'unidadesCount' => $unidadesCount,
                 'unidadesPendentes' => $unidadesPendentes,
-                'unidadeCadastrada' => $unidadeCadastrada,
+                'unidadeCadastrada' => $unidadeCadastrada, // Atualizado para refletir is_draft
             ]);
-        } elseif ($isAdmin) {
+        }
+        // Dados para Administrador
+        elseif ($isAdmin) {
             return Inertia::render('Dashboard', [
                 'isSuperAdmin' => false,
                 'isAdmin' => true,
                 'isServidor' => false,
-                'unidadeCadastrada' => $unidadeCadastrada,
+                'unidadeCadastrada' => $unidadeCadastrada, // Atualizado para refletir is_draft
             ]);
-        } else {
-            // Usuário servidor - apenas visualização
+        }
+        // Dados para Servidor
+        else {
             return Inertia::render('Dashboard', [
                 'isSuperAdmin' => false,
                 'isAdmin' => false,
                 'isServidor' => true,
-                'unidadeCadastrada' => $unidadeCadastrada,
+                'unidadeCadastrada' => $unidadeCadastrada, // Atualizado para refletir is_draft
             ]);
         }
     }
