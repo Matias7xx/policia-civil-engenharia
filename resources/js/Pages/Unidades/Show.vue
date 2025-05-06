@@ -69,9 +69,9 @@ const getStatusLabel = computed(() => {
         case 'pendente_avaliacao':
             return { text: 'Pendente de Avaliação', class: 'bg-yellow-100 text-yellow-800' };
         case 'aprovada':
-            return { text: 'Aprovada', class: 'bg-green-100 text-green-800' };
+            return { text: 'Aprovado', class: 'bg-green-100 text-green-800' };
         case 'reprovada':
-            return { text: 'Reprovada', class: 'bg-red-100 text-red-800' };
+            return { text: 'Reprovado', class: 'bg-red-100 text-red-800' };
         case 'em_revisao':
             return { text: 'Em Revisão', class: 'bg-blue-100 text-blue-800' };
         default:
@@ -196,6 +196,13 @@ const formatarTelefones = computed(() => {
                                 >
                                     {{ getStatusLabel.text }}
                                 </span>
+                            </div>
+                            <!-- Exibir motivo da reprovação -->
+                            <div v-if="unidade?.rejection_reason && unidade.status === 'reprovada'" class="mt-4">
+                                <div class="bg-red-50 p-3 rounded-md shadow-sm">
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Motivo da Reprovação:</dt>
+                                    <dd class="mt-1 whitespace-pre-line text-red-700">{{ unidade.rejection_reason }}</dd>
+                                </div>
                             </div>
                         </div>
 

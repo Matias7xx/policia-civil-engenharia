@@ -84,8 +84,8 @@ class UnidadeController extends Controller
         $statusOptions = [
             ['key' => 'todos', 'name' => 'Todos'],
             ['key' => 'pendente_avaliacao', 'name' => 'Pendente de Avaliação'],
-            ['key' => 'aprovada', 'name' => 'Aprovada'],
-            ['key' => 'reprovada', 'name' => 'Reprovada'],
+            ['key' => 'aprovada', 'name' => 'Aprovado'],
+            ['key' => 'reprovada', 'name' => 'Reprovado'],
             ['key' => 'em_revisao', 'name' => 'Em Revisão'],
         ];
 
@@ -176,61 +176,67 @@ class UnidadeController extends Controller
      * Update the contract details for a locado unit.
      */
     public function updateContrato(Request $request, $id)
-    {
-        $user = $request->user();
-        if (!RoleHelper::isSuperAdmin($user)) {
-            abort(403, 'Acesso não autorizado');
-        }
-
-        $unidade = Unidade::findOrFail($id);
-
-        if ($unidade->tipo_judicial !== 'locado') {
-            return back()->with('error', 'Unidade não é do tipo locado.');
-        }
-
-        $validated = $request->validate([
-            'nome_proprietario' => 'required|string|max:255',
-            'cpf_cnpj' => 'required|string|max:25',
-            'telefone' => 'nullable|string|max:20',
-            'valor_locacao' => 'nullable|numeric|min:0',
-            'data_inicio' => 'nullable|date',
-            'data_fim' => 'nullable|date|after:data_inicio',
-            'anexo' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240', // 10MB max
-        ]);
-
-        $contrato = $unidade->contratoLocacao ?: new ContratoLocacaoUnidade(['unidade_id' => $unidade->id]);
-
-        $contrato->fill([
-            'nome_proprietario' => $validated['nome_proprietario'],
-            'cpf_cnpj' => $validated['cpf_cnpj'],
-            'telefone' => $validated['telefone'],
-            'valor_locacao' => $validated['valor_locacao'],
-            'data_inicio' => $validated['data_inicio'],
-            'data_fim' => $validated['data_fim'],
-        ]);
-
-        if ($request->hasFile('anexo')) {
-            // Sanitizar o nome da unidade para evitar caracteres inválidos
-            $nomeUnidade = Str::slug($unidade->nome);
-            $path = "contratos/{$nomeUnidade}";
-
-            // Remover anexo antigo, se existir
-            if ($contrato->anexo) {
-                Storage::disk('public')->delete($contrato->anexo);
-            }
-
-            // Armazenar novo anexo
-            $anexoPath = $request->file('anexo')->store($path, 'public');
-            $contrato->anexo = $anexoPath;
-        }
-
-        $contrato->save();
-
-        // Recarregar a unidade com o contrato para garantir que a view receba os dados atualizados
-        $unidade->load('contratoLocacao');
-
-        return back()->with('success', 'Contrato atualizado com sucesso.');
+{
+    $user = $request->user();
+    if (!RoleHelper::isSuperAdmin($user)) {
+        abort(403, 'Acesso não autorizado');
     }
+
+    $unidade = Unidade::findOrFail($id);
+
+    if ($unidade->tipo_judicial !== 'locado') {
+        return back()->with('error', 'Unidade não é do tipo locado.');
+    }
+
+    $validated = $request->validate([
+        'nome_proprietario' => 'required|string|max:255',
+        'cpf_cnpj' => 'required|string|min:11|max:14',
+        'telefone' => 'nullable|string|min:10|max:11',
+        'valor_locacao' => 'required|numeric|min:0',
+        'data_inicio' => 'required|date',
+        'data_fim' => 'nullable|date|after_or_equal:data_inicio',
+        'anexo' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+    ]);
+
+    $contrato = $unidade->contratoLocacao ?: new ContratoLocacaoUnidade(['unidade_id' => $unidade->id]);
+
+    // Limpar caracteres não numéricos
+    $cleanedCpfCnpj = preg_replace('/\D/', '', $validated['cpf_cnpj']);
+    $cleanedTelefone = $validated['telefone'] ? preg_replace('/\D/', '', $validated['telefone']) : null;
+
+     // Validar comprimento após limpeza
+     if (strlen($cleanedCpfCnpj) < 11 || strlen($cleanedCpfCnpj) > 14) {
+        return redirect()->back()->withErrors(['cpf_cnpj' => 'O CPF/CNPJ deve conter entre 11 e 14 dígitos numéricos.'])->withInput();
+    }
+    if ($cleanedTelefone && strlen($cleanedTelefone) !== 11) {
+        return redirect()->back()->withErrors(['telefone' => 'O telefone deve conter exatamente 11 dígitos numéricos.'])->withInput();
+    }
+
+    $contrato->fill([
+        'nome_proprietario' => $validated['nome_proprietario'],
+        'cpf_cnpj' => $cleanedCpfCnpj,
+        'telefone' => $cleanedTelefone,
+        'valor_locacao' => $validated['valor_locacao'],
+        'data_inicio' => $validated['data_inicio'],
+        'data_fim' => $validated['data_fim'],
+    ]);
+
+    if ($request->hasFile('anexo')) {
+        $nomeUnidade = Str::slug($unidade->nome);
+        $path = "contratos/{$nomeUnidade}";
+        if ($contrato->anexo) {
+            Storage::disk('public')->delete($contrato->anexo);
+        }
+        $anexoPath = $request->file('anexo')->store($path, 'public');
+        $contrato->anexo = $anexoPath;
+    }
+
+    $contrato->save();
+
+    $unidade->load('contratoLocacao');
+
+    return back()->with('success', 'Contrato atualizado com sucesso.');
+}
 
     public function anexo($id)
     {
@@ -318,5 +324,27 @@ class UnidadeController extends Controller
         }
 
         return response()->file($filePath);
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!RoleHelper::isSuperAdmin($user)) {
+            abort(403, 'Acesso não autorizado');
+        }
+
+        $unidade = Unidade::findOrFail($id);
+
+        $validated = $request->validate([
+            'status' => 'required|in:pendente_avaliacao,aprovada,reprovada,em_revisao',
+            'rejection_reason' => 'required_if:status,reprovada|string|max:1000|nullable',
+        ]);
+
+        $unidade->update([
+            'status' => $validated['status'],
+            'rejection_reason' => $validated['status'] === 'reprovada' ? $validated['rejection_reason'] : null,
+        ]);
+
+        return back()->with('success', 'Status atualizado com sucesso.');
     }
 }

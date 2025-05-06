@@ -31,6 +31,7 @@ return new class extends Migration
             $table->decimal('longitude', 11, 8)->nullable();
             $table->string('tipo_judicial')->nullable()->comment('próprio, locado, cedido (orgao cedente, termo de cessão e prazo de cessão)');
             $table->string('status')->nullable();
+            $table->text('rejection_reason')->nullable(); //Motivo da reprovação do formulário
             $table->boolean('imovel_compartilhado_orgao')->default(false);
             $table->unsignedBigInteger('imovel_compartilhado_orgao_id')->nullable();
             $table->string('observacoes')->nullable();

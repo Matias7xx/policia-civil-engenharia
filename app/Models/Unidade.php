@@ -56,6 +56,7 @@ class Unidade extends Model
         'termo_cessao',
         'prazo_cessao',
         'is_draft',
+        'rejection_reason',
     ];
 
     /**

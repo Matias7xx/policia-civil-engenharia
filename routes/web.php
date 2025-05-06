@@ -102,6 +102,7 @@ Route::middleware([
             Route::post('/{id}/cessao', [AdminUnidadeController::class, 'updateCessao'])->name('updateCessao');
             Route::get('/{id}/anexo', [AdminUnidadeController::class, 'anexo'])->name('anexo');
             Route::get('/{id}/termo-cessao', [AdminUnidadeController::class, 'termoCessao'])->name('termoCessao');
+            Route::post('/{id}/status', [AdminUnidadeController::class, 'updateStatus'])->name('updateStatus');
         });
 
         // Gerenciamento de avaliações

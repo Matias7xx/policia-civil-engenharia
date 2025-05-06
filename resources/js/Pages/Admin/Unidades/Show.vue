@@ -22,9 +22,13 @@ const activeTab = ref('dados-gerais');
 const flashMessage = ref(null);
 const mobileMenuOpen = ref(false);
 
-// Estado do modal
+// Estado do modal de mídia
 const isModalOpen = ref(false);
 const selectedMedia = ref(null);
+
+// Estado do modal de reprovação
+const isRejectionModalOpen = ref(false);
+const rejectionReason = ref('');
 
 // Formulário para edição de contrato de locação
 const contratoForm = useForm({
@@ -44,8 +48,28 @@ const cessaoForm = useForm({
     prazo_cessao: props.unidade?.prazo_cessao || '',
 });
 
+// Formulário para atualização de status
+const statusForm = useForm({
+    status: '',
+    rejection_reason: '',
+});
+
 // Máscara para o campo telefone
-const telefoneMask = { mask: '(00) 00000-0000', lazy: false, overwrite: true };
+const telefoneMask = { mask: '(00) 00000-0000', maxLength: 15, lazy: false, overwrite: true };
+
+// Máscara para o campo CPF/CNPJ
+const cpfCnpjMask = {
+    mask: [
+        { mask: '000.000.000-00', maxLength: 14 }, // CPF com formatação
+        { mask: '00.000.000/0000-00', maxLength: 18 } // CNPJ com formatação
+    ],
+    dispatch: function(appended, dynamicMasked) {
+        const numericValue = (dynamicMasked.value + appended).replace(/\D/g, '');
+        return numericValue.length <= 11 
+            ? dynamicMasked.compiledMasks[0] 
+            : dynamicMasked.compiledMasks[1];
+    },
+};
 
 // Exibe mensagens de flash
 watch(() => page.props.flash, (flash) => {
@@ -84,6 +108,57 @@ const closeModal = () => {
     selectedMedia.value = null;
 };
 
+// Função para abrir o modal de reprovação
+const openRejectionModal = () => {
+    rejectionReason.value = '';
+    statusForm.status = 'reprovada';
+    isRejectionModalOpen.value = true;
+};
+
+// Função para fechar o modal de reprovação
+const closeRejectionModal = () => {
+    isRejectionModalOpen.value = false;
+    statusForm.reset();
+    rejectionReason.value = '';
+};
+
+// Função para atualizar o status
+const updateStatus = (status) => {
+    statusForm.status = status;
+    if (status === 'reprovada') {
+        openRejectionModal();
+    } else {
+        statusForm.rejection_reason = null;
+        submitStatus();
+    }
+};
+
+// Função para enviar o status (com motivo, se reprovada)
+const submitStatus = () => {
+    if (statusForm.status === 'reprovada') {
+        statusForm.rejection_reason = rejectionReason.value.trim();
+        if (!statusForm.rejection_reason) {
+            flashMessage.value = 'Por favor, forneça um motivo para a reprovação.';
+            setTimeout(() => (flashMessage.value = null), 5000);
+            return;
+        }
+    }
+    console.log('Enviando status:', statusForm);
+    statusForm.post(route('admin.unidades.updateStatus', props.unidade.id), {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            flashMessage.value = 'Status atualizado com sucesso!';
+            closeRejectionModal();
+            setTimeout(() => (flashMessage.value = null), 5000);
+        },
+        onError: (errors) => {
+            flashMessage.value = 'Erro ao atualizar o status: ' + (errors.rejection_reason || 'Verifique os dados.');
+            setTimeout(() => (flashMessage.value = null), 5000);
+        },
+    });
+};
+
 // Formatando dados para exibição
 const getStatusLabel = computed(() => {
     if (!props.unidade?.status) return { text: 'Desconhecido', class: 'bg-gray-100 text-gray-800' };
@@ -92,9 +167,9 @@ const getStatusLabel = computed(() => {
         case 'pendente_avaliacao':
             return { text: 'Pendente de Avaliação', class: 'bg-yellow-100 text-yellow-800' };
         case 'aprovada':
-            return { text: 'Aprovada', class: 'bg-green-100 text-green-800' };
+            return { text: 'Aprovado', class: 'bg-green-100 text-green-800' };
         case 'reprovada':
-            return { text: 'Reprovada', class: 'bg-red-100 text-red-800' };
+            return { text: 'Reprovado', class: 'bg-red-100 text-red-800' };
         case 'em_revisao':
             return { text: 'Em Revisão', class: 'bg-blue-100 text-blue-800' };
         default:
@@ -120,42 +195,55 @@ const formatarTelefones = computed(() => {
     return tels.length > 0 ? tels.join(' / ') : 'Não informado';
 });
 
-// Formatar a data das avaliações
+// Formatando a data
 const formatarData = (data) => {
     if (!data) return 'Não informado';
     
     if (typeof data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data)) {
         const [year, month, day] = data.split('-').map(Number);
-        // Criar a data como local
         const date = new Date(year, month - 1, day);
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
     
-    // Para outros formatos, usamos o comportamento padrão
     const date = new Date(data);
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 // Função para salvar contrato de locação
 const salvarContrato = () => {
-    // Remover qualquer formatação do cpf_cnpj antes de enviar
-    contratoForm.cpf_cnpj = contratoForm.cpf_cnpj.replace(/\D/g, '');
+    // Limpar a formatação do CPF/CNPJ e telefone antes de enviar
+    const cleanedCpfCnpj = contratoForm.cpf_cnpj ? String(contratoForm.cpf_cnpj).replace(/\D/g, '').trim() : '';
+    const cleanedTelefone = contratoForm.telefone ? String(contratoForm.telefone).replace(/\D/g, '').trim() : null;
+
+    // Atualizar os valores no formulário
+    contratoForm.cpf_cnpj = cleanedCpfCnpj;
+    contratoForm.telefone = cleanedTelefone;
+
+    // Depuração: Verificar os dados antes de enviar
+    console.log('Dados do contrato antes de enviar:', {
+        nome_proprietario: contratoForm.nome_proprietario,
+        cpf_cnpj: contratoForm.cpf_cnpj,
+        telefone: contratoForm.telefone,
+        valor_locacao: contratoForm.valor_locacao,
+        data_inicio: contratoForm.data_inicio,
+        data_fim: contratoForm.data_fim,
+        anexo: contratoForm.anexo,
+    });
+
     contratoForm.post(route('admin.unidades.updateContrato', props.unidade.id), {
         preserveState: true,
         preserveScroll: true,
         forceFormData: true,
         onSuccess: (page) => {
             flashMessage.value = 'Contrato salvo com sucesso!';
-            // Atualizar o formulário com os dados retornados
             const updatedContrato = page.props.unidade.contrato_locacao || {};
             contratoForm.nome_proprietario = updatedContrato.nome_proprietario || '';
             contratoForm.cpf_cnpj = updatedContrato.cpf_cnpj || '';
             contratoForm.telefone = updatedContrato.telefone || '';
             contratoForm.valor_locacao = updatedContrato.valor_locacao || '';
-            // Garantir que as datas estejam no formato YYYY-MM-DD
             contratoForm.data_inicio = updatedContrato.data_inicio ? new Date(updatedContrato.data_inicio).toISOString().split('T')[0] : '';
             contratoForm.data_fim = updatedContrato.data_fim ? new Date(updatedContrato.data_fim).toISOString().split('T')[0] : '';
-            contratoForm.anexo = null; // Resetar o campo de arquivo
+            contratoForm.anexo = null;
             setTimeout(() => (flashMessage.value = null), 5000);
         },
         onError: () => {
@@ -260,7 +348,6 @@ const salvarCessao = () => {
                             </button>
                         </div>
                         
-                        <!-- Menu móvel dropdown -->
                         <div v-if="mobileMenuOpen" class="mt-2 space-y-1 bg-gray-50 rounded-md p-2 transition-all">
                             <button
                                 v-for="tab in tabs"
@@ -287,6 +374,75 @@ const salvarCessao = () => {
                                 >
                                     {{ getStatusLabel.text }}
                                 </span>
+                                <!-- Botões de ação para SuperAdmin -->
+                                <div v-if="isSuperAdmin" class="flex space-x-2">
+                                    <button
+                                        v-if="unidade.status !== 'aprovada'"
+                                        @click="updateStatus('aprovada')"
+                                        class="px-3 py-1 bg-green-500 text-white rounded-md text-xs sm:text-sm hover:bg-green-600"
+                                    >
+                                        Aprovar
+                                    </button>
+                                    <button
+                                        v-if="unidade.status !== 'reprovada'"
+                                        @click="updateStatus('reprovada')"
+                                        class="px-3 py-1 bg-red-500 text-white rounded-md text-xs sm:text-sm hover:bg-red-600"
+                                    >
+                                        Reprovar
+                                    </button>
+                                    <button
+                                        v-if="unidade.status !== 'em_revisao'"
+                                        @click="updateStatus('em_revisao')"
+                                        class="px-3 py-1 bg-blue-500 text-white rounded-md text-xs sm:text-sm hover:bg-blue-600"
+                                    >
+                                        Em Revisão
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Exibir motivo da reprovação -->
+                            <div v-if="unidade?.rejection_reason && unidade.status === 'reprovada'" class="mt-4">
+                                <div class="bg-red-50 p-3 rounded-md shadow-sm">
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Motivo da Reprovação:</dt>
+                                    <dd class="mt-1 whitespace-pre-line text-red-700">{{ unidade.rejection_reason }}</dd>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal de Reprovação -->
+                        <div v-if="isRejectionModalOpen" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+                            <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">Motivo da Reprovação</h3>
+                                <form @submit.prevent="submitStatus">
+                                    <div class="mb-4">
+                                        <label for="rejection_reason" class="block text-sm font-medium text-gray-700">Descreva o motivo</label>
+                                        <textarea
+                                            id="rejection_reason"
+                                            v-model="rejectionReason"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            rows="4"
+                                            required
+                                        ></textarea>
+                                        <p v-if="statusForm.errors.rejection_reason" class="text-red-500 text-xs mt-1">
+                                            {{ statusForm.errors.rejection_reason }}
+                                        </p>
+                                    </div>
+                                    <div class="flex justify-end space-x-2">
+                                        <button
+                                            type="button"
+                                            @click="closeRejectionModal"
+                                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                                            :disabled="statusForm.processing"
+                                        >
+                                            Confirmar Reprovação
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
 
@@ -427,7 +583,8 @@ const salvarCessao = () => {
                                             id="cpf_cnpj"
                                             v-model="contratoForm.cpf_cnpj"
                                             type="text"
-                                            placeholder="12345678901 ou 12345678000199"
+                                            v-imask="cpfCnpjMask"
+                                            placeholder="CPF ou CNPJ"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                             required
                                         />
@@ -606,7 +763,7 @@ const salvarCessao = () => {
 
                         <!-- Informações Estruturais -->
                         <div v-if="activeTab === 'informacoes'" class="space-y-6">
-                            <!-- Primeira seção: Via e Serviços -->
+                            <!-- Via e Serviços -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Características da Via e Serviços</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -637,7 +794,7 @@ const salvarCessao = () => {
                                 </div>
                             </div>
 
-                            <!-- Segunda seção: Internet e Telefonia -->
+                            <!-- Internet e Telefonia -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Internet e Telefonia</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -660,7 +817,7 @@ const salvarCessao = () => {
                                 </div>
                             </div>
 
-                            <!-- Terceira seção: Características do Imóvel -->
+                            <!-- Características do Imóvel -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Características do Imóvel</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -810,89 +967,17 @@ const salvarCessao = () => {
                                             {{ informacoes.pontos_telefone_suficientes ? 'Suficientes' : 'Insuficientes' }}
                                         </dd>
                                     </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos de A/C:</dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i :class="`fas ${informacoes.pontos_ar_condicionado_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
-                                            {{ informacoes.pontos_ar_condicionado_suficientes ? 'Suficientes' : 'Insuficientes' }}
-                                        </dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos Hidráulicos:</dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i :class="`fas ${informacoes.pontos_hidraulicos_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
-                                            {{ informacoes.pontos_hidraulicos_suficientes ? 'Suficientes' : 'Insuficientes' }}
-                                        </dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos Sanitários:</dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i :class="`fas ${informacoes.pontos_sanitarios_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
-                                            {{ informacoes.pontos_sanitarios_suficientes ? 'Suficientes' : 'Insuficientes' }}
-                                        </dd>
-                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Acabamentos -->
-                            <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Acabamentos</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Piso:</dt>
-                                        <dd class="mt-1">{{ informacoes.piso || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Parede:</dt>
-                                        <dd class="mt-1">{{ informacoes.parede || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Esquadrias:</dt>
-                                        <dd class="mt-1">{{ informacoes.esquadrias || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Louças e Metais:</dt>
-                                        <dd class="mt-1">{{ informacoes.loucas_metais || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Forro/Laje:</dt>
-                                        <dd class="mt-1">{{ informacoes.forro_lage || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Cobertura:</dt>
-                                        <dd class="mt-1">{{ informacoes.cobertura || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pintura:</dt>
-                                        <dd class="mt-1">{{ informacoes.pintura || 'Não informado' }}</dd>
-                                    </div>
+                            <!-- Observações Estruturais -->
+                            <div v-if="informacoes?.observacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Observações</h3>
+                                <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow whitespace-pre-line">
+                                    {{ informacoes.observacoes }}
                                 </div>
                             </div>
 
-                            <!-- Equipamentos de Segurança -->
-                            <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Equipamentos de Segurança</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Extintor Pó Químico:</dt>
-                                        <dd class="mt-1">{{ informacoes.extintor_po_quimico || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Extintor CO2:</dt>
-                                        <dd class="mt-1">{{ informacoes.extintor_co2 || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Extintor Água:</dt>
-                                        <dd class="mt-1">{{ informacoes.extintor_agua || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Placas de Emergência Para Incêndio:</dt>
-                                        <dd class="mt-1">{{ informacoes.placa_incendio || 'Não informado' }}</dd>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Se não houver informações estruturais -->
                             <div v-if="!informacoes" class="bg-white p-6 rounded-md shadow-sm text-center">
                                 <i class="fas fa-info-circle text-blue-500 text-4xl mb-4"></i>
                                 <p class="text-gray-600">Nenhuma informação estrutural cadastrada para esta unidade.</p>
@@ -902,82 +987,86 @@ const salvarCessao = () => {
                         <!-- Mídias -->
                         <div v-if="activeTab === 'midias'" class="space-y-6">
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Galeria de Mídias</h3>
-                                
-                                <!-- Exibição de mídias em formato grid -->
-                                <div v-if="midias && midias.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                    <div 
-                                        v-for="(midia, index) in midias" 
-                                        :key="index" 
-                                        class="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all"
-                                    >
-                                        <!-- Imagem -->
-                                        <div v-if="isImage(midia)" class="relative h-48 bg-gray-200">
-                                            <img 
-                                                :src="midia.url" 
-                                                alt="Mídia" 
-                                                class="w-full h-full object-cover cursor-pointer"
-                                                @click="openModal(midia)"
-                                            />
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Mídias da Unidade</h3>
+                                <div v-if="midias && midias.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div v-for="midia in midias" :key="midia.id" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-medium text-gray-600 text-xs uppercase tracking-wider">
+                                                {{ midia.midia_tipo?.nome || 'Tipo desconhecido' }}
+                                            </span>
+                                            <a v-if="midia.url" :href="midia.url" download class="text-blue-500 hover:text-blue-700">
+                                                <i class="fas fa-download"></i>
+                                            </a>
                                         </div>
-                                        
-                                        <!-- Informações da mídia -->
-                                        <div class="p-4">
-                                            <h4 class="font-medium text-gray-900 truncate">
-                                                {{ midia.midia_tipo?.nome || 'Arquivo' }}
-                                            </h4>
-                                            <p v-if="midia.tamanho" class="text-xs text-gray-500 mt-1">
-                                                {{ (midia.tamanho / 1024).toFixed(2) }} KB
-                                            </p>
+                                        <div v-if="isImage(midia)" class="mt-2 cursor-pointer" @click="openModal(midia)">
+                                            <img :src="midia.url" :alt="midia.midia_tipo?.nome" class="w-full h-32 object-cover rounded-md" />
+                                        </div>
+                                        <div v-else class="mt-2">
+                                            <p class="text-gray-600">Arquivo não visualizável</p>
+                                            <a :href="midia.url" target="_blank" class="text-blue-500 hover:underline">Abrir arquivo</a>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Mensagem quando não há mídias -->
                                 <div v-else class="bg-white p-6 rounded-md shadow-sm text-center">
-                                    <i class="fas fa-photo-video text-blue-500 text-4xl mb-4"></i>
-                                    <p class="text-gray-600">Nenhuma mídia disponível para esta unidade.</p>
+                                    <i class="fas fa-image text-blue-500 text-4xl mb-4"></i>
+                                    <p class="text-gray-600">Nenhuma mídia cadastrada para esta unidade.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal de Visualização de Mídia -->
+                        <div v-if="isModalOpen" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[1000]" @click.self="closeModal">
+                            <div class="bg-white rounded-lg shadow-lg p-4 max-w-3xl w-full relative">
+                                <button @click="closeModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
+                                    <i class="fas fa-times text-2xl"></i>
+                                </button>
+                                <div class="flex flex-col items-center">
+                                    <div v-if="isImage(selectedMedia)" class="flex justify-center">
+                                        <img :src="selectedMedia.url" :alt="selectedMedia.midia_tipo?.nome" class="max-w-full max-h-[70vh] object-contain rounded-lg" />
+                                    </div>
+                                    <div v-else class="text-center">
+                                        <p class="text-gray-600">Arquivo não visualizável no navegador.</p>
+                                        <a :href="selectedMedia.url" target="_blank" class="text-blue-500 hover:underline">Abrir arquivo</a>
+                                    </div>
+                                    <div class="mt-4 flex items-center justify-between w-full">
+                                        <h4 class="font-medium text-gray-900 truncate">{{ selectedMedia?.midia_tipo?.nome || 'Visualizar Mídia' }}</h4>
+                                        <a :href="selectedMedia.url" download class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all">
+                                            <i class="fas fa-download mr-2"></i> Baixar
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Avaliações -->
                         <div v-if="activeTab === 'avaliacoes'" class="space-y-6">
+                            <!-- Formulário de Avaliação (apenas SuperAdmin) -->
+                            <div v-if="isSuperAdmin" class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Nova Avaliação</h3>
+                                <AvaliacaoForm :unidade-id="unidade.id" />
+                            </div>
+
                             <!-- Histórico de Avaliações -->
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Histórico de Avaliações</h3>
-                                
-                                <div v-if="avaliacoes && avaliacoes.length" class="space-y-4">
-                                    <div v-for="(avaliacao, index) in avaliacoes" :key="avaliacao.id" class="bg-white p-4 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                <div v-if="avaliacoes && avaliacoes.length > 0" class="space-y-4">
+                                    <div v-for="avaliacao in avaliacoes" :key="avaliacao.id" class="bg-white p-4 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                             <div>
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Status:</dt>
-                                                <dd class="mt-1">
-                                                    <span class="px-3 py-1 rounded-full text-xs font-medium"
-                                                          :class="{
-                                                              'bg-green-100 text-green-800': avaliacao.status === 'aprovada',
-                                                              'bg-red-100 text-red-800': avaliacao.status === 'reprovada',
-                                                              'bg-blue-100 text-blue-800': avaliacao.status === 'em_revisao',
-                                                          }">
-                                                        {{ avaliacao.status === 'aprovada' ? 'Aprovada' : avaliacao.status === 'reprovada' ? 'Reprovada' : 'Em Revisão' }}
-                                                    </span>
-                                                </dd>
-                                            </div>
-                                            <div>
                                                 <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nota Geral:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_geral || 'Não informado' }}</dd>
+                                                <dd class="mt-1">{{ avaliacao.nota_geral ? `${avaliacao.nota_geral.toFixed(1)}` : 'Não informada' }}</dd>
                                             </div>
                                             <div>
                                                 <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nota Estrutura:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_estrutura || 'Não informado' }}</dd>
+                                                <dd class="mt-1">{{ avaliacao.nota_estrutura ? `${avaliacao.nota_estrutura.toFixed(1)}` : 'Não informada' }}</dd>
                                             </div>
                                             <div>
                                                 <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nota Acessibilidade:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_acessibilidade || 'Não informado' }}</dd>
+                                                <dd class="mt-1">{{ avaliacao.nota_acessibilidade ? `${avaliacao.nota_acessibilidade.toFixed(1)}` : 'Não informada' }}</dd>
                                             </div>
                                             <div>
                                                 <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nota Conservação:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_conservacao || 'Não informado' }}</dd>
+                                                <dd class="mt-1">{{ avaliacao.nota_conservacao ? `${avaliacao.nota_conservacao.toFixed(1)}` : 'Não informada' }}</dd>
                                             </div>
                                             <div>
                                                 <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Avaliador:</dt>
@@ -987,53 +1076,19 @@ const salvarCessao = () => {
                                                 <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Data:</dt>
                                                 <dd class="mt-1">{{ formatarData(avaliacao.created_at) }}</dd>
                                             </div>
-                                            <div v-if="avaliacao.observacoes" class="col-span-1 sm:col-span-2 md:col-span-3">
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Observações:</dt>
-                                                <dd class="mt-1 whitespace-pre-line">{{ avaliacao.observacoes }}</dd>
-                                            </div>
+                                        </div>
+                                        <div v-if="avaliacao.observacoes" class="mt-4">
+                                            <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Observações:</dt>
+                                            <dd class="mt-1 whitespace-pre-line">{{ avaliacao.observacoes }}</dd>
                                         </div>
                                     </div>
                                 </div>
-                                
                                 <div v-else class="bg-white p-6 rounded-md shadow-sm text-center">
                                     <i class="fas fa-star text-blue-500 text-4xl mb-4"></i>
-                                    <p class="text-gray-600">Nenhuma avaliação registrada para esta unidade.</p>
+                                    <p class="text-gray-600">Nenhuma avaliação cadastrada para esta unidade.</p>
                                 </div>
                             </div>
-
-                            <!-- Formulário de Avaliação (apenas para SuperAdmin) -->
-                            <div v-if="isSuperAdmin" class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Registrar Nova Avaliação</h3>
-                                <AvaliacaoForm :unidade="unidade" :is-new="true" />
-                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal para exibir a imagem -->
-        <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[1000]" @click.self="closeModal">
-            <div class="bg-white rounded-lg p-4 max-w-3xl w-full mx-4 relative">
-                <!-- Botão de fechar -->
-                <button @click="closeModal" class="absolute top-2 right-2 text-gray-600 hover:text-gray-800">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-                
-                <!-- Imagem no modal -->
-                <div class="flex flex-col items-center">
-                    <img 
-                        :src="selectedMedia?.url" 
-                        alt="Mídia Ampliada" 
-                        class="max-h-[70vh] max-w-full object-contain rounded-lg"
-                    />
-                    <div class="mt-4 flex items-center justify-between w-full">
-                        <h4 class="font-medium text-gray-900 truncate">
-                            {{ selectedMedia?.midia_tipo?.nome || 'Arquivo' }}
-                        </h4>
-                        <a :href="selectedMedia?.url" download class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-all">
-                            <i class="fas fa-download mr-2"></i> Baixar
-                        </a>
                     </div>
                 </div>
             </div>
