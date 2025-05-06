@@ -15,11 +15,10 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('unidade_id');
             $table->unsignedBigInteger('avaliador_id');
-            $table->string('status'); // aprovada, reprovada, em_revisao
+            $table->string('status'); // aprovada, reprovada, pendente de avaliação
             $table->decimal('nota_geral', 2, 1)->nullable();
             $table->decimal('nota_estrutura', 2, 1)->nullable();
             $table->decimal('nota_acessibilidade', 2, 1)->nullable();
-            $table->decimal('nota_conservacao', 2, 1)->nullable();
             $table->text('observacoes')->nullable();
             $table->timestamps();
             

@@ -76,6 +76,7 @@ class InformacoesUnidade extends Model
         'extintor_po_quimico',
         'extintor_co2',
         'extintor_agua',
+        'placa_incendio',
     ];
 
     /**

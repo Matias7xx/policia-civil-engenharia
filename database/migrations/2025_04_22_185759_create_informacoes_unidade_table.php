@@ -77,6 +77,7 @@ return new class extends Migration
             $table->string('extintor_po_quimico')->nullable();
             $table->string('extintor_co2')->nullable();
             $table->string('extintor_agua')->nullable();
+            $table->string('placa_incendio')->nullable();
             
             $table->timestamps();
             

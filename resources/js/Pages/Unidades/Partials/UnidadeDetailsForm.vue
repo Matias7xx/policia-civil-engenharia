@@ -19,7 +19,6 @@ const mapLoaded = ref(false);
 const props = defineProps({
     team: Object,
     unidade: Object,
-    contratoLocacao: Object,
     permissions: Object,
     isNew: Boolean,
     isEditable: Boolean,
@@ -51,18 +50,9 @@ const form = useForm({
     observacoes: props.unidade?.observacoes || '',
     numero_medidor_agua: props.unidade?.numero_medidor_agua || '',
     numero_medidor_energia: props.unidade?.numero_medidor_energia || '',
-    nome_proprietario: props.contratoLocacao?.nome_proprietario || '',
-    cpf_cnpj: props.contratoLocacao?.cpf_cnpj || '',
-    telefone_proprietario: props.contratoLocacao?.telefone || '',
-    valor_locacao: props.contratoLocacao?.valor_locacao || '',
-    data_inicio: props.contratoLocacao?.data_inicio || '',
-    data_fim: props.contratoLocacao?.data_fim || '',
-    orgao_cedente: props.unidade?.orgao_cedente || '',
-    termo_cessao: props.unidade?.termo_cessao || '',
-    prazo_cessao: props.unidade?.prazo_cessao || '',
 });
 
-const activeSection = ref('geral'); // 'geral', 'localizacao', 'contrato'
+const activeSection = ref('geral'); // 'geral', 'localizacao'
 const mapContainer = ref(null);
 let map = null;
 let marker = null;
@@ -304,26 +294,6 @@ const saveDadosGerais = () => {
         }
     });
 
-    if (form.tipo_judicial === 'locado') {
-        const locadoFields = ['nome_proprietario', 'cpf_cnpj', 'valor_locacao', 'data_inicio', 'data_fim'];
-        locadoFields.forEach((field) => {
-            if (!form[field]) {
-                errors.push(`O campo ${field} é obrigatório para imóveis locados.`);
-                form.errors[field] = `O campo ${field} é obrigatório para imóveis locados.`;
-            }
-        });
-    }
-
-    if (form.tipo_judicial === 'cedido') {
-        const cedidoFields = ['orgao_cedente', 'termo_cessao', 'prazo_cessao'];
-        cedidoFields.forEach((field) => {
-            if (!form[field]) {
-                errors.push(`O campo ${field} é obrigatório para imóveis cedidos.`);
-                form.errors[field] = `O campo ${field} é obrigatório para imóveis cedidos.`;
-            }
-        });
-    }
-
     if (errors.length > 0) {
         emit('saved', null, errors.join(' '));
         return;
@@ -380,20 +350,6 @@ const saveDadosGerais = () => {
                     <i class="fas fa-map-marker-alt mr-1"></i>
                     <span class="hidden sm:inline">Localização</span>
                     <span class="sm:hidden">Mapa</span>
-                </button>
-                
-                <button
-                    @click="methods.setActiveSection('contrato')"
-                    :class="[
-                        'py-3 px-4 text-sm font-medium border-b-2 whitespace-nowrap',
-                        activeSection === 'contrato'
-                            ? 'border-[#bea55a] text-[#bea55a]'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    ]"
-                >
-                    <i class="fas fa-file-contract mr-1"></i>
-                    <span class="hidden sm:inline">Informações de Contrato</span>
-                    <span class="sm:hidden">Contrato</span>
                 </button>
             </nav>
         </div>
@@ -460,27 +416,27 @@ const saveDadosGerais = () => {
                     </div>
 
                     <div>
-                        <InputLabel for="srpc" value="SRPC" class="text-sm font-medium text-gray-700" />
+                        <InputLabel for="srpc" value="Unidade Gestora" class="text-sm font-medium text-gray-700" />
                         <TextInput
                             id="srpc"
                             v-model="form.srpc"
                             type="text"
                             class="mt-1 block w-full"
                             :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            placeholder="Superintendência"
+                            placeholder="DEGEPOL, 1ª SRPC, etc"
                         />
                         <InputError :message="form.errors.srpc" class="mt-1" />
                     </div>
 
                     <div>
-                        <InputLabel for="dspc" value="DSPC" class="text-sm font-medium text-gray-700" />
+                        <InputLabel for="dspc" value="Unidade Sub-Gestora" class="text-sm font-medium text-gray-700" />
                         <TextInput
                             id="dspc"
                             v-model="form.dspc"
                             type="text"
                             class="mt-1 block w-full"
                             :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            placeholder="Seccional"
+                            placeholder="COORDEAM, 1ª DSPC, etc"
                         />
                         <InputError :message="form.errors.dspc" class="mt-1" />
                     </div>
@@ -799,183 +755,6 @@ const saveDadosGerais = () => {
                                     :disabled="!isEditable || !permissions?.canUpdateTeam"
                                 />
                                 <InputError :message="form.errors.complemento" class="mt-1" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Seção de Contrato -->
-            <div v-show="activeSection === 'contrato'" class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Informações de Contrato</h3>
-
-                <div v-if="form.tipo_judicial === 'locado'" class="bg-white rounded-lg mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <InputLabel for="nome_proprietario" value="Nome do Proprietário *" class="text-sm font-medium text-gray-700" />
-                            <TextInput
-                                id="nome_proprietario"
-                                v-model="form.nome_proprietario"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Nome completo do proprietário"
-                                :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            />
-                            <InputError :message="form.errors.nome_proprietario" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <InputLabel for="cpf_cnpj" value="CPF/CNPJ *" class="text-sm font-medium text-gray-700" />
-                            <TextInput
-                                id="cpf_cnpj"
-                                :value="form.cpf_cnpj"
-                                type="text"
-                                v-imask="{
-                                    mask: [
-                                        { mask: '000.000.000-00' },
-                                        { mask: '00.000.000/0000-00' }
-                                    ],
-                                    lazy: false,
-                                    overwrite: true
-                                }"
-                                placeholder="123.456.789-01 ou 12.345.678/0001-99"
-                                class="mt-1 block w-full"
-                                :disabled="!isEditable || !permissions?.canUpdateTeam"
-                                @update:modelValue="methods.updateField('cpf_cnpj', $event)"
-                            />
-                            <InputError :message="form.errors.cpf_cnpj" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <InputLabel for="telefone_proprietario" value="Telefone do Proprietário" class="text-sm font-medium text-gray-700" />
-                            <TextInput
-                                id="telefone_proprietario"
-                                :value="form.telefone_proprietario"
-                                type="text"
-                                v-imask="{
-                                    mask: '{(00) }0000[0]-0000',
-                                    lazy: false,
-                                    overwrite: true
-                                }"
-                                placeholder="(11) 98765-4321"
-                                class="mt-1 block w-full"
-                                :disabled="!isEditable || !permissions?.canUpdateTeam"
-                                @update:modelValue="methods.updateField('telefone_proprietario', $event)"
-                            />
-                            <InputError :message="form.errors.telefone_proprietario" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <InputLabel for="valor_locacao" value="Valor da Locação (R$) *" class="text-sm font-medium text-gray-700" />
-                            <TextInput
-                                id="valor_locacao"
-                                v-model="form.valor_locacao"
-                                type="number"
-                                step="0.01"
-                                class="mt-1 block w-full"
-                                placeholder="0.00"
-                                :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            />
-                            <InputError :message="form.errors.valor_locacao" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <InputLabel for="data_inicio" value="Data de Início *" class="text-sm font-medium text-gray-700" />
-                            <TextInput
-                                id="data_inicio"
-                                v-model="form.data_inicio"
-                                type="date"
-                                class="mt-1 block w-full"
-                                :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            />
-                            <InputError :message="form.errors.data_inicio" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <InputLabel for="data_fim" value="Data de Fim *" class="text-sm font-medium text-gray-700" />
-                            <TextInput
-                                id="data_fim"
-                                v-model="form.data_fim"
-                                type="date"
-                                class="mt-1 block w-full"
-                                :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            />
-                            <InputError :message="form.errors.data_fim" class="mt-1" />
-                        </div>
-                    </div>
-                </div>
-
-                <div v-else-if="form.tipo_judicial === 'cedido'" class="bg-white rounded-lg mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <InputLabel for="orgao_cedente" value="Órgão Cedente *" class="text-sm font-medium text-gray-700" />
-                            <TextInput
-                                id="orgao_cedente"
-                                v-model="form.orgao_cedente"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Nome do órgão cedente"
-                                :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            />
-                            <InputError :message="form.errors.orgao_cedente" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <InputLabel for="termo_cessao" value="Termo de Cessão *" class="text-sm font-medium text-gray-700" />
-                            <TextInput
-                                id="termo_cessao"
-                                v-model="form.termo_cessao"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Número do termo"
-                                :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            />
-                            <InputError :message="form.errors.termo_cessao" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <InputLabel for="prazo_cessao" value="Prazo de Cessão *" class="text-sm font-medium text-gray-700" />
-                            <TextInput
-                                id="prazo_cessao"
-                                v-model="form.prazo_cessao"
-                                type="date"
-                                class="mt-1 block w-full"
-                                :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            />
-                            <InputError :message="form.errors.prazo_cessao" class="mt-1" />
-                        </div>
-                    </div>
-                </div>
-
-                <div v-else-if="form.tipo_judicial === 'proprio'" class="bg-white rounded-lg mb-6">
-                    <div class="p-4 border border-blue-200 rounded-lg bg-blue-50 text-blue-800">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm">
-                                    Imóvel próprio selecionado. Nenhuma informação adicional de contrato é necessária.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div v-else class="bg-white rounded-lg mb-6">
-                    <div class="p-4 border border-red-200 rounded-lg bg-red-50 text-red-800">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm">
-                                    Por favor, selecione um tipo judicial na seção "Dados Gerais" para preencher as informações de contrato.
-                                </p>
                             </div>
                         </div>
                     </div>

@@ -209,6 +209,14 @@ const formatarTelefones = computed(() => {
                                         <dd class="mt-1">{{ unidade?.nome || 'Não informado' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Unidade Gestora:</dt>
+                                        <dd class="mt-1">{{ unidade?.srpc || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Unidade Sub-Gestora:</dt>
+                                        <dd class="mt-1">{{ unidade?.dspc || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Código:</dt>
                                         <dd class="mt-1">{{ unidade?.codigo || 'Não informado' }}</dd>
                                     </div>
@@ -271,40 +279,7 @@ const formatarTelefones = computed(() => {
                                     </div>
                                 </dl>
                             </div>
-
-                            <!-- Informações adicionais -->
-                            <div v-if="unidade?.tipo_judicial === 'locado' && unidade?.contrato_locacao" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Contrato de Locação</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Proprietário:</dt>
-                                        <dd class="mt-1">{{ unidade.contrato_locacao?.nome_proprietario || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">CPF/CNPJ:</dt>
-                                        <dd class="mt-1">{{ unidade.contrato_locacao?.cpf_cnpj || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Telefone:</dt>
-                                        <dd class="mt-1">{{ unidade.contrato_locacao?.telefone || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Valor:</dt>
-                                        <dd class="mt-1">{{ unidade.contrato_locacao?.valor_locacao ? 
-                                            `R$ ${Number(unidade.contrato_locacao.valor_locacao).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
-                                            'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Início:</dt>
-                                        <dd class="mt-1">{{ unidade.contrato_locacao?.data_inicio || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Fim:</dt>
-                                        <dd class="mt-1">{{ unidade.contrato_locacao?.data_fim || 'Não informado' }}</dd>
-                                    </div>
-                                </div>
-                            </div>
-
+                            
                             <!-- Informações para imóvel compartilhado -->
                             <div v-if="unidade?.imovel_compartilhado_orgao" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Compartilhamento de Imóvel</h3>
@@ -666,6 +641,10 @@ const formatarTelefones = computed(() => {
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Extintor Água:</dt>
                                         <dd class="mt-1">{{ informacoes.extintor_agua || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Placas de Emergência Para Incêndio:</dt>
+                                        <dd class="mt-1">{{ informacoes.placa_incendio || 'Não informado' }}</dd>
                                     </div>
                                 </div>
                             </div>

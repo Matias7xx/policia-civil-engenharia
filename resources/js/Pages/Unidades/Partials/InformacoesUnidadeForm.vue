@@ -86,6 +86,7 @@ const form = useForm({
     extintor_po_quimico: props.informacoes?.extintor_po_quimico || '',
     extintor_co2: props.informacoes?.extintor_co2 || '',
     extintor_agua: props.informacoes?.extintor_agua || '',
+    placa_incendio: props.informacoes?.placa_incendio || '',
 });
 
 const methods = {
@@ -104,7 +105,7 @@ const saveInformacoesEstruturais = () => {
     // Campos obrigatórios
     const requiredFields = {
         pavimentacao_rua: 'A pavimentação da rua é obrigatória.',
-        padrao_energia: 'O padrão de energia é obrigatório.'
+        /* padrao_energia: 'O padrão de energia é obrigatório.' */
     };
     
     Object.entries(requiredFields).forEach(([field, message]) => {
@@ -114,7 +115,7 @@ const saveInformacoesEstruturais = () => {
     });
     
     if (Object.keys(form.errors).length > 0) {
-        // Role até o primeiro erro
+        // Rola até o primeiro erro
         const firstErrorField = document.querySelector('.text-red-600');
         if (firstErrorField) {
             firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -131,7 +132,7 @@ const saveInformacoesEstruturais = () => {
         onError: (errors) => {
             emit('saved', null, 'Erro ao salvar as informações estruturais. Verifique os campos.');
             
-            // Role até o primeiro erro
+            // Rola até o primeiro erro
             setTimeout(() => {
                 const firstErrorField = document.querySelector('.text-red-600');
                 if (firstErrorField) {
@@ -219,7 +220,7 @@ const tiposPavimentacao = [
                         </div>
 
                         <div>
-                            <InputLabel for="padrao_energia" value="Padrão de Energia *" class="text-sm" />
+                            <InputLabel for="padrao_energia" value="Padrão de Energia" class="text-sm" />
                             <TextInput
                                 id="padrao_energia"
                                 v-model="form.padrao_energia"
@@ -560,8 +561,8 @@ const tiposPavimentacao = [
                 >
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                         <!-- Áreas de uso público -->
-                        <div class="bg-blue-50 p-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
-                            <h3 class="text-sm font-medium text-blue-800 mb-2">Áreas de Uso Público</h3>
+                        <div class="p-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
+                            <h3 class="text-sm font-medium mb-2">Áreas de Uso Público</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                 <div>
                                     <InputLabel for="qtd_recepcao" value="Recepções" class="text-sm" />
@@ -605,8 +606,8 @@ const tiposPavimentacao = [
                         </div>
                         
                         <!-- Áreas administrativas -->
-                        <div class="bg-green-50 p-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
-                            <h3 class="text-sm font-medium text-green-800 mb-2">Áreas Administrativas</h3>
+                        <div class="-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
+                            <h3 class="text-sm font-medium mb-2">Áreas Administrativas</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                 <div>
                                     <InputLabel for="qtd_gabinetes" value="Gabinetes" class="text-sm" />
@@ -650,8 +651,8 @@ const tiposPavimentacao = [
                         </div>
                         
                         <!-- Alojamentos -->
-                        <div class="bg-amber-50 p-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
-                            <h3 class="text-sm font-medium text-amber-800 mb-2">Alojamentos</h3>
+                        <div class="p-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
+                            <h3 class="text-sm font-medium mb-2">Alojamentos</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
                                     <InputLabel for="qtd_alojamento_masculino" value="Alojamento Masculino" class="text-sm" />
@@ -708,8 +709,8 @@ const tiposPavimentacao = [
                         </div>
                         
                         <!-- Outras instalações -->
-                        <div class="bg-purple-50 p-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
-                            <h3 class="text-sm font-medium text-purple-800 mb-2">Outras Instalações</h3>
+                        <div class="p-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
+                            <h3 class="text-sm font-medium mb-2">Outras Instalações</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
                                     <InputLabel for="qtd_celas_carceragem" value="Cela/Carceragem" class="text-sm" />
@@ -1022,6 +1023,18 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Quantidade/Capacidade"
+                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                            />
+                        </div>
+
+                        <div>
+                            <InputLabel for="placa_incendio" value="Placas de Sinalização de Emergência Para Incêndio" class="text-sm" />
+                            <TextInput
+                                id="placa_incendio"
+                                v-model="form.placa_incendio"
+                                type="text"
+                                class="mt-1 block w-full"
+                                placeholder="Sim/Não"
                                 :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
                             />
                         </div>

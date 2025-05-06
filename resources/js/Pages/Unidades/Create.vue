@@ -208,7 +208,6 @@ const tabProgressClass = computed(() => (tabId) => {
                                 <UnidadeDetailsForm
                                     :team="team"
                                     :unidade="unidade"
-                                    :contrato-locacao="unidade?.contratoLocacao"
                                     :permissions="permissions"
                                     :is-new="!unidade?.id"
                                     :is-editable="unidade?.is_draft ?? true"

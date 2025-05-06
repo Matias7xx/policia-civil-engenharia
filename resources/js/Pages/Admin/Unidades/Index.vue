@@ -1,84 +1,62 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
+import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Pagination from '@/Components/Pagination.vue';
+import { MagnifyingGlassIcon, FunnelIcon, BuildingOfficeIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    unidades: Array,
+    unidades: Object,
+    filters: Object,
+    statusOptions: Array,
+    notaOptions: Array,
 });
 
-// Estado para filtros
-const searchQuery = ref('');
-const statusFilter = ref('todos');
+const searchQuery = ref(props.filters.search || '');
+const statusFilter = ref(props.filters.status || 'todos');
+const notaFilter = ref(props.filters.nota || 'todas');
+const isLoading = ref(false);
 
-// Computar unidades filtradas
-const filteredUnidades = computed(() => {
-    if (!props.unidades) return []; // Retorna array vazio se props.unidades for undefined
-    
-    return props.unidades.filter(unidade => {
-        // Filtrar por pesquisa
-        const matchesSearch = 
-            unidade.nome.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-            (unidade.codigo ? unidade.codigo.toLowerCase().includes(searchQuery.value.toLowerCase()) : false) ||
-            (unidade.cidade ? unidade.cidade.toLowerCase().includes(searchQuery.value.toLowerCase()) : false);
+let searchTimeout;
+const applyFilters = () => {
+    clearTimeout(searchTimeout);
+    isLoading.value = true;
+    searchTimeout = setTimeout(() => {
+        const normalizedSearch = searchQuery.value.trim().toLowerCase();
         
-        // Filtrar por status
-        const matchesStatus = statusFilter.value === 'todos' || unidade.status === statusFilter.value;
-        
-        return matchesSearch && matchesStatus;
-    });
-});
+        router.get(
+            route('admin.unidades.index'),
+            { 
+                search: normalizedSearch, 
+                status: statusFilter.value,
+                nota: notaFilter.value,
+            },
+            { 
+                preserveState: true,
+                replace: true,
+                preserveScroll: true,
+                onFinish: () => {
+                    isLoading.value = false;
+                },
+            }
+        );
+    }, 400); // Debounce
+};
 
-// Limpar filtros
+watch(searchQuery, applyFilters);
+watch(statusFilter, applyFilters);
+watch(notaFilter, applyFilters);
+
 const clearFilters = () => {
     searchQuery.value = '';
     statusFilter.value = 'todos';
-};
-
-// Status para filtro
-const statusOptions = [
-    { value: 'todos', label: 'Todos' },
-    { value: 'pendente_avaliacao', label: 'Pendente de Avaliação' },
-    { value: 'aprovada', label: 'Aprovada' },
-    { value: 'reprovada', label: 'Reprovada' },
-    { value: 'em_revisao', label: 'Em Revisão' }
-];
-
-// Status de cor
-const getStatusClass = (status) => {
-    switch(status) {
-        case 'pendente_avaliacao':
-            return 'bg-yellow-100 text-yellow-800';
-        case 'aprovada':
-            return 'bg-green-100 text-green-800';
-        case 'reprovada':
-            return 'bg-red-100 text-red-800';
-        case 'em_revisao':
-            return 'bg-blue-100 text-blue-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-};
-
-// Formatação do status
-const formatStatus = (status) => {
-    switch(status) {
-        case 'pendente_avaliacao':
-            return 'Pendente de Avaliação';
-        case 'aprovada':
-            return 'Aprovada';
-        case 'reprovada':
-            return 'Reprovada';
-        case 'em_revisao':
-            return 'Em Revisão';
-        default:
-            return 'Desconhecido';
-    }
+    notaFilter.value = 'todas';
+    router.get(route('admin.unidades.index'), {}, { preserveState: true });
 };
 </script>
 
 <template>
-    <AppLayout title="Gerenciar Unidades Policiais">
+    <AppLayout title="Gerenciar Unidades">
         <template #header>
             <div class="flex items-center space-x-4">
                 <Link href="/dashboard">
@@ -91,195 +69,160 @@ const formatStatus = (status) => {
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
-                    <!-- Filtros -->
-                    <div class="flex flex-col md:flex-row mb-6 gap-4">
-                        <div class="flex-1">
-                            <label for="search" class="block text-sm font-medium text-gray-700">Pesquisar</label>
-                            <input 
-                                id="search" 
-                                v-model="searchQuery" 
-                                type="text" 
-                                placeholder="Buscar por nome, código ou cidade..." 
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            />
-                        </div>
-                        <div class="md:w-64">
-                            <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                            <select 
-                                id="status" 
-                                v-model="statusFilter" 
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            >
-                                <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                        </div>
-                        <div class="flex items-end">
-                            <button 
-                                @click="clearFilters"
-                                class="mt-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md border border-gray-300"
-                            >
-                                Limpar Filtros
-                            </button>
-                        </div>
+                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                    <div class="bg-amber-50 border-b border-gray-200 px-6 py-4">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <BuildingOfficeIcon class="h-6 w-6 text-[#bea55a] mr-2" />
+                            Lista de Unidades
+                        </h3>
+                        <p class="mt-1 text-sm text-gray-600">
+                            Gerencie as unidades do sistema
+                        </p>
                     </div>
 
-                    <!-- Estatísticas Rápidas -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        <div class="bg-white overflow-hidden shadow rounded-lg border">
-                            <div class="px-4 py-5 sm:p-6">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 bg-indigo-100 rounded-md p-3">
-                                        <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="ml-5 w-0 flex-1">
-                                        <dl>
-                                            <dt class="text-sm font-medium text-gray-500 truncate">Total de Unidades</dt>
-                                            <dd>
-                                                <div class="text-lg font-medium text-gray-900">{{ props.unidades ? props.unidades.length : 0 }}</div>
-                                            </dd>
-                                        </dl>
-                                    </div>
+                    <div class="p-6">
+                        <!-- Filtros -->
+                        <div class="flex flex-col md:flex-row mb-6 gap-4">
+                            <div class="flex-1 relative">
+                                <label for="search" class="block text-sm font-medium text-gray-700 flex items-center">
+                                    <MagnifyingGlassIcon class="h-5 w-5 text-gray-400 mr-2" />
+                                    Pesquisar
+                                </label>
+                                <input 
+                                    id="search" 
+                                    v-model="searchQuery" 
+                                    type="text" 
+                                    placeholder="Buscar por nome, cidade, Unidade Gestora..." 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#bea55a] focus:ring-[#bea55a] text-base"
+                                />
+                                <div v-if="isLoading" class="absolute right-3 top-10 text-gray-500">
+                                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                                    </svg>
                                 </div>
                             </div>
+                            <div class="md:w-64">
+                                <label for="status" class="block text-sm font-medium text-gray-700 flex items-center">
+                                    <FunnelIcon class="h-5 w-5 text-gray-400 mr-2" />
+                                    Status
+                                </label>
+                                <select 
+                                    id="status" 
+                                    v-model="statusFilter" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#bea55a] focus:ring-[#bea55a] text-base"
+                                >
+                                    <option v-for="option in statusOptions" :key="option.key" :value="option.key">
+                                        {{ option.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="md:w-64">
+                                <label for="nota" class="block text-sm font-medium text-gray-700 flex items-center">
+                                    <FunnelIcon class="h-5 w-5 text-gray-400 mr-2" />
+                                    Nota
+                                </label>
+                                <select 
+                                    id="nota" 
+                                    v-model="notaFilter" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#bea55a] focus:ring-[#bea55a] text-base"
+                                >
+                                    <option v-for="option in notaOptions" :key="option.key" :value="option.key">
+                                        {{ option.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button 
+                                    @click="clearFilters"
+                                    class="mt-1 px-4 py-2 bg-gray-100 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 uppercase tracking-widest hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition ease-in-out duration-150 flex items-center"
+                                >
+                                    <XMarkIcon class="h-5 w-5 mr-2" />
+                                    Limpar Filtros
+                                </button>
+                            </div>
                         </div>
-                        
-                        <div class="bg-white overflow-hidden shadow rounded-lg border">
-                            <div class="px-4 py-5 sm:p-6">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
-                                        <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="ml-5 w-0 flex-1">
-                                        <dl>
-                                            <dt class="text-sm font-medium text-gray-500 truncate">Pendentes</dt>
-                                            <dd>
-                                                <div class="text-lg font-medium text-gray-900">
-                                                    {{ props.unidades ? props.unidades.filter(u => u.status === 'pendente_avaliacao').length : 0 }}
-                                                </div>
-                                            </dd>
-                                        </dl>
+
+                        <!-- Tabela de Unidades -->
+                        <div class="mt-4 flex flex-col">
+                            <div class="overflow-x-auto">
+                                <div class="align-middle inline-block min-w-full">
+                                    <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                                        <table class="min-w-full divide-y divide-gray-200 table-fixed">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th scope="col" class="w-1/5 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Nome
+                                                    </th>
+                                                    <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Código
+                                                    </th>
+                                                    <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Cidade
+                                                    </th>
+                                                    <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Unidade Gestora
+                                                    </th>
+                                                    <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Unidade Sub-Gestora
+                                                    </th>
+                                                    <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Status
+                                                    </th>
+                                                    <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Nota
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-200">
+                                                <tr v-for="unidade in unidades.data" :key="unidade.id" class="hover:bg-gray-50 transition-opacity duration-300" :class="{ 'opacity-50': isLoading }">
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <Link :href="route('admin.unidades.show', unidade.id)" class="text-base font-medium text-[#bea55a] hover:text-[#d4bf7a]">
+                                                            {{ unidade.nome }}
+                                                        </Link>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-base text-gray-900">{{ unidade.codigo || 'N/A' }}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-base text-gray-900">{{ unidade.cidade }}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-base text-gray-900">{{ unidade.srpc }}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-base text-gray-900">{{ unidade.dspc }}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <span class="px-2 inline-flex text-sm leading-5 font-semibold rounded-full" :class="unidade.status_class">
+                                                            {{ unidade.status_formatado }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <span class="px-2 inline-flex text-sm leading-5 font-semibold rounded-full bg-amber-100 text-black">
+                                                            {{ unidade.nota_geral ? unidade.nota_geral + ' (' + String.fromCharCode(65 + (10 - unidade.nota_geral)) + ')' : 'N/A' }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                <tr v-if="unidades.data.length === 0" class="transition-opacity duration-300" :class="{ 'opacity-50': isLoading }">
+                                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                                        Nenhuma unidade encontrada. Tente ajustar os filtros.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-white overflow-hidden shadow rounded-lg border">
-                            <div class="px-4 py-5 sm:p-6">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
-                                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="ml-5 w-0 flex-1">
-                                        <dl>
-                                            <dt class="text-sm font-medium text-gray-500 truncate">Aprovadas</dt>
-                                            <dd>
-                                                <div class="text-lg font-medium text-gray-900">
-                                                    {{ props.unidades ? props.unidades.filter(u => u.status === 'aprovada').length : 0 }}
-                                                </div>
-                                            </dd>
-                                        </dl>
-                                    </div>
+                        <!-- Paginação -->
+                        <div class="mt-6" v-if="unidades.data.length > 0">
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm text-gray-700">
+                                    Mostrando {{ unidades.from }}-{{ unidades.to }} de {{ unidades.total }} unidades
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white overflow-hidden shadow rounded-lg border">
-                            <div class="px-4 py-5 sm:p-6">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 bg-red-100 rounded-md p-3">
-                                        <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="ml-5 w-0 flex-1">
-                                        <dl>
-                                            <dt class="text-sm font-medium text-gray-500 truncate">Reprovadas</dt>
-                                            <dd>
-                                                <div class="text-lg font-medium text-gray-900">
-                                                    {{ props.unidades ? props.unidades.filter(u => u.status === 'reprovada').length : 0 }}
-                                                </div>
-                                            </dd>
-                                        </dl>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tabela de Unidades -->
-                    <div class="mt-4 flex flex-col">
-                        <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                            <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-                                <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Nome
-                                                </th>
-                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Código
-                                                </th>
-                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Localização
-                                                </th>
-                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Status
-                                                </th>
-                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Ações
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">
-                                            <tr v-for="unidade in filteredUnidades" :key="unidade.id">
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <div class="text-sm font-medium text-gray-900">
-                                                        {{ unidade.nome }}
-                                                    </div>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <div class="text-sm text-gray-900">{{ unidade.codigo || 'N/A' }}</div>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <div class="text-sm text-gray-900">
-                                                        {{ unidade.cidade || 'N/A' }}
-                                                    </div>
-                                                    <div class="text-sm text-gray-500">
-                                                        {{ unidade.rua ? `${unidade.rua}, ${unidade.numero || 'S/N'}` : 'Endereço não informado' }}
-                                                    </div>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="getStatusClass(unidade.status)">
-                                                        {{ formatStatus(unidade.status) }}
-                                                    </span>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    <Link :href="route('admin.unidades.show', unidade.id)" class="text-indigo-600 hover:text-indigo-900 mr-4">
-                                                        Visualizar
-                                                    </Link>
-                                                    <Link :href="route('teams.show', unidade.team_id)" class="text-green-600 hover:text-green-900">
-                                                        Editar
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                            <tr v-if="filteredUnidades.length === 0">
-                                                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
-                                                    Nenhuma unidade encontrada. Tente ajustar os filtros.
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <Pagination :links="unidades.links" />
                             </div>
                         </div>
                     </div>

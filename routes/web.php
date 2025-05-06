@@ -97,6 +97,11 @@ Route::middleware([
             Route::get('/', [AdminUnidadeController::class, 'index'])->name('index');
             Route::get('/{id}', [AdminUnidadeController::class, 'show'])->name('show');
             Route::post('/{unidade}/avaliar', [AvaliacaoUnidadeController::class, 'store'])->name('avaliar');
+
+            Route::post('/{id}/contrato', [AdminUnidadeController::class, 'updateContrato'])->name('updateContrato');
+            Route::post('/{id}/cessao', [AdminUnidadeController::class, 'updateCessao'])->name('updateCessao');
+            Route::get('/{id}/anexo', [AdminUnidadeController::class, 'anexo'])->name('anexo');
+            Route::get('/{id}/termo-cessao', [AdminUnidadeController::class, 'termoCessao'])->name('termoCessao');
         });
 
         // Gerenciamento de avaliações

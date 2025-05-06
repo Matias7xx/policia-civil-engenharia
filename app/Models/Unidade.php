@@ -116,7 +116,7 @@ class Unidade extends Model
      */
     public function avaliacoes(): HasMany
     {
-        return $this->hasMany(Avaliacao::class);
+        return $this->hasMany(AvaliacaoUnidade::class, 'unidade_id');
     }
 
     /**
@@ -124,7 +124,7 @@ class Unidade extends Model
      */
     public function ultimaAvaliacao(): HasOne
     {
-        return $this->hasOne(Avaliacao::class)->latest();
+        return $this->hasOne(AvaliacaoUnidade::class, 'unidade_id')->latest();
     }
 
     /**

@@ -41,7 +41,7 @@ class UnidadeController extends Controller
             $unidade->nome = $team->name; // Valor inicial para o formulário
             $unidade->is_draft = true; // Marcado como rascunho (mas não salvo ainda)
         } else {
-            $unidade->load('acessibilidade', 'informacoes', 'midias', 'contratoLocacao');
+            $unidade->load('acessibilidade', 'informacoes', 'midias',);
         }
 
         return Inertia::render('Unidades/Create', [
@@ -50,7 +50,6 @@ class UnidadeController extends Controller
             'acessibilidade' => $unidade->acessibilidade,
             'informacoes' => $unidade->informacoes,
             'midias' => $unidade->midias ?? [],
-            'contratoLocacao' => $unidade->contratoLocacao,
             'permissions' => [
                 'canUpdateTeam' => auth()->user()->hasTeamPermission($team, 'update'),
             ],
@@ -62,8 +61,7 @@ class UnidadeController extends Controller
         $unidade = Unidade::with([
             'acessibilidade',
             'informacoes',
-            'midias.midia_tipo',
-            'contratoLocacao',
+            'midias.midiaTipo',
         ])->findOrFail($unidade);
 
         $user = auth()->user();
@@ -75,7 +73,6 @@ class UnidadeController extends Controller
             'acessibilidade' => $unidade->acessibilidade,
             'informacoes' => $unidade->informacoes,
             'midias' => $unidade->midias,
-            'contratoLocacao' => $unidade->contratoLocacao, // Adicionar esta linha
             'orgaos' => Orgao::all(),
             'permissions' => [
                 'canUpdateTeam' => $user->hasTeamPermission($unidade->team, 'update'),
@@ -118,15 +115,6 @@ class UnidadeController extends Controller
             'observacoes' => 'nullable|string',
             'numero_medidor_agua' => 'nullable|string|max:50',
             'numero_medidor_energia' => 'nullable|string|max:50',
-            'nome_proprietario' => 'required_if:tipo_judicial,locado|string|max:255|nullable',
-            'cpf_cnpj' => 'required_if:tipo_judicial,locado|string|max:50|nullable',
-            'telefone_proprietario' => 'nullable|string|max:20',
-            'valor_locacao' => 'required_if:tipo_judicial,locado|numeric|nullable',
-            'data_inicio' => 'required_if:tipo_judicial,locado|date|nullable',
-            'data_fim' => 'required_if:tipo_judicial,locado|date|nullable',
-            'orgao_cedente' => 'required_if:tipo_judicial,cedido|string|max:255|nullable',
-            'termo_cessao' => 'required_if:tipo_judicial,cedido|string|max:255|nullable',
-            'prazo_cessao' => 'required_if:tipo_judicial,cedido|date|nullable',
         ]);
 
         // Verificar permissão de atualização
@@ -139,20 +127,6 @@ class UnidadeController extends Controller
             ['team_id' => $request->team_id],
             array_merge($validated, ['is_draft' => true])
         );
-
-        if ($request->tipo_judicial === 'locado') {
-            $unidade->contratoLocacao()->updateOrCreate(
-                ['unidade_id' => $unidade->id],
-                [
-                    'nome_proprietario' => $request->nome_proprietario,
-                    'cpf_cnpj' => $request->cpf_cnpj,
-                    'telefone' => $request->telefone_proprietario,
-                    'valor_locacao' => $request->valor_locacao,
-                    'data_inicio' => $request->data_inicio,
-                    'data_fim' => $request->data_fim,
-                ]
-            );
-        }
 
         // Atualizar o status da unidade para pendente de avaliação
         $unidade->update(['status' => 'pendente_avaliacao']);
@@ -205,8 +179,8 @@ class UnidadeController extends Controller
     {
         $validated = $request->validate([
             'unidade_id' => 'required|exists:unidades,id',
-            'pavimentacao_rua' => 'required|string|max:255', // Tornar obrigatório, conforme validação client-side
-            'padrao_energia' => 'required|string|max:255',   // Tornar obrigatório, conforme validação client-side
+            'pavimentacao_rua' => 'required|string|max:255',
+            'padrao_energia' => 'nullable|string|max:255', 
             'subestacao' => 'nullable|string|max:255',
             'gerador_energia' => 'nullable|string|max:255',
             'para_raio' => 'nullable|string|max:255',
@@ -216,7 +190,6 @@ class UnidadeController extends Controller
             'telefone_fixo' => 'nullable|string|max:20',
             'telefone_movel' => 'nullable|string|max:20',
             'tipo_imovel' => 'nullable|string|max:255',
-            'contrato_locacao_id' => 'nullable|string|max:255',
             'responsavel_locacao_cessao' => 'nullable|string|max:255',
             'escritura_publica' => 'nullable|string|max:255',
             'qtd_pavimentos' => 'nullable|numeric', // Ajustado para numeric (aceita string que pode ser convertida)
@@ -257,6 +230,7 @@ class UnidadeController extends Controller
             'extintor_po_quimico' => 'nullable|string|max:255',
             'extintor_co2' => 'nullable|string|max:255',
             'extintor_agua' => 'nullable|string|max:255',
+            'placa_incendio' => 'nullable|string|max:255',
         ]);
 
         $unidade = Unidade::findOrFail($request->unidade_id);

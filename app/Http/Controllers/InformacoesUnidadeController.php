@@ -91,6 +91,7 @@ class InformacoesUnidadeController extends Controller
             'extintor_po_quimico' => 'nullable|string|max:255',
             'extintor_co2' => 'nullable|string|max:255',
             'extintor_agua' => 'nullable|string|max:255',
+            'placa_incendio' => 'nullable|string|max:255',
         ]);
         
         // Garantir que a unidade_id está correta
@@ -184,6 +185,7 @@ class InformacoesUnidadeController extends Controller
             'extintor_po_quimico' => 'nullable|string|max:255',
             'extintor_co2' => 'nullable|string|max:255',
             'extintor_agua' => 'nullable|string|max:255',
+            'placa_incendio' => 'nullable|string|max:255',
         ]);
         
         // Atualizar o registro de informações
