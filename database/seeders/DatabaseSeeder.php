@@ -22,7 +22,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             MidiaTiposSeeder::class,
-            UserSeeder::class
+            UserSeeder::class,
+            OrgaosSeeder::class
         ]);
     }
 }

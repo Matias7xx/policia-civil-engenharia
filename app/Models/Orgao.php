@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Orgao extends Model
@@ -26,16 +25,7 @@ class Orgao extends Model
     protected $fillable = [
         'nome',
         'status',
-        'orgao_tipos_id',
     ];
-
-    /**
-     * Obtém o tipo de órgão.
-     */
-    public function tipo(): BelongsTo
-    {
-        return $this->belongsTo(OrgaoTipo::class, 'orgao_tipos_id');
-    }
 
     /**
      * Obtém unidades que compartilham imóvel com este órgão.
@@ -51,13 +41,5 @@ class Orgao extends Model
     public function scopeAtivo($query)
     {
         return $query->where('status', 'ativo');
-    }
-
-    /**
-     * Escopo para filtrar órgãos por tipo.
-     */
-    public function scopeTipo($query, $tipoId)
-    {
-        return $query->where('orgao_tipos_id', $tipoId);
     }
 }

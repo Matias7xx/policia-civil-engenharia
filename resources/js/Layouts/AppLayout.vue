@@ -154,6 +154,14 @@ router.on('navigate', () => {
                                     >
                                         Unidades
                                     </NavLink>
+
+                                    <NavLink 
+                                        :href="route('admin.orgaos.index')" 
+                                        :active="route().current('admin.orgaos.index')"
+                                        class="text-black hover:text-white font-sans transition-colors duration-150 font-medium"
+                                    >
+                                        Órgãos
+                                    </NavLink>
                                 </template>
                             </div>
                         </div>

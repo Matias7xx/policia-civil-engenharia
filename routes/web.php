@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcessibilidadeUnidadeController;
+use App\Http\Controllers\Admin\OrgaoController;
 use App\Http\Controllers\Admin\UnidadeController as AdminUnidadeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AvaliacaoUnidadeController;
@@ -117,6 +118,17 @@ Route::middleware([
             Route::put('/{user}', [UserController::class, 'update'])->name('update');
             Route::get('/{user}', [UserController::class, 'show'])->name('show');
             Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+        });
+
+        // Gerenciamento de órgãos
+        Route::prefix('orgaos')->name('orgaos.')->group(function () {
+            Route::get('/', [OrgaoController::class, 'index'])->name('index');
+            Route::get('/create', [OrgaoController::class, 'create'])->name('create');
+            Route::post('/', [OrgaoController::class, 'store'])->name('store');
+            Route::get('/{orgao}/edit', [OrgaoController::class, 'edit'])->name('edit');
+            Route::put('/{orgao}', [OrgaoController::class, 'update'])->name('update');
+            Route::get('/{orgao}', [OrgaoController::class, 'show'])->name('show');
+            Route::delete('/{orgao}', [OrgaoController::class, 'destroy'])->name('destroy');
         });
     });
 

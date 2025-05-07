@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('nome');
             $table->string('status')->nullable();
-            $table->unsignedBigInteger('orgao_tipos_id')->nullable();
+            /* $table->unsignedBigInteger('orgao_tipos_id')->nullable(); */
             $table->timestamps();
 
-            $table->foreign('orgao_tipos_id')->references('id')->on('orgao_tipos');
+            /* $table->foreign('orgao_tipos_id')->references('id')->on('orgao_tipos'); */
         });
     }
 
