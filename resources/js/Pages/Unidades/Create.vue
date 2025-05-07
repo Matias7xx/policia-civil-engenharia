@@ -35,6 +35,7 @@ const props = defineProps({
     acessibilidade: Object,
     informacoes: Object,
     midias: Array,
+    orgaos: Array,
     permissions: Object,
 });
 
@@ -208,6 +209,7 @@ const tabProgressClass = computed(() => (tabId) => {
                                 <UnidadeDetailsForm
                                     :team="team"
                                     :unidade="unidade"
+                                    :orgaos="orgaos"
                                     :permissions="permissions"
                                     :is-new="!unidade?.id"
                                     :is-editable="unidade?.is_draft ?? true"

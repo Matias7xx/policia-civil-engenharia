@@ -125,16 +125,15 @@ class UnidadeController extends Controller
             abort(403, 'Acesso não autorizado');
         }
 
-        $unidade = Unidade::findOrFail($id);
-        $unidade->load([
+        $unidade = Unidade::with([
             'team.owner',
             'avaliacoes.avaliador',
             'acessibilidade',
             'informacoes',
             'midias.midiaTipo',
-            'orgaoCompartilhado',
             'contratoLocacao',
-        ]);
+            'orgaosCompartilhados',
+        ])->findOrFail($id);
 
         $orgaos = Orgao::all()->map(function ($orgao) {
             return [
@@ -143,9 +142,13 @@ class UnidadeController extends Controller
             ];
         });
 
+        // Converte explicitamente para array, forçando a inclusão da relação orgaosCompartilhados
+        $unidadeData = $unidade->toArray();
+        $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray();
+
         return Inertia::render('Admin/Unidades/Show', [
             'team' => $unidade->team,
-            'unidade' => $unidade,
+            'unidade' => $unidadeData,
             'acessibilidade' => $unidade->acessibilidade,
             'informacoes' => $unidade->informacoes,
             'midias' => $unidade->midias,
@@ -172,9 +175,6 @@ class UnidadeController extends Controller
         ]);
     }
 
-    /**
-     * Update the contract details for a locado unit.
-     */
     public function updateContrato(Request $request, $id)
 {
     $user = $request->user();

@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import TeamMemberManager from '@/Pages/Teams/Partials/TeamMemberManager.vue';
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { usePage, Link } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -16,24 +16,28 @@ const props = defineProps({
     userPermissions: Object,
 });
 
+const orgaosCompartilhados = computed(() => props.unidade?.orgaosCompartilhados || []);
 const page = usePage();
 const activeTab = ref('dados-gerais');
 const flashMessage = ref(null);
 const mobileMenuOpen = ref(false);
-
-// Estado do modal
 const isModalOpen = ref(false);
 const selectedMedia = ref(null);
 
-// Exibe mensagens de flash
+// Log para depuração
+/* onMounted(() => {
+    console.log('Unidade recebida no frontend:', props.unidade);
+    console.log('Órgãos compartilhados (props):', props.unidade.orgaosCompartilhados);
+    console.log('Órgãos compartilhados (computed):', orgaosCompartilhados.value);
+}); */
+
 watch(() => page.props.flash, (flash) => {
     flashMessage.value = flash?.success || flash?.error || flash?.banner || null;
     if (flashMessage.value) {
-        setTimeout(() => (flashMessage.value = null), 5000); // Ocultar após 5 segundos
+        setTimeout(() => (flashMessage.value = null), 5000);
     }
 }, { immediate: true, deep: true });
 
-// Aba ativa
 const tabs = [
     { id: 'dados-gerais', label: 'Dados Gerais', icon: 'fa-info-circle' },
     { id: 'acessibilidade', label: 'Acessibilidade', icon: 'fa-wheelchair' },
@@ -43,51 +47,39 @@ const tabs = [
 
 const changeTab = (tabId) => {
     activeTab.value = tabId;
-    mobileMenuOpen.value = false; // Fechar menu mobile ao trocar de aba
+    mobileMenuOpen.value = false;
 };
 
-// Verificar tipos de mídia
 const isImage = (midia) => midia.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(midia.url);
 
-// Função para abrir o modal com a imagem selecionada
 const openModal = (midia) => {
     selectedMedia.value = midia;
     isModalOpen.value = true;
 };
 
-// Função para fechar o modal
 const closeModal = () => {
     isModalOpen.value = false;
     selectedMedia.value = null;
 };
 
-// Formatando dados para exibição
 const getStatusLabel = computed(() => {
     if (!props.unidade?.status) return { text: 'Desconhecido', class: 'bg-gray-100 text-gray-800' };
-    
     switch(props.unidade.status) {
-        case 'pendente_avaliacao':
-            return { text: 'Pendente de Avaliação', class: 'bg-yellow-100 text-yellow-800' };
-        case 'aprovada':
-            return { text: 'Aprovado', class: 'bg-green-100 text-green-800' };
-        case 'reprovada':
-            return { text: 'Reprovado', class: 'bg-red-100 text-red-800' };
-        case 'em_revisao':
-            return { text: 'Em Revisão', class: 'bg-blue-100 text-blue-800' };
-        default:
-            return { text: 'Desconhecido', class: 'bg-gray-100 text-gray-800' };
+        case 'pendente_avaliacao': return { text: 'Pendente de Avaliação', class: 'bg-yellow-100 text-yellow-800' };
+        case 'aprovada': return { text: 'Aprovado', class: 'bg-green-100 text-green-800' };
+        case 'reprovada': return { text: 'Reprovado', class: 'bg-red-100 text-red-800' };
+        case 'em_revisao': return { text: 'Em Revisão', class: 'bg-blue-100 text-blue-800' };
+        default: return { text: 'Desconhecido', class: 'bg-gray-100 text-gray-800' };
     }
 });
 
 const formatarEndereco = computed(() => {
     const { rua, numero, bairro, cidade, cep } = props.unidade || {};
     let endereco = [];
-    
     if (rua) endereco.push(`${rua}${numero ? `, ${numero}` : ', S/N'}`);
     if (bairro) endereco.push(bairro);
     if (cidade) endereco.push(cidade);
     if (cep) endereco.push(`CEP: ${cep}`);
-    
     return endereco.length > 0 ? endereco.join(' - ') : 'Não informado';
 });
 
@@ -114,7 +106,6 @@ const formatarTelefones = computed(() => {
             </div>
         </template>
 
-        <!-- Mensagem de Flash -->
         <div v-if="flashMessage" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-4">
             <div class="p-4 rounded-md shadow-sm transition-all" 
                 :class="flashMessage.includes('sucesso') || flashMessage.includes('salva') ? 
@@ -122,7 +113,7 @@ const formatarTelefones = computed(() => {
                     'bg-amber-100 text-amber-700 border-l-4 border-amber-500'">
                 <div class="flex">
                     <div class="flex-shrink-0">
-                        <i class="fas" :class="flashMessage.includes('sucesso') || flashMessage.includes('salva') ? 
+                        <i :class="flashMessage.includes('sucesso') || flashMessage.includes('salva') ? 
                             'fa-check-circle text-green-600' : 'fa-exclamation-circle text-amber-600'"></i>
                     </div>
                     <div class="ml-3">{{ flashMessage }}</div>
@@ -135,7 +126,6 @@ const formatarTelefones = computed(() => {
 
         <div class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Navegação de abas para desktop -->
                 <div class="bg-white rounded-t-lg overflow-hidden shadow-md">
                     <div class="hidden sm:block border-b border-gray-200">
                         <nav class="flex space-x-2 md:space-x-8 overflow-x-auto scrollbar-thin" aria-label="Abas">
@@ -156,7 +146,6 @@ const formatarTelefones = computed(() => {
                         </nav>
                     </div>
                     
-                    <!-- Navegação mobile -->
                     <div class="sm:hidden bg-white p-4 border-b border-gray-200">
                         <div class="flex items-center justify-between">
                             <span class="text-indigo-600 font-medium">
@@ -165,11 +154,10 @@ const formatarTelefones = computed(() => {
                             </span>
                             <button @click="mobileMenuOpen = !mobileMenuOpen" 
                                     class="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none">
-                                <i class="fas" :class="mobileMenuOpen ? 'fa-times' : 'fa-bars'"></i>
+                                <i :class="mobileMenuOpen ? 'fa-times' : 'fa-bars'"></i>
                             </button>
                         </div>
                         
-                        <!-- Menu móvel dropdown -->
                         <div v-if="mobileMenuOpen" class="mt-2 space-y-1 bg-gray-50 rounded-md p-2 transition-all">
                             <button
                                 v-for="tab in tabs"
@@ -184,9 +172,7 @@ const formatarTelefones = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Conteúdo das abas -->
                     <div class="p-4 sm:p-6 bg-white">
-                        <!-- Status da unidade -->
                         <div v-if="unidade?.status" class="mb-6">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="font-medium text-gray-600">Status:</span>
@@ -197,7 +183,6 @@ const formatarTelefones = computed(() => {
                                     {{ getStatusLabel.text }}
                                 </span>
                             </div>
-                            <!-- Exibir motivo da reprovação -->
                             <div v-if="unidade?.rejection_reason && unidade.status === 'reprovada'" class="mt-4">
                                 <div class="bg-red-50 p-3 rounded-md shadow-sm">
                                     <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Motivo da Reprovação:</dt>
@@ -206,7 +191,6 @@ const formatarTelefones = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Dados Gerais -->
                         <div v-if="activeTab === 'dados-gerais'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Informações Básicas</h3>
@@ -255,7 +239,6 @@ const formatarTelefones = computed(() => {
                                             <span v-if="unidade?.latitude && unidade?.longitude" class="inline-flex items-center">
                                                 <span>Lat: {{ unidade.latitude }}, Lng: {{ unidade.longitude }}</span>
                                                 <a 
-                                                    v-if="unidade.latitude && unidade.longitude"
                                                     :href="`https://www.google.com/maps?q=${unidade.latitude},${unidade.longitude}`" 
                                                     target="_blank"
                                                     class="ml-2 text-blue-500 hover:text-blue-700"
@@ -287,16 +270,26 @@ const formatarTelefones = computed(() => {
                                 </dl>
                             </div>
                             
-                            <!-- Informações para imóvel compartilhado -->
                             <div v-if="unidade?.imovel_compartilhado_orgao" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Compartilhamento de Imóvel</h3>
                                 <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Órgão Compartilhado:</dt>
-                                    <dd class="mt-1">{{ orgaos?.find(orgao => orgao.id === unidade.imovel_compartilhado_orgao_id)?.nome || 'Não informado' }}</dd>
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Compartilhado com:</dt>
+                                    <dd class="mt-1 flex flex-wrap gap-2">
+                                        <span v-if="!unidade.orgaosCompartilhados || unidade.orgaosCompartilhados.length === 0" class="text-gray-600">
+                                            Não informado
+                                        </span>
+                                        <span 
+                                            v-else
+                                            v-for="orgao in unidade.orgaosCompartilhados" 
+                                            :key="orgao.id"
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                                        >
+                                            {{ orgao.nome || 'Sem nome' }}
+                                        </span>
+                                    </dd>
                                 </div>
                             </div>
 
-                            <!-- Observações -->
                             <div v-if="unidade?.observacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Observações</h3>
                                 <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow whitespace-pre-line">
@@ -305,11 +298,9 @@ const formatarTelefones = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Acessibilidade -->
                         <div v-if="activeTab === 'acessibilidade'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-full">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Condições de Acessibilidade</h3>
-                                
                                 <div v-if="acessibilidade" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Rampa de Acesso:</dt>
@@ -354,13 +345,10 @@ const formatarTelefones = computed(() => {
                                         </dd>
                                     </div>
                                 </div>
-                                
                                 <div v-if="!acessibilidade" class="bg-white p-6 rounded-md shadow-sm text-center">
                                     <i class="fas fa-info-circle text-blue-500 text-4xl mb-4"></i>
                                     <p class="text-gray-600">Nenhuma informação de acessibilidade cadastrada para esta unidade.</p>
                                 </div>
-
-                                <!-- Observações de Acessibilidade -->
                                 <div v-if="acessibilidade?.observacoes" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow mt-4">
                                     <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Observações:</dt>
                                     <dd class="mt-1 whitespace-pre-line">{{ acessibilidade.observacoes }}</dd>
@@ -368,9 +356,7 @@ const formatarTelefones = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Informações Estruturais -->
                         <div v-if="activeTab === 'informacoes'" class="space-y-6">
-                            <!-- Primeira seção: Via e Serviços -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Características da Via e Serviços</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -401,7 +387,6 @@ const formatarTelefones = computed(() => {
                                 </div>
                             </div>
 
-                            <!-- Segunda seção: Internet e Telefonia -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Internet e Telefonia</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -424,7 +409,6 @@ const formatarTelefones = computed(() => {
                                 </div>
                             </div>
 
-                            <!-- Terceira seção: Características do Imóvel -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Características do Imóvel</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -460,7 +444,6 @@ const formatarTelefones = computed(() => {
                                 </div>
                             </div>
 
-                            <!-- Recuos -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Recuos</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -479,7 +462,6 @@ const formatarTelefones = computed(() => {
                                 </div>
                             </div>
 
-                            <!-- Quantitativos -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Quantitativos de Espaços</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -542,7 +524,6 @@ const formatarTelefones = computed(() => {
                                 </div>
                             </div>
 
-                            <!-- Suficiência de Instalações -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Suficiência de Instalações</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -598,7 +579,6 @@ const formatarTelefones = computed(() => {
                                 </div>
                             </div>
 
-                            <!-- Acabamentos -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Acabamentos</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -633,7 +613,6 @@ const formatarTelefones = computed(() => {
                                 </div>
                             </div>
 
-                            <!-- Equipamentos de Segurança -->
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Equipamentos de Segurança</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -656,26 +635,21 @@ const formatarTelefones = computed(() => {
                                 </div>
                             </div>
 
-                            <!-- Se não houver informações estruturais -->
                             <div v-if="!informacoes" class="bg-white p-6 rounded-md shadow-sm text-center">
                                 <i class="fas fa-info-circle text-blue-500 text-4xl mb-4"></i>
                                 <p class="text-gray-600">Nenhuma informação estrutural cadastrada para esta unidade.</p>
                             </div>
                         </div>
 
-                        <!-- Mídias -->
                         <div v-if="activeTab === 'midias'" class="space-y-6">
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Galeria de Mídias</h3>
-                                
-                                <!-- Exibição de mídias em formato grid -->
                                 <div v-if="midias && midias.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                     <div 
                                         v-for="(midia, index) in midias" 
                                         :key="index" 
                                         class="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all"
                                     >
-                                        <!-- Imagem -->
                                         <div v-if="isImage(midia)" class="relative h-48 bg-gray-200">
                                             <img 
                                                 :src="midia.url" 
@@ -684,8 +658,6 @@ const formatarTelefones = computed(() => {
                                                 @click="openModal(midia)"
                                             />
                                         </div>
-                                        
-                                        <!-- Informações da mídia -->
                                         <div class="p-4">
                                             <h4 class="font-medium text-gray-900 truncate">
                                                 {{ midia.midia_tipo?.nome || 'Arquivo' }}
@@ -696,8 +668,6 @@ const formatarTelefones = computed(() => {
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Mensagem quando não há mídias -->
                                 <div v-else class="bg-white p-6 rounded-md shadow-sm text-center">
                                     <i class="fas fa-photo-video text-blue-500 text-4xl mb-4"></i>
                                     <p class="text-gray-600">Nenhuma mídia disponível para esta unidade.</p>
@@ -709,15 +679,11 @@ const formatarTelefones = computed(() => {
             </div>
         </div>
 
-        <!-- Modal para exibir a imagem -->
         <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[1000]" @click.self="closeModal">
             <div class="bg-white rounded-lg p-4 max-w-3xl w-full mx-4 relative">
-                <!-- Botão de fechar -->
                 <button @click="closeModal" class="absolute top-2 right-2 text-gray-600 hover:text-gray-800">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
-                
-                <!-- Imagem no modal -->
                 <div class="flex flex-col items-center">
                     <img 
                         :src="selectedMedia?.url" 
@@ -739,7 +705,6 @@ const formatarTelefones = computed(() => {
 </template>
 
 <style scoped>
-/* Transições e animações */
 .transition-all {
     transition: all 0.3s ease;
 }
@@ -752,18 +717,15 @@ const formatarTelefones = computed(() => {
     scrollbar-width: thin;
 }
 
-/* Responsividade para telas pequenas */
 @media (max-width: 640px) {
     .grid {
         grid-gap: 0.75rem;
     }
-    
     .p-4 {
         padding: 0.75rem;
     }
 }
 
-/* Estilo para o modal */
 .modal-enter-active, .modal-leave-active {
     transition: opacity 0.3s ease;
 }

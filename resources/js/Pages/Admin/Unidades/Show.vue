@@ -684,8 +684,20 @@ const salvarCessao = () => {
                             <div v-if="unidade?.imovel_compartilhado_orgao" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Compartilhamento de Imóvel</h3>
                                 <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Órgão Compartilhado:</dt>
-                                    <dd class="mt-1">{{ unidade.orgao_compartilhado?.nome || 'Não informado' }}</dd>
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Compartilhado com:</dt>
+                                    <dd class="mt-1 flex flex-wrap gap-2">
+                                        <span v-if="!unidade.orgaosCompartilhados || unidade.orgaosCompartilhados.length === 0" class="text-gray-600">
+                                            Não informado
+                                        </span>
+                                        <span 
+                                            v-else
+                                            v-for="orgao in unidade.orgaosCompartilhados" 
+                                            :key="orgao.id"
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                                        >
+                                            {{ orgao.nome || 'Sem nome' }}
+                                        </span>
+                                    </dd>
                                 </div>
                             </div>
 
@@ -934,147 +946,74 @@ const salvarCessao = () => {
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Suficiência de Instalações -->
-                            <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Suficiência de Instalações</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Tomadas:</dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i :class="`fas ${informacoes.tomadas_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
-                                            {{ informacoes.tomadas_suficientes ? 'Suficientes' : 'Insuficientes' }}
-                                        </dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Luminárias:</dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i :class="`fas ${informacoes.luminarias_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
-                                            {{ informacoes.luminarias_suficientes ? 'Suficientes' : 'Insuficientes' }}
-                                        </dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos de Rede:</dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i :class="`fas ${informacoes.pontos_rede_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
-                                            {{ informacoes.pontos_rede_suficientes ? 'Suficientes' : 'Insuficientes' }}
-                                        </dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos de Telefone:</dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i :class="`fas ${informacoes.pontos_telefone_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
-                                            {{ informacoes.pontos_telefone_suficientes ? 'Suficientes' : 'Insuficientes' }}
-                                        </dd>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Observações Estruturais -->
-                            <div v-if="informacoes?.observacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Observações</h3>
-                                <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow whitespace-pre-line">
-                                    {{ informacoes.observacoes }}
-                                </div>
-                            </div>
-
-                            <div v-if="!informacoes" class="bg-white p-6 rounded-md shadow-sm text-center">
-                                <i class="fas fa-info-circle text-blue-500 text-4xl mb-4"></i>
-                                <p class="text-gray-600">Nenhuma informação estrutural cadastrada para esta unidade.</p>
-                            </div>
                         </div>
 
                         <!-- Mídias -->
-                        <div v-if="activeTab === 'midias'" class="space-y-6">
+                        <div v-if="activeTab === 'midias'" class="grid grid-cols-1 gap-6">
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Mídias da Unidade</h3>
                                 <div v-if="midias && midias.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     <div v-for="midia in midias" :key="midia.id" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-medium text-gray-600 text-xs uppercase tracking-wider">
-                                                {{ midia.midia_tipo?.nome || 'Tipo desconhecido' }}
-                                            </span>
-                                            <a v-if="midia.url" :href="midia.url" download class="text-blue-500 hover:text-blue-700">
-                                                <i class="fas fa-download"></i>
-                                            </a>
-                                        </div>
-                                        <div v-if="isImage(midia)" class="mt-2 cursor-pointer" @click="openModal(midia)">
-                                            <img :src="midia.url" :alt="midia.midia_tipo?.nome" class="w-full h-32 object-cover rounded-md" />
-                                        </div>
-                                        <div v-else class="mt-2">
-                                            <p class="text-gray-600">Arquivo não visualizável</p>
-                                            <a :href="midia.url" target="_blank" class="text-blue-500 hover:underline">Abrir arquivo</a>
-                                        </div>
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">{{ midia.midiaTipo?.nome || 'Tipo Desconhecido' }}:</dt>
+                                        <dd class="mt-1">
+                                            <div v-if="isImage(midia)" class="relative">
+                                                <img :src="midia.url" @click="openModal(midia)" class="w-full h-32 object-cover rounded cursor-pointer" alt="Imagem da mídia" />
+                                            </div>
+                                            <div v-else class="text-blue-500 hover:underline">
+                                                <a :href="midia.url" target="_blank">{{ midia.url.split('/').pop() || 'Ver arquivo' }}</a>
+                                            </div>
+                                        </dd>
                                     </div>
                                 </div>
                                 <div v-else class="bg-white p-6 rounded-md shadow-sm text-center">
-                                    <i class="fas fa-image text-blue-500 text-4xl mb-4"></i>
+                                    <i class="fas fa-image text-gray-400 text-4xl mb-4"></i>
                                     <p class="text-gray-600">Nenhuma mídia cadastrada para esta unidade.</p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Modal de Visualização de Mídia -->
-                        <div v-if="isModalOpen" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[1000]" @click.self="closeModal">
-                            <div class="bg-white rounded-lg shadow-lg p-4 max-w-3xl w-full relative">
+                        <!-- Modal de Visualização de Imagem -->
+                        <div v-if="isModalOpen" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+                            <div class="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full">
                                 <button @click="closeModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
-                                    <i class="fas fa-times text-2xl"></i>
+                                    <i class="fas fa-times"></i>
                                 </button>
-                                <div class="flex flex-col items-center">
-                                    <div v-if="isImage(selectedMedia)" class="flex justify-center">
-                                        <img :src="selectedMedia.url" :alt="selectedMedia.midia_tipo?.nome" class="max-w-full max-h-[70vh] object-contain rounded-lg" />
-                                    </div>
-                                    <div v-else class="text-center">
-                                        <p class="text-gray-600">Arquivo não visualizável no navegador.</p>
-                                        <a :href="selectedMedia.url" target="_blank" class="text-blue-500 hover:underline">Abrir arquivo</a>
-                                    </div>
-                                    <div class="mt-4 flex items-center justify-between w-full">
-                                        <h4 class="font-medium text-gray-900 truncate">{{ selectedMedia?.midia_tipo?.nome || 'Visualizar Mídia' }}</h4>
-                                        <a :href="selectedMedia.url" download class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all">
-                                            <i class="fas fa-download mr-2"></i> Baixar
-                                        </a>
-                                    </div>
-                                </div>
+                                <img :src="selectedMedia.url" class="w-full h-auto max-h-[80vh] object-contain" :alt="selectedMedia.midiaTipo?.nome || 'Imagem'" />
                             </div>
                         </div>
 
                         <!-- Avaliações -->
-                        <div v-if="activeTab === 'avaliacoes'" class="space-y-6">
-                            <!-- Formulário de Avaliação (apenas SuperAdmin) -->
-                            <div v-if="isSuperAdmin" class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Nova Avaliação</h3>
-                                <AvaliacaoForm :unidade-id="unidade.id" />
-                            </div>
-
-                            <!-- Histórico de Avaliações -->
+                        <div v-if="activeTab === 'avaliacoes'" class="grid grid-cols-1 gap-6">
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Histórico de Avaliações</h3>
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Avaliações da Unidade</h3>
                                 <div v-if="avaliacoes && avaliacoes.length > 0" class="space-y-4">
                                     <div v-for="avaliacao in avaliacoes" :key="avaliacao.id" class="bg-white p-4 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between">
                                             <div>
                                                 <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nota Geral:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_geral ? `${avaliacao.nota_geral.toFixed(1)}` : 'Não informada' }}</dd>
+                                                <dd class="mt-1 text-lg font-semibold">{{ avaliacao.nota_geral || 'N/A' }}</dd>
                                             </div>
-                                            <div>
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nota Estrutura:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_estrutura ? `${avaliacao.nota_estrutura.toFixed(1)}` : 'Não informada' }}</dd>
-                                            </div>
-                                            <div>
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nota Acessibilidade:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_acessibilidade ? `${avaliacao.nota_acessibilidade.toFixed(1)}` : 'Não informada' }}</dd>
-                                            </div>
-                                            <div>
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nota Conservação:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_conservacao ? `${avaliacao.nota_conservacao.toFixed(1)}` : 'Não informada' }}</dd>
-                                            </div>
-                                            <div>
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Avaliador:</dt>
-                                                <dd class="mt-1">{{ avaliacao.avaliador?.name || 'Não informado' }}</dd>
-                                            </div>
-                                            <div>
+                                            <div class="mt-2 sm:mt-0">
                                                 <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Data:</dt>
                                                 <dd class="mt-1">{{ formatarData(avaliacao.created_at) }}</dd>
+                                            </div>
+                                            <div v-if="avaliacao.avaliador" class="mt-2 sm:mt-0">
+                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Avaliador:</dt>
+                                                <dd class="mt-1">{{ avaliacao.avaliador.name || 'Desconhecido' }}</dd>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Estrutura:</dt>
+                                                <dd class="mt-1">{{ avaliacao.nota_estrutura || 'N/A' }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Acessibilidade:</dt>
+                                                <dd class="mt-1">{{ avaliacao.nota_acessibilidade || 'N/A' }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Conservação:</dt>
+                                                <dd class="mt-1">{{ avaliacao.nota_conservacao || 'N/A' }}</dd>
                                             </div>
                                         </div>
                                         <div v-if="avaliacao.observacoes" class="mt-4">
@@ -1084,8 +1023,11 @@ const salvarCessao = () => {
                                     </div>
                                 </div>
                                 <div v-else class="bg-white p-6 rounded-md shadow-sm text-center">
-                                    <i class="fas fa-star text-blue-500 text-4xl mb-4"></i>
+                                    <i class="fas fa-star text-gray-400 text-4xl mb-4"></i>
                                     <p class="text-gray-600">Nenhuma avaliação cadastrada para esta unidade.</p>
+                                </div>
+                                <div v-if="isSuperAdmin" class="mt-6">
+                                    <AvaliacaoForm :unidade-id="unidade.id" />
                                 </div>
                             </div>
                         </div>

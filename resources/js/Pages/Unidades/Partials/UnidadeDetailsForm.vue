@@ -19,11 +19,17 @@ const mapLoaded = ref(false);
 const props = defineProps({
     team: Object,
     unidade: Object,
+    orgaos: Array,
     permissions: Object,
     isNew: Boolean,
     isEditable: Boolean,
 });
 
+// Inicializar os IDs dos órgãos compartilhados, garantindo que sejam números
+const orgaoIds = props.unidade?.orgaosCompartilhados?.length
+    ? props.unidade.orgaosCompartilhados.map(orgao => Number(orgao.id))
+    : [];
+    
 const form = useForm({
     team_id: props.team?.id || '',
     nome: props.unidade?.nome || props.team?.name || '',
@@ -46,14 +52,29 @@ const form = useForm({
     longitude: props.unidade?.longitude || '',
     tipo_judicial: props.unidade?.tipo_judicial || '',
     imovel_compartilhado_orgao: props.unidade?.imovel_compartilhado_orgao || false,
-    imovel_compartilhado_orgao_id: props.unidade?.imovel_compartilhado_orgao_id || '',
+    imovel_compartilhado_orgao_ids: orgaoIds,
     observacoes: props.unidade?.observacoes || '',
     numero_medidor_agua: props.unidade?.numero_medidor_agua || '',
     numero_medidor_energia: props.unidade?.numero_medidor_energia || '',
 });
 
-const activeSection = ref('geral'); // 'geral', 'localizacao'
+// Watch para depurar mudanças em imovel_compartilhado_orgao_ids
+/* watch(() => form.imovel_compartilhado_orgao_ids, (newValue) => {
+    console.log('imovel_compartilhado_orgao_ids atualizado:', newValue);
+});
+
+// Watch para depurar mudanças em props.unidade
+watch(() => props.unidade, (newUnidade) => {
+    console.log('Props unidade atualizado:', newUnidade);
+    console.log('Orgaos Compartilhados atualizado:', newUnidade?.orgaosCompartilhados);
+    if (newUnidade?.orgaosCompartilhados?.length) {
+        form.imovel_compartilhado_orgao_ids = newUnidade.orgaosCompartilhados.map(orgao => Number(orgao.id));
+    }
+}); */
+
+const activeSection = ref('geral');
 const mapContainer = ref(null);
+const orgaoSelect = ref(null); // Referência ao select
 let map = null;
 let marker = null;
 let resizeObserver = null;
@@ -68,7 +89,6 @@ const methods = {
     },
     setActiveSection: (section) => {
         activeSection.value = section;
-        // Redesenha o mapa quando a seção de localização é ativada
         if (section === 'localizacao' && mapLoaded.value) {
             setTimeout(() => {
                 if (map) map.invalidateSize();
@@ -79,7 +99,6 @@ const methods = {
 
 const initMap = () => {
     if (!window.L || !mapContainer.value) {
-        // Se o Leaflet não estiver carregado ou o container não estiver disponível, tenta novamente depois
         setTimeout(initMap, 500);
         return;
     }
@@ -89,7 +108,6 @@ const initMap = () => {
         ? [parseFloat(form.latitude), parseFloat(form.longitude)]
         : defaultLocation;
 
-    // Certifica de que o mapa não será inicializado mais de uma vez
     if (map) map.remove();
 
     map = L.map(mapContainer.value, {
@@ -120,11 +138,8 @@ const initMap = () => {
         updateAddressFromCoordinates(lat, lng);
     });
 
-   
-
     mapLoaded.value = true;
 
-    // Observa as mudanças de tamanho no contêiner do mapa para redimensionar o mapa
     if (!resizeObserver && window.ResizeObserver) {
         resizeObserver = new ResizeObserver(() => {
             if (map) map.invalidateSize();
@@ -249,8 +264,21 @@ watch(() => form.tipo_judicial, (newValue) => {
     }
 });
 
+watch(() => form.imovel_compartilhado_orgao, (newValue) => {
+    if (!newValue) {
+        form.imovel_compartilhado_orgao_ids = [];
+    }
+});
+
 onMounted(() => {
-    // Carregando Leaflet de forma dinâmica se ainda não estiver disponível
+    // Forçar atualização do select
+    if (orgaoSelect.value && form.imovel_compartilhado_orgao_ids.length) {
+        form.imovel_compartilhado_orgao_ids.forEach(id => {
+            const option = orgaoSelect.value.querySelector(`option[value="${id}"]`);
+            if (option) option.selected = true;
+        });
+    }
+
     if (!window.L) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -262,17 +290,14 @@ onMounted(() => {
         script.onload = initMap;
         document.head.appendChild(script);
     } else {
-        // Se já estiver carregado, inicialize o mapa
         initMap();
     }
 });
 
 onBeforeUnmount(() => {
-    // Limpa o ResizeObserver quando o componente for desmontado
     if (resizeObserver) {
         resizeObserver.disconnect();
     }
-    // Limpe o mapa quando o componente for desmontado
     if (map) {
         map.remove();
         map = null;
@@ -294,17 +319,19 @@ const saveDadosGerais = () => {
         }
     });
 
+    if (form.imovel_compartilhado_orgao && form.imovel_compartilhado_orgao_ids.length === 0) {
+        errors.push('Selecione pelo menos um órgão.');
+        form.errors.imovel_compartilhado_orgao_ids = 'Selecione pelo menos um órgão.';
+    }
+
     if (errors.length > 0) {
         emit('saved', null, errors.join(' '));
         return;
     }
 
-    // Sanitizar valores antes de enviar ao backend
     form.cep = form.cep ? form.cep.replace(/[^0-9]/g, '') : '';
     form.telefone_1 = form.telefone_1 ? form.telefone_1.replace(/[^0-9]/g, '') : '';
     form.telefone_2 = form.telefone_2 ? form.telefone_2.replace(/[^0-9]/g, '') : '';
-    form.cpf_cnpj = form.cpf_cnpj ? form.cpf_cnpj.replace(/[^0-9]/g, '') : '';
-    form.telefone_proprietario = form.telefone_proprietario ? form.telefone_proprietario.replace(/[^0-9]/g, '') : '';
 
     form.post(route('unidades.saveDadosGerais'), {
         errorBag: 'saveDadosGerais',
@@ -321,7 +348,6 @@ const saveDadosGerais = () => {
 
 <template>
     <div class="bg-white rounded-lg shadow-md">
-        <!-- Guias de navegação responsivas -->
         <div class="border-b border-gray-200">
             <nav class="flex flex-wrap -mb-px" aria-label="Tabs">
                 <button
@@ -337,7 +363,6 @@ const saveDadosGerais = () => {
                     <span class="hidden sm:inline">Dados Gerais</span>
                     <span class="sm:hidden">Dados</span>
                 </button>
-                
                 <button
                     @click="methods.setActiveSection('localizacao')"
                     :class="[
@@ -355,7 +380,6 @@ const saveDadosGerais = () => {
         </div>
 
         <form @submit.prevent="saveDadosGerais">
-            <!-- Loading Overlay -->
             <div v-if="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
                 <div class="bg-white p-6 rounded-lg shadow-xl">
                     <div class="flex items-center space-x-4">
@@ -365,10 +389,8 @@ const saveDadosGerais = () => {
                 </div>
             </div>
 
-            <!-- Seção de Dados Gerais -->
             <div v-show="activeSection === 'geral'" class="p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Informações Básicas</h3>
-
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 mb-6">
                     <div>
                         <InputLabel for="nome" value="Nome da Unidade *" class="text-sm font-medium text-gray-700" />
@@ -382,7 +404,6 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.nome" class="mt-1" />
                     </div>
-
                     <div>
                         <InputLabel for="codigo" value="Código" class="text-sm font-medium text-gray-700" />
                         <TextInput
@@ -395,7 +416,6 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.codigo" class="mt-1" />
                     </div>
-
                     <div>
                         <InputLabel for="tipo_estrutural" value="Tipo Estrutural *" class="text-sm font-medium text-gray-700" />
                         <SelectInput
@@ -414,7 +434,6 @@ const saveDadosGerais = () => {
                         </SelectInput>
                         <InputError :message="form.errors.tipo_estrutural" class="mt-1" />
                     </div>
-
                     <div>
                         <InputLabel for="srpc" value="Unidade Gestora" class="text-sm font-medium text-gray-700" />
                         <TextInput
@@ -427,7 +446,6 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.srpc" class="mt-1" />
                     </div>
-
                     <div>
                         <InputLabel for="dspc" value="Unidade Sub-Gestora" class="text-sm font-medium text-gray-700" />
                         <TextInput
@@ -440,7 +458,6 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.dspc" class="mt-1" />
                     </div>
-
                     <div>
                         <InputLabel for="nivel" value="Nível" class="text-sm font-medium text-gray-700" />
                         <TextInput
@@ -453,7 +470,6 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.nivel" class="mt-1" />
                     </div>
-
                     <div class="flex items-center">
                         <div class="flex items-center h-full mt-6">
                             <Checkbox 
@@ -481,7 +497,6 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.email" class="mt-1" />
                     </div>
-
                     <div>
                         <InputLabel for="telefone_1" value="Telefone 1" class="text-sm font-medium text-gray-700" />
                         <TextInput
@@ -500,7 +515,6 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.telefone_1" class="mt-1" />
                     </div>
-
                     <div>
                         <InputLabel for="telefone_2" value="Telefone 2" class="text-sm font-medium text-gray-700" />
                         <TextInput
@@ -538,7 +552,6 @@ const saveDadosGerais = () => {
                         </SelectInput>
                         <InputError :message="form.errors.tipo_judicial" class="mt-1" />
                     </div>
-
                     <div>
                         <InputLabel for="numero_medidor_agua" value="Medidor de Água" class="text-sm font-medium text-gray-700" />
                         <TextInput
@@ -551,7 +564,6 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.numero_medidor_agua" class="mt-1" />
                     </div>
-
                     <div>
                         <InputLabel for="numero_medidor_energia" value="Medidor de Energia" class="text-sm font-medium text-gray-700" />
                         <TextInput
@@ -564,7 +576,6 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.numero_medidor_energia" class="mt-1" />
                     </div>
-
                     <div class="md:col-span-3">
                         <div class="flex items-center mt-2">
                             <Checkbox 
@@ -576,20 +587,23 @@ const saveDadosGerais = () => {
                         </div>
                         <InputError :message="form.errors.imovel_compartilhado_orgao" class="mt-1" />
                     </div>
-
                     <div v-if="form.imovel_compartilhado_orgao" class="md:col-span-3">
-                        <InputLabel for="imovel_compartilhado_orgao_id" value="Órgão Compartilhado" class="text-sm font-medium text-gray-700" />
-                        <TextInput
-                            id="imovel_compartilhado_orgao_id"
-                            v-model="form.imovel_compartilhado_orgao_id"
-                            type="text"
-                            class="mt-1 block w-full"
+                        <InputLabel for="imovel_compartilhado_orgao_ids" value="Órgãos Compartilhados *" class="text-sm font-medium text-gray-700" />
+                        <select
+                            id="imovel_compartilhado_orgao_ids"
+                            ref="orgaoSelect"
+                            v-model="form.imovel_compartilhado_orgao_ids"
+                            multiple
+                            class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                             :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            placeholder="Nome do órgão"
-                        />
-                        <InputError :message="form.errors.imovel_compartilhado_orgao_id" class="mt-1" />
+                        >
+                            <option v-for="orgao in orgaos" :key="orgao.id" :value="Number(orgao.id)">
+                                {{ orgao.nome }}
+                            </option>
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">Segure Ctrl (ou Cmd) para selecionar múltiplos órgãos.</p>
+                        <InputError :message="form.errors.imovel_compartilhado_orgao_ids" class="mt-1" />
                     </div>
-
                     <div class="md:col-span-3">
                         <InputLabel for="observacoes" value="Observações" class="text-sm font-medium text-gray-700" />
                         <textarea
@@ -605,7 +619,6 @@ const saveDadosGerais = () => {
                 </div>
             </div>
 
-            <!-- Seção de Localização -->
             <div v-show="activeSection === 'localizacao'" class="p-6">
                 <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
                     <div class="flex">
@@ -656,7 +669,6 @@ const saveDadosGerais = () => {
                                 />
                                 <InputError :message="form.errors.latitude" class="mt-1" />
                             </div>
-
                             <div>
                                 <InputLabel for="longitude" value="Longitude *" class="text-sm font-medium text-gray-700" />
                                 <TextInput
@@ -670,7 +682,6 @@ const saveDadosGerais = () => {
                                 />
                                 <InputError :message="form.errors.longitude" class="mt-1" />
                             </div>
-
                             <div>
                                 <InputLabel for="cep" value="CEP *" class="text-sm font-medium text-gray-700" />
                                 <TextInput
@@ -685,7 +696,6 @@ const saveDadosGerais = () => {
                                 />
                                 <InputError :message="form.errors.cep" class="mt-1" />
                             </div>
-
                             <div>
                                 <InputLabel for="cidade" value="Cidade *" class="text-sm font-medium text-gray-700" />
                                 <TextInput
@@ -699,7 +709,6 @@ const saveDadosGerais = () => {
                                 />
                                 <InputError :message="form.errors.cidade" class="mt-1" />
                             </div>
-
                             <div>
                                 <InputLabel for="rua" value="Rua *" class="text-sm font-medium text-gray-700" />
                                 <TextInput
@@ -713,7 +722,6 @@ const saveDadosGerais = () => {
                                 />
                                 <InputError :message="form.errors.rua" class="mt-1" />
                             </div>
-
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <InputLabel for="numero" value="Número" class="text-sm font-medium text-gray-700" />
@@ -728,7 +736,6 @@ const saveDadosGerais = () => {
                                     />
                                     <InputError :message="form.errors.numero" class="mt-1" />
                                 </div>
-
                                 <div>
                                     <InputLabel for="bairro" value="Bairro" class="text-sm font-medium text-gray-700" />
                                     <TextInput
@@ -743,7 +750,6 @@ const saveDadosGerais = () => {
                                     <InputError :message="form.errors.bairro" class="mt-1" />
                                 </div>
                             </div>
-
                             <div>
                                 <InputLabel for="complemento" value="Complemento" class="text-sm font-medium text-gray-700" />
                                 <TextInput
@@ -761,7 +767,6 @@ const saveDadosGerais = () => {
                 </div>
             </div>
 
-            <!-- Barra de ações fixa -->
             <div v-if="isEditable && permissions?.canUpdateTeam" class="border-t border-gray-200 px-6 py-4 bg-gray-50 flex items-center justify-between sticky bottom-0">
                 <div class="text-sm text-gray-600">
                     <span class="text-red-500">*</span> Campos obrigatórios
@@ -788,19 +793,9 @@ const saveDadosGerais = () => {
     font-family: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Estilos responsivos adicionais */
 @media (max-width: 640px) {
     .leaflet-control-zoom {
-        margin-bottom: 60px !important; /* Ajusta os controles de zoom em telas pequenas */
+        margin-bottom: 60px !important;
     }
-}
-
-/* Animações de transição para as abas */
-.tab-content-enter-active, .tab-content-leave-active {
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.tab-content-enter-from, .tab-content-leave-to {
-    opacity: 0;
-    transform: translateY(10px);
 }
 </style>

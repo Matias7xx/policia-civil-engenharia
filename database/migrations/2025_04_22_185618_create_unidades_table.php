@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('status')->nullable();
             $table->text('rejection_reason')->nullable(); //Motivo da reprovação do formulário
             $table->boolean('imovel_compartilhado_orgao')->default(false);
-            $table->unsignedBigInteger('imovel_compartilhado_orgao_id')->nullable();
+            /* $table->unsignedBigInteger('imovel_compartilhado_orgao_id')->nullable(); */
             $table->string('observacoes')->nullable();
             $table->string('numero_medidor_agua')->nullable();
             $table->string('numero_medidor_energia')->nullable();
@@ -44,7 +44,7 @@ return new class extends Migration
             $table->timestamps();
             
             $table->foreign('team_id')->references('id')->on('teams');
-            $table->foreign('imovel_compartilhado_orgao_id')->references('id')->on('orgaos');
+            /* $table->foreign('imovel_compartilhado_orgao_id')->references('id')->on('orgaos'); */
         });
     }
 

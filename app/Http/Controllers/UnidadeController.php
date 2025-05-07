@@ -32,7 +32,7 @@ class UnidadeController extends Controller
         }
 
         // Verificar se já existe uma unidade para este team
-        $unidade = Unidade::where('team_id', $teamId)->first();
+        $unidade = Unidade::where('team_id', $teamId)->with('orgaosCompartilhados')->first();
 
         // Se não existir unidade, inicializar um objeto vazio para o formulário
         if (!$unidade) {
@@ -41,7 +41,7 @@ class UnidadeController extends Controller
             $unidade->nome = $team->name; // Valor inicial para o formulário
             $unidade->is_draft = true; // Marcado como rascunho (mas não salvo ainda)
         } else {
-            $unidade->load('acessibilidade', 'informacoes', 'midias',);
+            $unidade->load('acessibilidade', 'informacoes', 'midias', 'orgaosCompartilhados');
         }
 
         return Inertia::render('Unidades/Create', [
@@ -50,6 +50,7 @@ class UnidadeController extends Controller
             'acessibilidade' => $unidade->acessibilidade,
             'informacoes' => $unidade->informacoes,
             'midias' => $unidade->midias ?? [],
+            'orgaos' => Orgao::ativo()->get(['id', 'nome']),
             'permissions' => [
                 'canUpdateTeam' => auth()->user()->hasTeamPermission($team, 'update'),
             ],
@@ -57,34 +58,39 @@ class UnidadeController extends Controller
     }
 
     public function show($team, $unidade)
-    {
-        $unidade = Unidade::with([
-            'acessibilidade',
-            'informacoes',
-            'midias.midiaTipo',
-        ])->findOrFail($unidade);
+{
+    $unidade = Unidade::with([
+        'acessibilidade',
+        'informacoes',
+        'midias.midiaTipo',
+        'orgaosCompartilhados', // Garante o carregamento
+    ])->findOrFail($unidade);
 
-        $user = auth()->user();
-        $isAdmin = $user->isAdmin;
+    $user = auth()->user();
+    $isAdmin = $user->isAdmin;
 
-        return Inertia::render('Unidades/Show', [
-            'team' => $team,
-            'unidade' => $unidade,
-            'acessibilidade' => $unidade->acessibilidade,
-            'informacoes' => $unidade->informacoes,
-            'midias' => $unidade->midias,
-            'orgaos' => Orgao::all(),
-            'permissions' => [
-                'canUpdateTeam' => $user->hasTeamPermission($unidade->team, 'update'),
-                'isAdmin' => $isAdmin,
-                'canDeleteTeam' => $user->hasTeamPermission($unidade->team, 'delete'),
-            ],
-            'availableRoles' => config('roles.available_roles', []),
-            'userPermissions' => [
-                'canManageTeamMembers' => $user->hasTeamPermission($unidade->team, 'manage-members'),
-            ],
-        ]);
-    }
+    // Converte explicitamente para array, incluindo a relação
+    $unidadeData = $unidade->toArray();
+    $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray(); // Força a inclusão
+
+    return Inertia::render('Unidades/Show', [
+        'team' => $team,
+        'unidade' => $unidadeData,
+        'acessibilidade' => $unidade->acessibilidade ? $unidade->acessibilidade->toArray() : null,
+        'informacoes' => $unidade->informacoes ? $unidade->informacoes->toArray() : null,
+        'midias' => $unidade->midias->toArray(),
+        'orgaos' => Orgao::all()->toArray(),
+        'permissions' => [
+            'canUpdateTeam' => $user->hasTeamPermission($unidade->team, 'update'),
+            'isAdmin' => $isAdmin,
+            'canDeleteTeam' => $user->hasTeamPermission($unidade->team, 'delete'),
+        ],
+        'availableRoles' => config('roles.available_roles', []),
+        'userPermissions' => [
+            'canManageTeamMembers' => $user->hasTeamPermission($unidade->team, 'manage-members'),
+        ],
+    ]);
+}
 
     public function saveDadosGerais(Request $request)
     {
@@ -111,7 +117,8 @@ class UnidadeController extends Controller
             'longitude' => 'required|numeric',
             'tipo_judicial' => 'required|string|in:proprio,locado,cedido',
             'imovel_compartilhado_orgao' => 'boolean',
-            'imovel_compartilhado_orgao_id' => 'nullable|exists:orgaos,id',
+            'imovel_compartilhado_orgao_ids' => 'nullable|array',
+            'imovel_compartilhado_orgao_ids.*' => 'exists:orgaos,id',
             'observacoes' => 'nullable|string',
             'numero_medidor_agua' => 'nullable|string|max:50',
             'numero_medidor_energia' => 'nullable|string|max:50',
@@ -123,10 +130,19 @@ class UnidadeController extends Controller
         }
 
         // Criar ou atualizar a unidade
+        $unidadeData = $validated;
+        unset($unidadeData['imovel_compartilhado_orgao_ids']); // Remover IDs de órgãos do array de dados da unidade
         $unidade = Unidade::updateOrCreate(
             ['team_id' => $request->team_id],
-            array_merge($validated, ['is_draft' => true])
+            array_merge($unidadeData, ['is_draft' => true])
         );
+
+        // Sincronizar órgãos compartilhados
+        if ($validated['imovel_compartilhado_orgao'] && !empty($validated['imovel_compartilhado_orgao_ids'])) {
+            $unidade->orgaosCompartilhados()->sync($validated['imovel_compartilhado_orgao_ids']);
+        } else {
+            $unidade->orgaosCompartilhados()->detach(); // Remove todos os órgãos se a opção estiver desmarcada
+        }
 
         // Atualizar o status da unidade para pendente de avaliação
         $unidade->update(['status' => 'pendente_avaliacao']);
@@ -152,7 +168,7 @@ class UnidadeController extends Controller
         // Encontrar a unidade
         $unidade = Unidade::findOrFail($validated['unidade_id']);
 
-        // Verificar permissão de atualização (incorporado do AcessibilidadeUnidadeController)
+        // Verificar permissão de atualização
         $team = Team::findOrFail($unidade->team_id);
         if (!auth()->user()->hasTeamPermission($team, 'update')) {
             return redirect()->back()->with('error', 'Você não tem permissão para atualizar esta unidade.');
@@ -175,7 +191,8 @@ class UnidadeController extends Controller
         // Redirecionar de volta com uma mensagem de sucesso
         return redirect()->back()->with('success', 'Informações de acessibilidade salvas com sucesso.');
     }
-        public function saveInformacoesEstruturais(Request $request)
+
+    public function saveInformacoesEstruturais(Request $request)
     {
         $validated = $request->validate([
             'unidade_id' => 'required|exists:unidades,id',
@@ -192,13 +209,13 @@ class UnidadeController extends Controller
             'tipo_imovel' => 'nullable|string|max:255',
             'responsavel_locacao_cessao' => 'nullable|string|max:255',
             'escritura_publica' => 'nullable|string|max:255',
-            'qtd_pavimentos' => 'nullable|numeric', // Ajustado para numeric (aceita string que pode ser convertida)
+            'qtd_pavimentos' => 'nullable|numeric',
             'cercado_muros' => 'boolean',
             'estacionamento_interno' => 'boolean',
             'estacionamento_externo' => 'boolean',
-            'recuo_frontal' => 'nullable|numeric',  // Ajustado para numeric
-            'recuo_lateral' => 'nullable|numeric',  // Ajustado para numeric
-            'recuo_fundos' => 'nullable|numeric',   // Ajustado para numeric
+            'recuo_frontal' => 'nullable|numeric',
+            'recuo_lateral' => 'nullable|numeric',
+            'recuo_fundos' => 'nullable|numeric',
             'qtd_recepcao' => 'nullable|integer',
             'qtd_wc_publico' => 'nullable|integer',
             'qtd_gabinetes' => 'nullable|integer',
@@ -211,7 +228,7 @@ class UnidadeController extends Controller
             'qtd_celas_carceragem' => 'nullable|integer',
             'qtd_sala_identificacao' => 'nullable|integer',
             'qtd_cozinha' => 'nullable|integer',
-            'qtd/area_servico' => 'nullable|integer',
+            'qtd_area_servico' => 'nullable|integer',
             'qtd_deposito_apreensao' => 'nullable|integer',
             'tomadas_suficientes' => 'boolean',
             'luminarias_suficientes' => 'boolean',

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Orgao extends Model
 {
@@ -30,9 +30,10 @@ class Orgao extends Model
     /**
      * Obtém unidades que compartilham imóvel com este órgão.
      */
-    public function unidadesCompartilhadas(): HasMany
+    public function unidadesCompartilhadas(): BelongsToMany
     {
-        return $this->hasMany(Unidade::class, 'imovel_compartilhado_orgao_id');
+        return $this->belongsToMany(Unidade::class, 'orgao_unidade')
+                    ->withTimestamps();
     }
 
     /**

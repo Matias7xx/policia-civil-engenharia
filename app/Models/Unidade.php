@@ -48,7 +48,6 @@ class Unidade extends Model
         'tipo_judicial',
         'status',
         'imovel_compartilhado_orgao',
-        'imovel_compartilhado_orgao_id',
         'observacoes',
         'numero_medidor_agua',
         'numero_medidor_energia',
@@ -72,11 +71,12 @@ class Unidade extends Model
     ];
 
     /**
-     * Obtém o órgão com o qual o imóvel é compartilhado.
+     * Obtém os órgãos com os quais o imóvel é compartilhado.
      */
-    public function orgaoCompartilhado(): BelongsTo
+    public function orgaosCompartilhados(): BelongsToMany
     {
-        return $this->belongsTo(Orgao::class, 'imovel_compartilhado_orgao_id');
+        return $this->belongsToMany(Orgao::class, 'orgao_unidade')
+                    ->withTimestamps();
     }
 
     /**
@@ -257,18 +257,4 @@ class Unidade extends Model
     {
         return $this->team->users();
     }
-
-    /* Verificar se um usuário pertence à uma unidade
-     $unidade = Unidade::find($id);
-        $usuario = Auth::user();
-
-if ($unidade->usuarios->contains($usuario->id)) {
-    // O usuário pertence à unidade
-}   
-    */
-
-    /* Verificar unidades que o usuário pertence
-    $usuario = Auth::user();
-        $teams = $usuario->allTeams(); // Todos os times do usuário
-        $unidades = Unidade::whereIn('team_id', $teams->pluck('id'))->get(); */
 }
