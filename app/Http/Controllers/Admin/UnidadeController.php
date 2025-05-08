@@ -26,8 +26,9 @@ class UnidadeController extends Controller
             abort(403, 'Ação não autorizada.');
         }
 
-        // Iniciar a consulta base
-        $unidadesQuery = Unidade::with(['team:id,name', 'avaliacoes']);
+        // Iniciar a consulta base, filtrando apenas unidades com is_draft = false
+        $unidadesQuery = Unidade::with(['team:id,name', 'avaliacoes'])
+            ->where('is_draft', false);
 
         if ($request->has('search') && $request->search) {
             $searchTerms = array_filter(explode(' ', trim($request->search)));
@@ -87,6 +88,7 @@ class UnidadeController extends Controller
             ['key' => 'aprovada', 'name' => 'Aprovado'],
             ['key' => 'reprovada', 'name' => 'Reprovado'],
             ['key' => 'em_revisao', 'name' => 'Em Revisão'],
+            ['key' => '', 'name' => 'Sem Cadastro']
         ];
 
         $notaOptions = [
@@ -217,8 +219,8 @@ class UnidadeController extends Controller
         'cpf_cnpj' => $cleanedCpfCnpj,
         'telefone' => $cleanedTelefone,
         'valor_locacao' => $validated['valor_locacao'],
-        'data_inicio' => $validated['data_inicio'],
-        'data_fim' => $validated['data_fim'],
+        'data_inicio' => $validated['data_inicio'] . ' 12:00:00',
+        'data_fim' => $validated['data_fim'] ? $validated['data_fim'] . ' 12:00:00' : null,
     ]);
 
     if ($request->hasFile('anexo')) {
@@ -336,7 +338,7 @@ class UnidadeController extends Controller
         $unidade = Unidade::findOrFail($id);
 
         $validated = $request->validate([
-            'status' => 'required|in:pendente_avaliacao,aprovada,reprovada,em_revisao',
+            'status' => 'required|in:pendente_avaliacao,aprovada,reprovada,em_revisao,sem_cadastro',
             'rejection_reason' => 'required_if:status,reprovada|string|max:1000|nullable',
         ]);
 

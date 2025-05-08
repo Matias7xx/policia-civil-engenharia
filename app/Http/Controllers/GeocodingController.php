@@ -53,7 +53,6 @@ use Illuminate\Support\Facades\Cache;
             return response()->json($result);
         }
 
-        \Log::warning('Nenhum resultado encontrado para a consulta', ['query' => $query]);
         return response()->json(['error' => 'Nenhum resultado encontrado'], 200);
     }
 
@@ -61,29 +60,18 @@ use Illuminate\Support\Facades\Cache;
     {
         $lat = $request->query('lat');
         $lng = $request->query('lng');
-        \Log::info('Método reverse chamado', [
-            'lat' => $lat,
-            'lng' => $lng,
-            'lat_type' => gettype($lat),
-            'lng_type' => gettype($lng),
-            'lat_empty' => empty($lat),
-            'lng_empty' => empty($lng),
-        ]);
 
         if (empty($lat) || empty($lng)) {
-            \Log::warning('Parâmetros lat ou lng ausentes ou vazios', ['lat' => $lat, 'lng' => $lng]);
             return response()->json(['error' => 'Latitude e longitude são obrigatórios'], 400);
         }
 
         if (!is_numeric($lat) || !is_numeric($lng)) {
-            \Log::warning('Parâmetros lat ou lng não são numéricos', ['lat' => $lat, 'lng' => $lng]);
             return response()->json(['error' => 'Latitude e longitude devem ser numéricos'], 400);
         }
 
         $lat = floatval($lat);
         $lng = floatval($lng);
         if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
-            \Log::warning('Parâmetros lat ou lng fora do intervalo válido', ['lat' => $lat, 'lng' => $lng]);
             return response()->json(['error' => 'Latitude deve estar entre -90 e 90, longitude deve estar entre -180 e 180'], 400);
         }
 
@@ -109,7 +97,6 @@ use Illuminate\Support\Facades\Cache;
             }
         }
 
-        \Log::warning('Nenhum resultado encontrado para geocodificação reversa', ['lat' => $lat, 'lng' => $lng]);
         return response()->json(['error' => 'Nenhum resultado encontrado'], 200);
     }
 }

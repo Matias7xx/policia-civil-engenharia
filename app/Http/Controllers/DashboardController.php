@@ -21,9 +21,18 @@ class DashboardController extends Controller
 
         // Verificar se já existe uma unidade cadastrada (apenas se is_draft for false)
         $unidadeCadastrada = false;
+        $unidadeStatus = null;
+        $rejectionReason = null;
+        $isDraft = false;
+
         if ($user && $user->currentTeam) {
             $unidade = Unidade::where('team_id', $user->currentTeam->id)->first();
-            $unidadeCadastrada = $unidade && !$unidade->is_draft;
+            if ($unidade) {
+                $unidadeCadastrada = !$unidade->is_draft;
+                $unidadeStatus = $unidade->status;
+                $rejectionReason = $unidade->rejection_reason;
+                $isDraft = $unidade->is_draft; // Passando o valor de is_draft
+            }
         }
 
         // Dados para Super Administrador
@@ -37,7 +46,10 @@ class DashboardController extends Controller
                 'isServidor' => false,
                 'unidadesCount' => $unidadesCount,
                 'unidadesPendentes' => $unidadesPendentes,
-                'unidadeCadastrada' => $unidadeCadastrada, // Atualizado para refletir is_draft
+                'unidadeCadastrada' => $unidadeCadastrada,
+                'unidadeStatus' => $unidadeStatus,
+                'rejectionReason' => $rejectionReason,
+                'isDraft' => $isDraft,
             ]);
         }
         // Dados para Administrador
@@ -46,7 +58,10 @@ class DashboardController extends Controller
                 'isSuperAdmin' => false,
                 'isAdmin' => true,
                 'isServidor' => false,
-                'unidadeCadastrada' => $unidadeCadastrada, // Atualizado para refletir is_draft
+                'unidadeCadastrada' => $unidadeCadastrada,
+                'unidadeStatus' => $unidadeStatus,
+                'rejectionReason' => $rejectionReason,
+                'isDraft' => $isDraft,
             ]);
         }
         // Dados para Servidor
@@ -55,7 +70,10 @@ class DashboardController extends Controller
                 'isSuperAdmin' => false,
                 'isAdmin' => false,
                 'isServidor' => true,
-                'unidadeCadastrada' => $unidadeCadastrada, // Atualizado para refletir is_draft
+                'unidadeCadastrada' => $unidadeCadastrada,
+                'unidadeStatus' => $unidadeStatus,
+                'rejectionReason' => $rejectionReason,
+                'isDraft' => $isDraft,
             ]);
         }
     }

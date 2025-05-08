@@ -12,6 +12,14 @@ const props = defineProps({
     unidade: Object,
     midias: Array,
     permissions: Object,
+    isEditable: {
+        type: Boolean,
+        default: true
+    },
+    isNew: {
+        type: Boolean,
+        default: true
+    }
 });
 
 const emit = defineEmits(['saved']);
@@ -24,6 +32,12 @@ const previewImages = ref({});
 let isMounted = ref(true);
 const mensagemFeedback = ref('');
 const tipoFeedback = ref(''); // 'success', 'error', 'info'
+const midiasToRemove = ref([]);
+const midiasToReplace = ref({});
+
+const formattedMessage = computed(() => {
+  return mensagemFeedback.value.replace(/\(e mais \d+ erro[s]?\)/g, '').trim();
+});
 
 onMounted(async () => {
     try {
@@ -56,28 +70,41 @@ const form = useForm({
     unidade_id: props.unidade?.id || '',
     midia_files: {},
     midia_tipos: {},
+    midia_replace: {},
+    midia_remover: []
 });
 
 const handleFileChange = (midiaTipoId, event) => {
-    const files = Array.from(event.target.files);
-    if (files.length === 0) return;
+    // Pega apenas o primeiro arquivo selecionado
+    const file = event.target.files[0];
+    if (!file) return;
     
-    form.midia_files[midiaTipoId] = files;
+    // Armazena como array com um único item (para manter compatibilidade com o restante do código)
+    form.midia_files[midiaTipoId] = [file];
     form.midia_tipos[midiaTipoId] = midiaTipoId;
     
-    // Criar previews para imagens
-    files.forEach(file => {
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (!previewImages.value[midiaTipoId]) {
-                    previewImages.value[midiaTipoId] = [];
-                }
-                previewImages.value[midiaTipoId].push(e.target.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+    // Se não estiver no modo de criação, marca para substituição
+    if (!props.isNew) {
+        form.midia_replace[midiaTipoId] = true;
+        midiasToReplace.value[midiaTipoId] = true;
+    }
+    
+    // Limpa previews anteriores para este tipo
+    if (previewImages.value[midiaTipoId]) {
+        previewImages.value[midiaTipoId] = [];
+    }
+    
+    // Cria preview para a imagem
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (!previewImages.value[midiaTipoId]) {
+                previewImages.value[midiaTipoId] = [];
+            }
+            previewImages.value[midiaTipoId].push(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
 };
 
 const removeFile = (midiaTipoId, index) => {
@@ -93,48 +120,99 @@ const removeFile = (midiaTipoId, index) => {
         if (newFiles.length === 0) {
             delete form.midia_files[midiaTipoId];
             delete form.midia_tipos[midiaTipoId];
+            delete form.midia_replace[midiaTipoId];
+            delete midiasToReplace.value[midiaTipoId];
         }
     }
 };
 
-const saveMidiasAndFinalize = () => {
-    if (!props.permissions?.canUpdateTeam || props.unidade?.is_draft === false) {
-        mensagemFeedback.value = 'O cadastro está finalizado e não pode ser editado.';
+const removeMidia = (midia) => {
+    if (confirm('Tem certeza que deseja remover esta mídia?')) {
+        midiasToRemove.value.push(midia.id);
+        form.midia_remover.push(midia.id);
+    }
+};
+
+const saveOrFinalizeMidias = () => {
+    if (!props.permissions?.canUpdateTeam || !props.isEditable) {
+        mensagemFeedback.value = 'O cadastro não pode ser editado.';
         tipoFeedback.value = 'error';
-        emit('saved', null, mensagemFeedback.value);
+        emit('saved', mensagemFeedback.value);
         return;
     }
 
-    const requiredMidiaTipos = [
-        'foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos',
-        'foto_medidor_agua', 'foto_medidor_energia',
-    ];
-
-    const missingRequired = requiredMidiaTipos.filter(nome => {
-        const tipo = midiaTipos.value.find(t => t.nome === nome);
-        if (!tipo) return true;
+    const requiredTypes = ['foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
+                          'foto_medidor_agua', 'foto_medidor_energia'];
+    
+    // Obter IDs dos tipos obrigatórios
+    const requiredTypeIds = midiaTipos.value
+        .filter(tipo => requiredTypes.includes(tipo.nome))
+        .map(tipo => tipo.id);
+    
+    // Verifica se há algum tipo obrigatório sem mídia
+    const missingRequiredTypes = [];
+    
+    requiredTypeIds.forEach(tipoId => {
+        const tipoName = midiaTipos.value.find(t => t.id === tipoId)?.nome || `Tipo ${tipoId}`;
         
-        // Verifica se já tem midias deste tipo ou se há novos arquivos
-        const temMidiasExistentes = midiasPorTipo.value[tipo.id]?.length > 0;
-        const temNovosArquivos = form.midia_files[tipo.id]?.length > 0;
+        //Verifica se há mídias existentes deste tipo que NÃO estão marcadas para remoção
+        const existingMediaNotRemoved = midiasPorTipo.value[tipoId]?.length > 0;
         
-        return !temMidiasExistentes && !temNovosArquivos;
+        // Verificar se há novas mídias sendo enviadas para este tipo
+        const hasNewMedia = form.midia_files[tipoId]?.length > 0;
+        
+        // Verificar se as mídias existentes deste tipo estão marcadas para substituição
+        const willBeReplaced = midiasToReplace.value[tipoId] === true;
+        
+        // Se não existem mídias ou elas serão todas removidas/substituídas sem novas adições
+        const isMissing = (!existingMediaNotRemoved || willBeReplaced) && !hasNewMedia;
+        
+        if (isMissing) {
+            missingRequiredTypes.push(tipoName.replace('foto_', ''));
+        }
     });
+    
+    // Se houver tipos obrigatórios faltando, exibir mensagem e interromper o envio
+    if (missingRequiredTypes.length > 0) {
+        const tiposFormatados = missingRequiredTypes.map(tipo => {
+             // Formatação especial para medidores e laterais
+            if (tipo === 'medidor_agua') return 'Nº do medidor de Água';
+            if (tipo === 'medidor_energia') return 'Nº do medidor de Energia';
+            if (tipo === 'lateral_1') return 'Lateral Esquerda';
+            if (tipo === 'lateral_2') return 'Lateral Direita';
 
-    if (missingRequired.length > 0) {
-        const missingNomes = missingRequired.map(nome => {
-            const tipo = midiaTipos.value.find(t => t.nome === nome);
-            return tipo ? tipo.descricao || tipo.nome : nome;
+            // Formatar nomes dos tipos para melhor exibição (ex: foto_frente -> Frente)
+            return tipo.charAt(0).toUpperCase() + tipo.slice(1).replace(/_/g, ' ');
         });
         
-        mensagemFeedback.value = `Os seguintes tipos de mídia são obrigatórios: ${missingNomes.join(', ')}.`;
+         // Mensagem mais clara sobre o que está faltando
+        if (tiposFormatados.length === 1) {
+            mensagemFeedback.value = `É necessário incluir uma imagem para: ${tiposFormatados[0]}`;
+        } else {
+            mensagemFeedback.value = `É necessário incluir imagens para os seguintes campos: ${tiposFormatados.join(', ')}`;
+        }
         tipoFeedback.value = 'error';
-        emit('saved', null, mensagemFeedback.value);
+        emit('saved', mensagemFeedback.value);
         return;
-    }
+}
 
     const formData = new FormData();
     formData.append('unidade_id', form.unidade_id);
+
+    // Verificar se há pelo menos um arquivo a ser enviado
+if (Object.keys(form.midia_files).length === 0 && midiasToRemove.value.length === 0) {
+    mensagemFeedback.value = 'Por favor, inclua pelo menos uma imagem antes de salvar.';
+    tipoFeedback.value = 'error';
+    emit('saved', mensagemFeedback.value);
+    return;
+}
+
+    // Adicionar midias para remover
+    if (midiasToRemove.value.length > 0) {
+        midiasToRemove.value.forEach((id, index) => {
+            formData.append(`midia_remover[${index}]`, id);
+        });
+    }
 
     let fileIndex = 0;
     Object.entries(form.midia_files).forEach(([midiaTipoId, files]) => {
@@ -142,91 +220,139 @@ const saveMidiasAndFinalize = () => {
         files.forEach(file => {
             formData.append(`files[${fileIndex}]`, file);
             formData.append(`midia_tipos[${fileIndex}]`, midiaTipoId);
+            
+            if (midiasToReplace.value[midiaTipoId]) {
+                formData.append(`midia_replace[${fileIndex}]`, "1"); // Usando "1" para representar true
+            }
+            
             fileIndex++;
         });
     });
 
-    if (fileIndex === 0) {
-        mensagemFeedback.value = 'Nenhum arquivo novo foi selecionado.';
+    if (fileIndex === 0 && midiasToRemove.value.length === 0) {
+        // Não há arquivos para salvar nem remover
+        mensagemFeedback.value = 'Nenhuma alteração nas mídias foi realizada.';
         tipoFeedback.value = 'info';
-        
-        // Se não há novos arquivos mas todos os obrigatórios já estão cadastrados, finalizar mesmo assim
-        form.post(route('unidades.finalize', props.unidade.id), {
-            errorBag: 'finalizeUnidade',
-            preserveScroll: true,
-            onSuccess: () => {
-                if (!isMounted.value) return;
-                mensagemFeedback.value = 'Cadastro finalizado com sucesso!';
-                tipoFeedback.value = 'success';
-                emit('saved', null, mensagemFeedback.value);
-            },
-            onError: (errors) => {
-                if (!isMounted.value) return;
-                mensagemFeedback.value = 'Erro ao finalizar o cadastro: ' + (Object.values(errors).join(', ') || 'Verifique os dados.');
-                tipoFeedback.value = 'error';
-                emit('saved', null, mensagemFeedback.value);
-            },
-        });
+        emit('saved');
         return;
     }
     
-    mensagemFeedback.value = 'Enviando arquivos...';
+    mensagemFeedback.value = 'Processando alterações nas mídias...';
     tipoFeedback.value = 'info';
 
-    axios.post(route('midias.store'), formData, {
+    // Usar rota específica para modo de edição se não for novo
+    const url = props.isNew ? route('midias.store') : route('midias.update', props.unidade.id);
+
+    axios.post(url, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            mensagemFeedback.value = `Enviando arquivos... ${percentCompleted}%`;
+            mensagemFeedback.value = `Processando... ${percentCompleted}%`;
         }
     })
     .then(response => {
         if (!isMounted.value) return;
         if (response.data.success) {
-            mensagemFeedback.value = 'Arquivos salvos! Finalizando cadastro...';
+            mensagemFeedback.value = props.isNew ? 'Mídias salvas com sucesso!' : 'Mídias atualizadas com sucesso!';
             tipoFeedback.value = 'success';
             
-            form.post(route('unidades.finalize', props.unidade.id), {
-                errorBag: 'finalizeUnidade',
-                preserveScroll: true,
-                onSuccess: () => {
-                    if (!isMounted.value) return;
-                    mensagemFeedback.value = 'Cadastro finalizado com sucesso!';
-                    tipoFeedback.value = 'success';
-                    emit('saved', null, mensagemFeedback.value);
-                    
-                    // Limpar os previews após o envio
-                    previewImages.value = {};
-                },
-                onError: (errors) => {
-                    if (!isMounted.value) return;
-                    mensagemFeedback.value = 'Erro ao finalizar o cadastro: ' + (Object.values(errors).join(', ') || 'Verifique os dados.');
-                    tipoFeedback.value = 'error';
-                    emit('saved', null, mensagemFeedback.value);
-                },
-            });
+            // Limpar midias para remover após sucesso
+            midiasToRemove.value = [];
+            midiasToReplace.value = {};
+            
+            // Se estiver no modo de criação e for um rascunho, finaliza o cadastro
+            if (props.isNew && props.unidade?.is_draft) {
+                mensagemFeedback.value = 'Mídias salvas! Finalizando cadastro...';
+                
+                form.post(route('unidades.finalize', props.unidade.id), {
+                    errorBag: 'finalizeUnidade',
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        if (!isMounted.value) return;
+                        mensagemFeedback.value = 'Cadastro finalizado com sucesso!';
+                        tipoFeedback.value = 'success';
+                        emit('saved');
+                        
+                        // Limpar os previews após o envio
+                        previewImages.value = {};
+                    },
+                    onError: (errors) => {
+                        if (!isMounted.value) return;
+                        mensagemFeedback.value = 'Erro ao finalizar o cadastro: ' + (Object.values(errors).join(', ') || 'Verifique os dados.');
+                        tipoFeedback.value = 'error';
+                        emit('saved', mensagemFeedback.value);
+                    },
+                });
+            } else {
+                // No modo de edição, apenas notifica sucesso
+                emit('saved');
+                
+                // Limpar os previews após o envio
+                previewImages.value = {};
+            }
         } else {
             mensagemFeedback.value = response.data.message || 'Erro ao salvar as mídias.';
             tipoFeedback.value = 'error';
-            emit('saved', null, mensagemFeedback.value);
+            emit('saved', mensagemFeedback.value);
         }
     })
     .catch(error => {
         if (!isMounted.value) return;
         mensagemFeedback.value = error.response?.data?.message || 'Erro ao salvar as mídias. Verifique os arquivos.';
         tipoFeedback.value = 'error';
-        emit('saved', null, mensagemFeedback.value);
+        emit('saved', mensagemFeedback.value);
     });
+};
+
+const formatarNomeTipoMidia = (nome) => {
+    // Casos específicos
+    if (nome === 'foto_medidor_agua') return 'Número do medidor de Água';
+    if (nome === 'foto_medidor_energia') return 'Número do medidor de Energia';
+    if (nome === 'foto_lateral_1') return 'Lateral Esquerda';
+    if (nome === 'foto_lateral_2') return 'Lateral Direita';
+    
+    // Formato padrão para outros tipos
+    // Remove o prefixo 'foto_' e substitui underscores por espaços
+    return nome.replace('foto_', '').replace(/_/g, ' ');
 };
 
 const midiasPorTipo = computed(() => {
     const grouped = {};
-    if (props.midias) {
+    
+    if (props.midias && Array.isArray(props.midias)) {
+        // Objeto para rastrear IDs já adicionados por tipo
+        const addedMidiaIds = {};
+        
         props.midias.forEach(midia => {
-            if (!grouped[midia.tipo.id]) grouped[midia.tipo.id] = [];
-            grouped[midia.tipo.id].push(midia);
+            // Pular mídias marcadas para remoção
+            if (midiasToRemove.value.includes(midia.id)) return;
+            
+            // Determinar o ID do tipo de mídia
+            let tipoId = null;
+            if (midia.midia_tipo_id) {
+                tipoId = midia.midia_tipo_id;
+            } else if (midia.midiaTipo && midia.midiaTipo.id) {
+                tipoId = midia.midiaTipo.id;
+            } else if (midia.tipo && midia.tipo.id) {
+                tipoId = midia.tipo.id;
+            }
+            
+            if (tipoId) {
+                // Inicializar o array para o tipo se necessário
+                if (!grouped[tipoId]) {
+                    grouped[tipoId] = [];
+                    addedMidiaIds[tipoId] = new Set();
+                }
+                
+                // Verificar se esta mídia já foi adicionada para este tipo
+                if (!addedMidiaIds[tipoId].has(midia.id)) {
+                    grouped[tipoId].push(midia);
+                    addedMidiaIds[tipoId].add(midia.id);
+                }
+            }
         });
     }
+    
     return grouped;
 });
 
@@ -253,18 +379,26 @@ const getTabelas = computed(() => {
     
     return Object.entries(tiposAgrupados);
 });
+
+// Determina o texto do botão com base no modo (criar/editar)
+const buttonText = computed(() => {
+    if (!props.isNew) {
+        return 'Salvar Alterações';
+    }
+    return 'Finalizar Cadastro';
+});
 </script>
 
 <template>
-    <FormSection @submitted="saveMidiasAndFinalize">
+    <FormSection @submitted="saveOrFinalizeMidias">
         <template #title>
             Mídias da Unidade
         </template>
 
         <template #description>
             <p>
-                Adicione fotos da unidade para cada tipo de mídia. 
-                <strong class="text-red-600">Os itens com * são obrigatórios.</strong>
+                {{ isNew ? 'Adicione' : 'Gerencie' }} fotos da unidade para cada tipo de mídia. 
+                <strong v-if="isNew" class="text-red-600">Os itens com * são obrigatórios.</strong>
             </p>
             <p class="mt-2 text-sm text-gray-600">
                 Formatos aceitos: JPG, PNG (máx. 5MB)
@@ -274,14 +408,14 @@ const getTabelas = computed(() => {
         <template #form>
             <div class="col-span-6">
                 <!-- Mensagem de feedback -->
-                <div v-if="mensagemFeedback" 
+                <div v-if="formattedMessage" 
                      class="mb-4 p-3 rounded-md text-sm"
                      :class="{
                         'bg-green-100 text-green-800': tipoFeedback === 'success',
                         'bg-red-100 text-red-800': tipoFeedback === 'error',
                         'bg-blue-100 text-blue-800': tipoFeedback === 'info'
                      }">
-                    {{ mensagemFeedback }}
+                    {{ formattedMessage }}
                 </div>
                 
                 <!-- Estado de carregamento -->
@@ -306,19 +440,33 @@ const getTabelas = computed(() => {
                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             <div v-for="midiaTipo in grupo[1]" :key="midiaTipo.id" 
                                  class="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
-                                <div class="flex justify-between items-start mb-2">
+                                 <div class="flex justify-between items-start mb-2">
                                     <InputLabel 
                                         :for="`file-${midiaTipo.id}`" 
-                                        :value="midiaTipo.nome" 
-                                        class="font-medium text-gray-800"
+                                        :value="formatarNomeTipoMidia(midiaTipo.nome)"
+                                        class="font-medium text-gray-800 capitalize"
                                     />
-                                    <span v-if="midiaTipo.isRequired" class="text-red-600 text-lg font-bold">*</span>
+                                    <div class="flex items-center">
+                                        <span v-if="midiaTipo.isRequired" 
+                                            class="text-red-600 text-lg font-bold ml-1"
+                                            :title="isNew ? 'Campo obrigatório para novo cadastro' : 'Campo obrigatório'">*</span>
+                                        
+                                        <!-- Indicador de status do campo -->
+                                        <span v-if="midiaTipo.isRequired" 
+                                            class="ml-2 text-xs px-2 py-1 rounded-full"
+                                            :class="{
+                                                'bg-green-100 text-green-800': midiasPorTipo[midiaTipo.id]?.length || form.midia_files[midiaTipo.id]?.length,
+                                                'bg-red-100 text-red-800': !midiasPorTipo[midiaTipo.id]?.length && !form.midia_files[midiaTipo.id]?.length
+                                            }">
+                                            {{ midiasPorTipo[midiaTipo.id]?.length || form.midia_files[midiaTipo.id]?.length ? 'OK' : 'Vazio' }}
+                                        </span>
+                                    </div>
                                 </div>
                                 
                                 <!-- Área de drop e upload -->
                                 <div 
                                     class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors duration-200 cursor-pointer mb-3"
-                                    :class="{ 'border-red-300': midiaTipo.isRequired && !midiasPorTipo[midiaTipo.id]?.length && !form.midia_files[midiaTipo.id]?.length }"
+                                    :class="{ 'border-red-300': isNew && midiaTipo.isRequired && !midiasPorTipo[midiaTipo.id]?.length && !form.midia_files[midiaTipo.id]?.length }"
                                     @click="$refs[`fileInput-${midiaTipo.id}`][0].click()"
                                 >
                                     <input
@@ -327,8 +475,7 @@ const getTabelas = computed(() => {
                                         type="file"
                                         accept="image/*"
                                         class="hidden"
-                                        multiple
-                                        :disabled="!permissions?.canUpdateTeam || props.unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || !isEditable"
                                         @change="handleFileChange(midiaTipo.id, $event)"
                                     />
                                     
@@ -336,7 +483,7 @@ const getTabelas = computed(() => {
                                         <svg class="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                         </svg>
-                                        <p class="text-sm text-gray-600">Clique para selecionar ou arraste arquivos aqui</p>
+                                        <p class="text-sm text-gray-600">Clique para selecionar uma foto</p>
                                         <p class="text-xs text-gray-500 mt-1">JPG, PNG até 5MB</p>
                                     </div>
                                 </div>
@@ -345,7 +492,12 @@ const getTabelas = computed(() => {
                                 
                                 <!-- Previews de imagens a serem enviadas -->
                                 <div v-if="previewImages[midiaTipo.id]?.length" class="mt-3">
-                                    <p class="text-sm font-medium text-gray-700 mb-2">Novas imagens selecionadas:</p>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <p class="text-sm font-medium text-gray-700">Novas imagens selecionadas:</p>
+                                        <div v-if="!isNew && midiasPorTipo[midiaTipo.id]?.length" class="flex items-center">
+                                            <span class="text-xs text-red-500 mr-1">Substituirá as existentes</span>
+                                        </div>
+                                    </div>
                                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                         <div 
                                             v-for="(preview, idx) in previewImages[midiaTipo.id]" 
@@ -378,7 +530,12 @@ const getTabelas = computed(() => {
                                 
                                 <!-- Mídias já cadastradas -->
                                 <div v-if="midiasPorTipo[midiaTipo.id]?.length" class="mt-3">
-                                    <p class="text-sm font-medium text-gray-700 mb-2">Imagens já cadastradas:</p>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <p class="text-sm font-medium text-gray-700">Imagens já cadastradas:</p>
+                                        <p v-if="!isNew && previewImages[midiaTipo.id]?.length" class="text-xs text-orange-500">
+                                            Será substituída
+                                        </p>
+                                    </div>
                                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                         <div 
                                             v-for="midia in midiasPorTipo[midiaTipo.id]" 
@@ -386,13 +543,24 @@ const getTabelas = computed(() => {
                                             class="relative group"
                                         >
                                             <img
-                                                v-if="midia.is_imagem"
+                                                v-if="midia.is_imagem !== false"
                                                 :src="midia.url"
                                                 :alt="`${midiaTipo.nome} - ${midia.id}`"
                                                 class="h-24 w-full object-cover rounded border border-gray-200"
                                                 @click="window.open(midia.url, '_blank')"
                                             />
-                                            <p class="text-xs text-gray-500 mt-1">{{ midia.tamanho_formatado }}</p>
+                                            <!-- Botão para remover mídia existente -->
+                                            <button 
+                                                v-if="permissions?.canUpdateTeam && isEditable && !isNew"
+                                                type="button"
+                                                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                                @click.prevent="removeMidia(midia)"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                            <p class="text-xs text-gray-500 mt-1">{{ midia.tamanho_formatado || getFileSize(midia.tamanho || 0) }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -403,17 +571,32 @@ const getTabelas = computed(() => {
             </div>
         </template>
 
-        <template v-if="permissions?.canUpdateTeam && props.unidade?.is_draft" #actions>
-            <ActionMessage :on="form.recentlySuccessful" class="me-3">
-                Salvo.
-            </ActionMessage>
+        <template v-if="permissions?.canUpdateTeam && isEditable" #actions>
+            <div class="flex items-center">
+        <!-- Mensagem de sucesso melhorada -->
+        <div v-if="tipoFeedback === 'success'" 
+             class="mr-4 inline-flex items-center px-3 py-1 rounded-md bg-green-100 text-green-800 text-sm animate-fade-in">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>Alterações salvas com sucesso</span>
+        </div>
+        
+        <!-- Mensagem de erro -->
+        <div v-else-if="tipoFeedback === 'error'" 
+             class="mr-4 inline-flex items-center px-3 py-1 rounded-md bg-red-100 text-red-800 text-sm animate-fade-in">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+            <span>{{ formattedMessage }}</span>
+        </div>
 
             <PrimaryButton 
                 :class="{ 'opacity-25': form.processing }" 
                 :disabled="form.processing"
                 color="gold"
             >
-                <span v-if="!form.processing">Finalizar Cadastro</span>
+                <span v-if="!form.processing">{{ buttonText }}</span>
                 <span v-else class="flex items-center">
                     <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -422,6 +605,7 @@ const getTabelas = computed(() => {
                     Processando...
                 </span>
             </PrimaryButton>
+            </div>
         </template>
     </FormSection>
 </template>
@@ -468,5 +652,9 @@ img {
 
 img:hover {
     transform: scale(1.05);
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
 }
 </style>

@@ -5,9 +5,9 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\Team;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Jetstream\Jetstream;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class UserSeeder extends Seeder
 {
@@ -16,83 +16,79 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Criar usuário superadmin
-        $superadmin = User::create([
-            'name' => 'Super Administrador',
-            'email' => 'superadmin@example.com',
-            'password' => Hash::make('password'),
-        ]);
+        // Iniciar transação para garantir consistência
+        DB::transaction(function () {
+            // Criar usuário superadmin
+            $superadmin = User::firstOrCreate(
+                ['email' => 'superadmin@example.com'],
+                [
+                    'name' => 'Super Administrador',
+                    'password' => Hash::make('password'),
+                ]
+            );
 
-        // Criar time pessoal para o superadmin
-        $superadminTeam = Team::forceCreate([
-            'user_id' => $superadmin->id,
-            'name' => 'Engenharia',
-            'personal_team' => true,
-        ]);
+            // Criar time pessoal para o superadmin
+            $superadminTeam = Team::firstOrCreate(
+                ['name' => 'Engenharia', 'user_id' => $superadmin->id],
+                [
+                    'user_id' => $superadmin->id,
+                    'personal_team' => true,
+                ]
+            );
 
-        // Associar superadmin ao time
-        $superadmin->ownedTeams()->save($superadminTeam);
-        $superadmin->current_team_id = $superadminTeam->id;
-        $superadmin->save();
-
-        // Definir role "superadmin" para o super administrador
-        DB::table('team_user')
-            ->where('team_id', $superadminTeam->id)
-            ->where('user_id', $superadmin->id)
-            ->update(['role' => 'superadmin']);
-        
-        // Criar usuário admin
-        $admin = User::create([
-            'name' => 'Administrador',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-        ]);
-
-        // Criar time pessoal para o admin
-        $adminTeam = Team::forceCreate([
-            'user_id' => $admin->id,
-            'name' => 'Delegacia Central',
-            'personal_team' => true,
-        ]);
-
-        // Associar admin ao time
-        $admin->ownedTeams()->save($adminTeam);
-        $admin->current_team_id = $adminTeam->id;
-        $admin->save();
-
-        // Definir role "admin" para o admin
-        DB::table('team_user')
-            ->where('team_id', $adminTeam->id)
-            ->where('user_id', $admin->id)
-            ->update(['role' => 'admin']);
-
-        // Criar usuário servidor
-        $servidor = User::create([
-            'name' => 'Servidor',
-            'email' => 'servidor@example.com',
-            'password' => Hash::make('password'),
-        ]);
-
-        // Criar time pessoal para o servidor
-        $servidorTeam = Team::forceCreate([
-            'user_id' => $servidor->id,
-            'name' => 'Delegacia Regional',
-            'personal_team' => true,
-        ]);
-
-        // Associar servidor ao time
-        $servidor->ownedTeams()->save($servidorTeam);
-        $servidor->current_team_id = $servidorTeam->id;
-        $servidor->save();
-
-        // Definir role "servidor" para o servidor
-        DB::table('team_user')
-            ->where('team_id', $servidorTeam->id)
-            ->where('user_id', $servidor->id)
-            ->update(['role' => 'servidor']);
-
+            // Associar superadmin ao time pessoal com papel 'superadmin'
+            $superadmin->ownedTeams()->save($superadminTeam);
+            $superadmin->current_team_id = $superadminTeam->id;
             $superadmin->teams()->sync([$superadminTeam->id => ['role' => 'superadmin']]);
-            $admin->teams()->sync([$adminTeam->id => ['role' => 'admin']]);
-            $servidor->teams()->sync([$servidorTeam->id => ['role' => 'servidor']]);
+            $superadmin->save();
+
+            // Criar times compartilhados, com superadmin como owner
+            $teams = [
+                ['name' => 'RH', 'personal_team' => false],
+                ['name' => 'Financeiro', 'personal_team' => false],
+            ];
+
+            $teamIds = [];
+            foreach ($teams as $teamData) {
+                $team = Team::firstOrCreate(
+                    ['name' => $teamData['name'], 'user_id' => $superadmin->id],
+                    [
+                        'user_id' => $superadmin->id,
+                        'personal_team' => $teamData['personal_team'],
+                    ]
+                );
+                $teamIds[$teamData['name']] = $team->id;
+            }
+
+            // Definir usuários para os times RH e Financeiro, todos com role 'admin'
+            $rhUsers =
+                [
+                    ['name' => 'RH Admin 1', 'email' => 'rh_admin1@example.com', 'team' => 'RH'],
+                    ['name' => 'RH Admin 2', 'email' => 'rh_admin2@example.com', 'team' => 'RH'],
+                    ['name' => 'RH Admin 3', 'email' => 'rh_admin3@example.com', 'team' => 'RH'],
+                    ['name' => 'Financeiro Admin 1', 'email' => 'fin_admin1@example.com', 'team' => 'Financeiro'],
+                    ['name' => 'Financeiro Admin 2', 'email' => 'fin_admin2@example.com', 'team' => 'Financeiro'],
+                    ['name' => 'Financeiro Admin 3', 'email' => 'fin_admin3@example.com', 'team' => 'Financeiro'],
+                ];
+
+            // Criar e associar usuários aos times
+            foreach ($rhUsers as $rhUserData) {
+                $user = User::firstOrCreate(
+                    ['email' => $rhUserData['email']],
+                    [
+                        'name' => $rhUserData['name'],
+                        'password' => 'password',
+                    ]
+                );
+
+                // Associar usuário ao time especificado com role 'admin'
+                $teamId = $teamIds[$rhUserData['team']];
+                $user->teams()->sync([$teamId => ['role' => 'admin']]);
+                
+                // Definir o time como o atual do usuário
+                $user->current_team_id = $teamId;
+                $user->save();
+            }
+        });
     }
 }

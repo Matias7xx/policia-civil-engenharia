@@ -7,7 +7,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const emit = defineEmits(['saved']);
 const isLoading = ref(false);
@@ -37,7 +37,7 @@ const form = useForm({
 
 const saveAcessibilidade = () => {
     if (!unidadeId) {
-        emit('saved', null, 'ID da unidade inválido.');
+        emit('saved', 'ID da unidade inválido.');
         return;
     }
 
@@ -48,11 +48,11 @@ const saveAcessibilidade = () => {
         preserveScroll: true,
         onSuccess: () => {
             isLoading.value = false;
-            emit('saved', 'informacoes');
+            emit('saved'); // Emite apenas 'saved' para sucesso, sem forçar transição de aba
         },
         onError: (errors) => {
             isLoading.value = false;
-            emit('saved', null, 'Erro ao salvar os dados de acessibilidade.');
+            emit('saved', 'Erro ao salvar os dados de acessibilidade.');
         },
     });
 };
@@ -65,6 +65,13 @@ const checkOptions = [
     { id: 'elevador', label: 'Elevador', description: 'Elevador para acesso a andares superiores' },
     { id: 'sinalizacao_braile', label: 'Sinalização em Braille', description: 'Sinalizações em Braille para deficientes visuais' }
 ];
+
+const buttonText = computed(() => {
+    if (props.isNew) {
+        return 'Salvar Alterações';
+    }
+    return 'Salvar e Continuar';
+});
 </script>
 
 <template>
@@ -142,11 +149,12 @@ const checkOptions = [
                     <PrimaryButton
                         :class="{ 'opacity-25': form.processing, 'bg-[#bea55a] hover:bg-[#d4bf7a]': !form.processing }"
                         :disabled="form.processing"
+                        color="gold"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <svg v-if="unidade?.is_draft === true" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
-                        Salvar e Continuar
+                        {{ buttonText }}
                     </PrimaryButton>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, computed } from 'vue';
 import ActionMessage from '@/Components/ActionMessage.vue';
 import FormSection from '@/Components/FormSection.vue';
 import InputError from '@/Components/InputError.vue';
@@ -105,7 +105,6 @@ const saveInformacoesEstruturais = () => {
     // Campos obrigatórios
     const requiredFields = {
         pavimentacao_rua: 'A pavimentação da rua é obrigatória.',
-        /* padrao_energia: 'O padrão de energia é obrigatório.' */
     };
     
     Object.entries(requiredFields).forEach(([field, message]) => {
@@ -120,6 +119,7 @@ const saveInformacoesEstruturais = () => {
         if (firstErrorField) {
             firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+        emit('saved', 'Verifique os campos obrigatórios.');
         return;
     }
 
@@ -127,10 +127,10 @@ const saveInformacoesEstruturais = () => {
         errorBag: 'saveInformacoesEstruturais',
         preserveScroll: true,
         onSuccess: () => {
-            emit('saved', 'midias'); // Passar a próxima aba
+            emit('saved'); // Emite apenas 'saved' para sucesso, sem forçar transição de aba
         },
         onError: (errors) => {
-            emit('saved', null, 'Erro ao salvar as informações estruturais. Verifique os campos.');
+            emit('saved', 'Erro ao salvar as informações estruturais. Verifique os campos.');
             
             // Rola até o primeiro erro
             setTimeout(() => {
@@ -159,6 +159,13 @@ const tiposPavimentacao = [
     { value: 'cascalho', label: 'Cascalho' },
     { value: 'outro', label: 'Outro' }
 ];
+
+const buttonText = computed(() => {
+    if (props.isNew) {
+        return 'Salvar Alterações';
+    }
+    return 'Salvar e Continuar';
+});
 </script>
 
 <template>
@@ -212,7 +219,7 @@ const tiposPavimentacao = [
                                 v-model="form.pavimentacao_rua"
                                 :options="tiposPavimentacao"
                                 class="mt-1 block w-full"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             >
                                 <option value="">Selecione o tipo</option>
                             </SelectInput>
@@ -227,7 +234,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Ex: Monofásico/Bifásico/Trifásico"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputError :message="form.errors.padrao_energia" class="mt-1 text-xs" />
                         </div>
@@ -240,7 +247,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Descreva se houver"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputError :message="form.errors.subestacao" class="mt-1 text-xs" />
                         </div>
@@ -253,7 +260,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Descreva se houver"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputError :message="form.errors.gerador_energia" class="mt-1 text-xs" />
                         </div>
@@ -266,7 +273,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Sim/Não/Especificações"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputError :message="form.errors.para_raio" class="mt-1 text-xs" />
                         </div>
@@ -279,7 +286,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Sim/Não/Especificações"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputError :message="form.errors.caixa_dagua" class="mt-1 text-xs" />
                         </div>
@@ -292,7 +299,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Possui/Não Possui"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputError :message="form.errors.internet_cabeada" class="mt-1 text-xs" />
                         </div>
@@ -305,7 +312,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Nome do provedor"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputError :message="form.errors.internet_provedor" class="mt-1 text-xs" />
                         </div>
@@ -318,7 +325,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 placeholder="Possui/Não Possui"
                                 class="mt-1 block w-full"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 @update:modelValue="methods.updateField('telefone_fixo', $event)"
                             />
                             <InputError :message="form.errors.telefone_fixo" class="mt-1 text-xs" />
@@ -332,7 +339,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 placeholder="Possui/Não Possui"
                                 class="mt-1 block w-full"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 @update:modelValue="methods.updateField('telefone_movel', $event)"
                             />
                             <InputError :message="form.errors.telefone_movel" class="mt-1 text-xs" />
@@ -453,7 +460,7 @@ const tiposPavimentacao = [
                                 step="1"
                                 class="mt-1 block w-full"
                                 placeholder="Ex: 1, 2, 3..."
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputError :message="form.errors.qtd_pavimentos" class="mt-1 text-xs" />
                         </div>
@@ -463,7 +470,7 @@ const tiposPavimentacao = [
                                 <Checkbox 
                                     id="cercado_muros" 
                                     v-model:checked="form.cercado_muros" 
-                                    :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                                 />
                                 <InputLabel for="cercado_muros" value="Cercado por Muros" class="ml-2 text-sm" />
                             </div>
@@ -472,7 +479,7 @@ const tiposPavimentacao = [
                                 <Checkbox 
                                     id="estacionamento_interno" 
                                     v-model:checked="form.estacionamento_interno" 
-                                    :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                                 />
                                 <InputLabel for="estacionamento_interno" value="Estacionamento Interno" class="ml-2 text-sm" />
                             </div>
@@ -481,7 +488,7 @@ const tiposPavimentacao = [
                                 <Checkbox 
                                     id="estacionamento_externo" 
                                     v-model:checked="form.estacionamento_externo" 
-                                    :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                                 />
                                 <InputLabel for="estacionamento_externo" value="Estacionamento Externo" class="ml-2 text-sm" />
                             </div>
@@ -498,7 +505,7 @@ const tiposPavimentacao = [
                                     min="0"
                                     class="mt-1 block w-full"
                                     placeholder="Ex: 3.5"
-                                    :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 />
                                 <InputError :message="form.errors.recuo_frontal" class="mt-1 text-xs" />
                             </div>
@@ -513,7 +520,7 @@ const tiposPavimentacao = [
                                     min="0"
                                     class="mt-1 block w-full"
                                     placeholder="Ex: 2.0"
-                                    :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 />
                                 <InputError :message="form.errors.recuo_lateral" class="mt-1 text-xs" />
                             </div>
@@ -528,7 +535,7 @@ const tiposPavimentacao = [
                                     min="0"
                                     class="mt-1 block w-full"
                                     placeholder="Ex: 4.0"
-                                    :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 />
                                 <InputError :message="form.errors.recuo_fundos" class="mt-1 text-xs" />
                             </div>
@@ -573,7 +580,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -586,7 +593,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -599,7 +606,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                             </div>
@@ -618,7 +625,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -631,7 +638,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -644,7 +651,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                             </div>
@@ -663,7 +670,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -676,7 +683,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -689,7 +696,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -702,7 +709,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                             </div>
@@ -721,7 +728,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -734,7 +741,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -747,7 +754,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                                 
@@ -760,7 +767,7 @@ const tiposPavimentacao = [
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
-                                        :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
                             </div>
@@ -796,7 +803,7 @@ const tiposPavimentacao = [
                             <Checkbox 
                                 id="tomadas_suficientes" 
                                 v-model:checked="form.tomadas_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
                             <InputLabel for="tomadas_suficientes" value="Tomadas Suficientes" class="ml-2 text-sm" />
                         </div>
@@ -805,7 +812,7 @@ const tiposPavimentacao = [
                             <Checkbox 
                                 id="luminarias_suficientes" 
                                 v-model:checked="form.luminarias_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
                             <InputLabel for="luminarias_suficientes" value="Luminárias Suficientes" class="ml-2 text-sm" />
                         </div>
@@ -814,7 +821,7 @@ const tiposPavimentacao = [
                             <Checkbox 
                                 id="pontos_rede_suficientes" 
                                 v-model:checked="form.pontos_rede_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
                             <InputLabel for="pontos_rede_suficientes" value="Pontos de Rede" class="ml-2 text-sm" />
                         </div>
@@ -823,7 +830,7 @@ const tiposPavimentacao = [
                             <Checkbox 
                                 id="pontos_telefone_suficientes" 
                                 v-model:checked="form.pontos_telefone_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
                             <InputLabel for="pontos_telefone_suficientes" value="Pontos de Telefone" class="ml-2 text-sm" />
                         </div>
@@ -832,7 +839,7 @@ const tiposPavimentacao = [
                             <Checkbox 
                                 id="pontos_ar_condicionado_suficientes" 
                                 v-model:checked="form.pontos_ar_condicionado_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
                             <InputLabel for="pontos_ar_condicionado_suficientes" value="Ar Condicionado" class="ml-2 text-sm" />
                         </div>
@@ -841,7 +848,7 @@ const tiposPavimentacao = [
                             <Checkbox 
                                 id="pontos_hidraulicos_suficientes" 
                                 v-model:checked="form.pontos_hidraulicos_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
                             <InputLabel for="pontos_hidraulicos_suficientes" value="Pontos Hidráulicos" class="ml-2 text-sm" />
                         </div>
@@ -850,7 +857,7 @@ const tiposPavimentacao = [
                             <Checkbox 
                                 id="pontos_sanitarios_suficientes" 
                                 v-model:checked="form.pontos_sanitarios_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false" 
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
                             <InputLabel for="pontos_sanitarios_suficientes" value="Pontos Sanitários" class="ml-2 text-sm" />
                         </div>
@@ -889,7 +896,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Cerâmica, porcelanato, etc"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
 
@@ -901,7 +908,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Revestimento das paredes"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
 
@@ -913,7 +920,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Alumínio, madeira, etc"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
 
@@ -925,7 +932,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Descrição das louças"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
 
@@ -937,7 +944,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Tipo de forro/laje"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
 
@@ -949,7 +956,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="telha, etc"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
 
@@ -961,7 +968,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Tipo de pintura"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
                     </div>
@@ -999,7 +1006,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Quantidade/Capacidade"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
 
@@ -1011,7 +1018,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Quantidade/Capacidade"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
 
@@ -1023,7 +1030,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Quantidade/Capacidade"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
 
@@ -1035,7 +1042,7 @@ const tiposPavimentacao = [
                                 type="text"
                                 class="mt-1 block w-full"
                                 placeholder="Sim/Não"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
                     </div>
@@ -1048,7 +1055,7 @@ const tiposPavimentacao = [
             </div>
         </template>
 
-        <template v-if="permissions?.canUpdateTeam && unidade?.is_draft !== false" #actions>
+        <template v-if="permissions?.canUpdateTeam && (!isNew || unidade?.is_draft === false)" #actions>
             <div class="flex items-center justify-between w-full">
                 <div>
                     <ActionMessage :on="form.recentlySuccessful" class="me-3">
@@ -1068,8 +1075,8 @@ const tiposPavimentacao = [
                         color="gold"
                     >
                         <span class="flex items-center">
-                            <span>Salvar e Continuar</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                            <span>{{ buttonText }}</span>
+                            <svg v-if="unidade?.is_draft === true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                             </svg>
                         </span>

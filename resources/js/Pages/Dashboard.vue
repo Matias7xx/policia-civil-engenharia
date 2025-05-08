@@ -7,6 +7,7 @@ import {
     ExclamationTriangleIcon, 
     CheckCircleIcon, 
     EyeIcon, 
+    PencilIcon,
     PlusIcon,
     ChartBarIcon,
     ClipboardDocumentListIcon,
@@ -37,6 +38,18 @@ const props = defineProps({
     unidadesPendentes: {
         type: Number,
         default: 0
+    },
+    unidadeStatus: {
+        type: String,
+        default: null
+    },
+    rejectionReason: {
+        type: String,
+        default: null
+    },
+    isDraft: { // Novo prop para is_draft
+        type: Boolean,
+        default: false
     }
 });
 
@@ -54,7 +67,7 @@ const welcomeMessage = computed(() => {
     }
 });
 
-// Determinar a rota e texto do link com base no papel e unidade
+// Determinar a rota e texto do link com base no papel, unidade e is_draft
 const getUnidadeLink = computed(() => {
     if (props.isAdmin || props.isServidor) {
         if (props.unidadeCadastrada) {
@@ -69,13 +82,61 @@ const getUnidadeLink = computed(() => {
             if (props.isAdmin) {
                 return {
                     href: route('unidades.create'),
-                    text: 'Cadastrar Minha Unidade',
+                    text: props.isDraft ? 'Continuar Cadastro da Unidade' : 'Cadastrar Minha Unidade',
                     icon: PlusIcon
                 };
             }
         }
     }
     return null;
+});
+
+// Novo computed para obter classe CSS e texto baseado no status
+const statusInfo = computed(() => {
+    switch(props.unidadeStatus) {
+        case 'pendente_avaliacao':
+            return {
+                class: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+                icon: ExclamationTriangleIcon,
+                iconColor: 'text-yellow-500',
+                title: 'Pendente de Avaliação',
+                message: 'Sua unidade está aguardando avaliação pela Engenharia.'
+            };
+        case 'aprovada':
+            return {
+                class: 'bg-green-50 text-green-800 border-green-200',
+                icon: CheckCircleIcon,
+                iconColor: 'text-green-500',
+                title: 'Aprovado',
+                message: 'Sua formulário foi aprovado pela Engenharia.'
+            };
+        case 'reprovada':
+            return {
+                class: 'bg-red-50 text-red-800 border-red-200',
+                icon: ExclamationTriangleIcon,
+                iconColor: 'text-red-500',
+                title: 'Reprovado',
+                message: props.rejectionReason 
+                    ? `Seu formulário foi reprovado pelo seguinte motivo: "${props.rejectionReason}". Por favor, faça as correções necessárias.` 
+                    : 'Seu formulário foi reprovado. Por favor, faça as correções necessárias.'
+            };
+        case 'em_revisao':
+            return {
+                class: 'bg-blue-50 text-blue-800 border-blue-200',
+                icon: PencilIcon,
+                iconColor: 'text-blue-500',
+                title: 'Em Revisão',
+                message: 'Seu formulário está em processo de revisão.'
+            };
+        default:
+            return {
+                class: 'bg-gray-50 text-gray-800 border-gray-200',
+                icon: BuildingOfficeIcon,
+                iconColor: 'text-gray-500',
+                title: 'Status não definido',
+                message: 'O status da sua unidade ainda não foi definido.'
+            };
+    }
 });
 </script>
 
@@ -165,7 +226,23 @@ const getUnidadeLink = computed(() => {
                             </div>
                         </div>
                         
-                        <div v-else class="p-5 rounded-lg bg-emerald-50 text-emerald-800 mb-6 flex items-start space-x-3 shadow-sm">
+                        <!-- Status da unidade, se estiver cadastrada -->
+                        <div v-if="unidadeCadastrada && unidadeStatus" 
+                            :class="['p-5 rounded-lg mb-6 flex items-start space-x-3 shadow-sm border', statusInfo.class]">
+                            <component :is="statusInfo.icon" :class="['h-6 w-6 flex-shrink-0 mt-0.5', statusInfo.iconColor]" />
+                            <div>
+                                <h3 class="font-semibold">Status: {{ statusInfo.title }}</h3>
+                                <p class="mt-1">{{ statusInfo.message }}</p>
+                                
+                                <!-- Se houver um motivo de reprovação e o status for 'reprovada' -->
+                                <div v-if="unidadeStatus === 'reprovada' && rejectionReason" class="mt-3 p-3 bg-red-100 rounded-md">
+                                    <h4 class="font-medium text-red-800 mb-1">Motivo da reprovação:</h4>
+                                    <p class="text-red-700 text-sm">{{ rejectionReason }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div v-else-if="unidadeCadastrada" class="p-5 rounded-lg bg-emerald-50 text-emerald-800 mb-6 flex items-start space-x-3 shadow-sm">
                             <CheckCircleIcon class="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
                             <div>
                                 <h3 class="font-semibold">Cadastro Realizado</h3>
@@ -173,16 +250,26 @@ const getUnidadeLink = computed(() => {
                             </div>
                         </div>
                         
-                        <div class="mt-8 flex justify-center">
+                        <div class="mt-8 flex justify-center space-x-4 flex-wrap">
                             <Link 
                                 v-if="getUnidadeLink" 
                                 ref="actionButton"
                                 :href="getUnidadeLink.href" 
-                                class="inline-flex items-center px-6 py-3 bg-[#bea55a] border border-transparent rounded-md font-semibold text-sm text-black uppercase tracking-wider hover:bg-[#d4bf7a] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#bea55a] active:bg-[#a89043] transition ease-in-out duration-300 transform hover:scale-105"
+                                class="inline-flex items-center px-6 py-3 bg-[#bea55a] border border-transparent rounded-md font-semibold text-sm text-black uppercase tracking-wider hover:bg-[#d4bf7a] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#bea55a] active:bg-[#a89043] transition ease-in-out duration-300 transform hover:scale-105 mb-4"
                             >
                                 <component :is="getUnidadeLink.icon" class="h-5 w-5 mr-2 -ml-1 text-black" />
                                 {{ getUnidadeLink.text }}
-                                <ArrowRightIcon class="h-4 w-4 ml-2 animate-bounce-x" />
+                            </Link>
+                            
+                            <!-- Botão para editar a unidade (apenas se o status não for 'aprovada') -->
+                            <Link 
+                                v-if="getEditUnidadeLink" 
+                                ref="editButton"
+                                :href="getEditUnidadeLink.href" 
+                                class="inline-flex items-center px-6 py-3 bg-gray-100 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 uppercase tracking-wider hover:bg-gray-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-300 active:bg-gray-300 transition ease-in-out duration-300 transform hover:scale-105 mb-4"
+                            >
+                                <component :is="getEditUnidadeLink.icon" class="h-5 w-5 mr-2 -ml-1 text-gray-700" />
+                                {{ getEditUnidadeLink.text }}
                             </Link>
                         </div>
                     </div>
@@ -190,13 +277,31 @@ const getUnidadeLink = computed(() => {
                     <!-- Conteúdo para Servidores -->
                     <div v-if="isServidor" class="mb-6">
                         <p class="text-lg mb-4 text-gray-700">Bem-vindo ao sistema de gerenciamento de unidades!</p>
-                        <div v-if="unidadeCadastrada" class="p-5 rounded-lg bg-[#f5e6b8] text-gray-800 mb-6 flex items-start space-x-3 shadow-sm">
+                        
+                        <!-- Status da unidade cadastrada -->
+                        <div v-if="unidadeCadastrada && unidadeStatus" 
+                            :class="['p-5 rounded-lg mb-6 flex items-start space-x-3 shadow-sm border', statusInfo.class]">
+                            <component :is="statusInfo.icon" :class="['h-6 w-6 flex-shrink-0 mt-0.5', statusInfo.iconColor]" />
+                            <div>
+                                <h3 class="font-semibold">Status: {{ statusInfo.title }}</h3>
+                                <p class="mt-1">{{ statusInfo.message }}</p>
+                                
+                                <!-- Se houver um motivo de reprovação e o status for 'reprovada', exibimos em destaque -->
+                                <div v-if="unidadeStatus === 'reprovada' && rejectionReason" class="mt-3 p-3 bg-red-100 rounded-md">
+                                    <h4 class="font-medium text-red-800 mb-1">Motivo da reprovação:</h4>
+                                    <p class="text-red-700 text-sm">{{ rejectionReason }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div v-else-if="unidadeCadastrada" class="p-5 rounded-lg bg-[#f5e6b8] text-gray-800 mb-6 flex items-start space-x-3 shadow-sm">
                             <CheckCircleIcon class="h-6 w-6 text-[#bea55a] flex-shrink-0 mt-0.5" />
                             <div>
                                 <h3 class="font-semibold">Cadastro Ativo</h3>
                                 <p class="mt-1">Sua unidade está cadastrada no sistema de censo anual.</p>
                             </div>
                         </div>
+                        
                         <div v-else class="p-5 rounded-lg bg-amber-50 text-amber-800 mb-6 flex items-start space-x-3 shadow-sm">
                             <ExclamationTriangleIcon class="h-6 w-6 text-[#bea55a] flex-shrink-0 mt-0.5" />
                             <div>
@@ -204,15 +309,26 @@ const getUnidadeLink = computed(() => {
                                 <p class="mt-1">Sua unidade ainda não foi cadastrada no sistema. Por favor, entre em contato com um administrador.</p>
                             </div>
                         </div>
-                        <div v-if="unidadeCadastrada" class="mt-8 flex justify-center">
+                        
+                        <div v-if="unidadeCadastrada" class="mt-8 flex justify-center space-x-4 flex-wrap">
                             <Link 
                                 ref="actionButton"
                                 :href="getUnidadeLink.href" 
-                                class="inline-flex items-center px-6 py-3 bg-[#bea55a] border border-transparent rounded-md font-semibold text-sm text-black uppercase tracking-wider hover:bg-[#d4bf7a] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#bea55a] active:bg-[#a89043] transition ease-in-out duration-300 transform hover:scale-105"
+                                class="inline-flex items-center px-6 py-3 bg-[#bea55a] border border-transparent rounded-md font-semibold text-sm text-black uppercase tracking-wider hover:bg-[#d4bf7a] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#bea55a] active:bg-[#a89043] transition ease-in-out duration-300 transform hover:scale-105 mb-4"
                             >
                                 <component :is="getUnidadeLink.icon" class="h-5 w-5 mr-2 -ml-1 text-black" />
                                 {{ getUnidadeLink.text }}
-                                <ArrowRightIcon class="h-4 w-4 ml-2 animate-bounce-x" />
+                            </Link>
+                            
+                            <!-- Botão para editar a unidade (apenas se o status não for 'aprovada') -->
+                            <Link 
+                                v-if="getEditUnidadeLink" 
+                                ref="editButton"
+                                :href="getEditUnidadeLink.href" 
+                                class="inline-flex items-center px-6 py-3 bg-gray-100 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 uppercase tracking-wider hover:bg-gray-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-300 active:bg-gray-300 transition ease-in-out duration-300 transform hover:scale-105 mb-4"
+                            >
+                                <component :is="getEditUnidadeLink.icon" class="h-5 w-5 mr-2 -ml-1 text-gray-700" />
+                                {{ getEditUnidadeLink.text }}
                             </Link>
                         </div>
                     </div>

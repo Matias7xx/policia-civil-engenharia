@@ -306,7 +306,7 @@ onBeforeUnmount(() => {
 
 const saveDadosGerais = () => {
     if (!props.isEditable) {
-        emit('saved', null, 'O cadastro está finalizado e não pode ser editado.');
+        emit('saved', 'O cadastro está finalizado e não pode ser editado.');
         return;
     }
 
@@ -325,7 +325,7 @@ const saveDadosGerais = () => {
     }
 
     if (errors.length > 0) {
-        emit('saved', null, errors.join(' '));
+        emit('saved', errors.join(' '));
         return;
     }
 
@@ -337,10 +337,10 @@ const saveDadosGerais = () => {
         errorBag: 'saveDadosGerais',
         preserveScroll: true,
         onSuccess: () => {
-            emit('saved', 'acessibilidade');
+            emit('saved'); // Apenas emite o evento sem forçar transição de aba
         },
         onError: (errors) => {
-            emit('saved', null, 'Erro ao salvar os dados. Verifique os campos.');
+            emit('saved', 'Erro ao salvar os dados. Verifique os campos.');
         },
     });
 };
@@ -778,9 +778,12 @@ const saveDadosGerais = () => {
                     <PrimaryButton
                         :class="{ 'opacity-25': form.processing }"
                         :disabled="form.processing"
-                        class="bg-[#bea55a] hover:bg-[#d4bf7a] text-white"
+                        color="gold"
                     >
                         Salvar e Continuar
+                        <svg v-if="unidade?.is_draft === true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
                     </PrimaryButton>
                 </div>
             </div>

@@ -9,10 +9,43 @@ import { usePage, Link } from '@inertiajs/vue3';
 
 // Inicializa o completedTabs com base nos dados existentes
 const initializeCompletedTabs = () => {
-    completedTabs.value['dados-gerais'] = !!props.unidade?.id; // Verifica se há dados preenchidos
-    completedTabs.value['acessibilidade'] = !!props.acessibilidade?.id; // verifica se acessibilidade foi salva
-    completedTabs.value['informacoes'] = !!props.informacoes?.id; // verifica se informações foi salva
-    completedTabs.value['midias'] = props.midias?.length > 0; // Verifica se há mídias
+    // Aba "Dados Gerais": Verifica se todos os campos obrigatórios estão preenchidos
+    const dadosGeraisCompleted = props.unidade?.id &&
+        props.unidade?.nome &&
+        props.unidade?.tipo_estrutural &&
+        props.unidade?.tipo_judicial &&
+        props.unidade?.cidade &&
+        props.unidade?.cep &&
+        props.unidade?.rua &&
+        props.unidade?.bairro &&
+        props.unidade?.latitude &&
+        props.unidade?.longitude;
+
+    completedTabs.value['dados-gerais'] = !!dadosGeraisCompleted;
+
+    // Aba "Acessibilidade": Verifica se todos os campos obrigatórios estão preenchidos
+    const acessibilidadeCompleted = props.acessibilidade?.id &&
+        typeof props.acessibilidade.rampa_acesso === 'boolean' &&
+        typeof props.acessibilidade.corrimao === 'boolean' &&
+        typeof props.acessibilidade.piso_tatil === 'boolean' &&
+        typeof props.acessibilidade.banheiro_adaptado === 'boolean' &&
+        typeof props.acessibilidade.elevador === 'boolean' &&
+        typeof props.acessibilidade.sinalizacao_braile === 'boolean';
+
+    completedTabs.value['acessibilidade'] = !!acessibilidadeCompleted;
+
+    // Aba "Estruturais": Verifica se os campos obrigatórios estão preenchidos
+    const informacoesCompleted = props.informacoes?.id &&
+        props.informacoes?.pavimentacao_rua;
+
+    completedTabs.value['informacoes'] = !!informacoesCompleted;
+
+    // Aba "Mídias": Verifica se as mídias obrigatórias estão presentes
+    const requiredMediaTypes = ['foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 'foto_medidor_agua', 'foto_medidor_energia'];
+    const existingMediaTypes = props.midias?.map(midia => midia.midia_tipo?.nome) || [];
+    const allRequiredMediaPresent = requiredMediaTypes.every(type => existingMediaTypes.includes(type));
+
+    completedTabs.value['midias'] = props.midias?.length > 0 && allRequiredMediaPresent;
 };
 
 onMounted(() => {
@@ -39,14 +72,22 @@ const props = defineProps({
     permissions: Object,
 });
 
-// Observar mensagens flash
+// Observar mensagens flash para erros ou sucessos
 watch(() => page.props.flash, (flash) => {
     if (flash.success) {
-        errorMessage.value = flash.success; // Exibe a mensagem de sucesso
-        setTimeout(() => { errorMessage.value = null }, 5000); // Desaparece após 5 segundos
+        errorMessage.value = flash.success;
+        setTimeout(() => { errorMessage.value = null }, 5000);
+        // Atualizar o estado de completedTabs com base nos dados mais recentes
+        initializeCompletedTabs();
+
+        if (activeTab.value === 'midias') {
+            completedTabs.value['midias'] = true;
+        }
     } else if (flash.error) {
-        errorMessage.value = flash.error; // Exibe a mensagem de erro
-        setTimeout(() => { errorMessage.value = null }, 5000); // Desaparece após 5 segundos
+        errorMessage.value = flash.error;
+        setTimeout(() => { errorMessage.value = null }, 5000);
+        // Se houver erro, garante que a aba atual não seja marcada como concluída
+        completedTabs.value[activeTab.value] = false;
     }
 });
 
@@ -78,14 +119,24 @@ const changeTab = (tabId) => {
 
 // Função para lidar com o evento 'saved' dos componentes filhos
 const handleSaved = (nextTab, tabId, error = null) => {
-    if (error) {
-        errorMessage.value = error;
+    if (error || page.props.flash?.error) {
+        errorMessage.value = error || page.props.flash?.error;
+        completedTabs.value[tabId] = false; // Não marca como concluído se houver erro
         return;
     }
-    if (tabId) {
-        completedTabs.value[tabId] = true;
+
+    // Se não houver erro, atualizamos o estado de completedTabs
+    initializeCompletedTabs();
+
+    // Definir próxima aba com base na aba atual
+    if (!nextTab && tabId) {
+        const tabOrder = ['dados-gerais', 'acessibilidade', 'informacoes', 'midias'];
+        const currentIndex = tabOrder.indexOf(tabId);
+        if (currentIndex < tabOrder.length - 1) {
+            nextTab = tabOrder[currentIndex + 1];
+        }
     }
-    if (nextTab) {
+    if (nextTab && canAccessTab(nextTab)) {
         activeTab.value = nextTab;
     }
     errorMessage.value = null;
@@ -93,16 +144,18 @@ const handleSaved = (nextTab, tabId, error = null) => {
 
 // Função para lidar com o salvamento final da aba Mídias
 const handleFinalSave = (nextTab, error = null) => {
-    if (error) {
-        errorMessage.value = error;
+    if (error || page.props.flash?.error) {
+        errorMessage.value = error || page.props.flash?.error;
+        completedTabs.value['midias'] = false;
         return;
     }
     if (!allTabsCompleted()) {
         errorMessage.value = 'Todas as abas devem ser preenchidas antes de finalizar o cadastro.';
+        completedTabs.value['midias'] = false;
         return;
     }
-    completedTabs.value['midias'] = true;
-    errorMessage.value = 'Cadastro finalizado com sucesso!';
+    // Não marcamos como concluído nem exibimos mensagem de sucesso aqui
+    // Isso será feito no watch de flash quando o backend confirmar o sucesso
 };
 
 // Verifica se todas as abas estão completas

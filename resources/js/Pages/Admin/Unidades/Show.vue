@@ -143,7 +143,6 @@ const submitStatus = () => {
             return;
         }
     }
-    console.log('Enviando status:', statusForm);
     statusForm.post(route('admin.unidades.updateStatus', props.unidade.id), {
         preserveState: true,
         preserveScroll: true,
@@ -199,14 +198,24 @@ const formatarTelefones = computed(() => {
 const formatarData = (data) => {
     if (!data) return 'Não informado';
     
+    // Se for uma string no formato ISO YYYY-MM-DD
     if (typeof data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data)) {
+        // Tratar explicitamente como data UTC para evitar problemas de fuso horário
         const [year, month, day] = data.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        // Criando um objeto Date com ano, mês (0-11) e dia
+        const date = new Date(Date.UTC(year, month - 1, day));
+        return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
     }
     
-    const date = new Date(data);
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    // Para outros formatos de data
+    try {
+        const date = new Date(data);
+        // Garantir que a data seja tratada como UTC
+        return new Date(date.getTime() + date.getTimezoneOffset() * 60000)
+            .toLocaleDateString('pt-BR');
+    } catch (e) {
+        return 'Data inválida';
+    }
 };
 
 // Função para salvar contrato de locação
@@ -218,17 +227,6 @@ const salvarContrato = () => {
     // Atualizar os valores no formulário
     contratoForm.cpf_cnpj = cleanedCpfCnpj;
     contratoForm.telefone = cleanedTelefone;
-
-    // Depuração: Verificar os dados antes de enviar
-    console.log('Dados do contrato antes de enviar:', {
-        nome_proprietario: contratoForm.nome_proprietario,
-        cpf_cnpj: contratoForm.cpf_cnpj,
-        telefone: contratoForm.telefone,
-        valor_locacao: contratoForm.valor_locacao,
-        data_inicio: contratoForm.data_inicio,
-        data_fim: contratoForm.data_fim,
-        anexo: contratoForm.anexo,
-    });
 
     contratoForm.post(route('admin.unidades.updateContrato', props.unidade.id), {
         preserveState: true,
@@ -403,6 +401,14 @@ const salvarCessao = () => {
                             <div v-if="unidade?.rejection_reason && unidade.status === 'reprovada'" class="mt-4">
                                 <div class="bg-red-50 p-3 rounded-md shadow-sm">
                                     <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Motivo da Reprovação:</dt>
+                                    <dd class="mt-1 whitespace-pre-line text-red-700">{{ unidade.rejection_reason }}</dd>
+                                </div>
+                            </div>
+
+                            <div v-if="unidade?.rejection_reason && unidade.status !== 'reprovada'" class="mt-4">
+                                <div class="bg-red-50 p-3 rounded-md shadow-sm">
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Essa Unidade já foi reprovada</dt>
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Motivo da última Reprovação:</dt>
                                     <dd class="mt-1 whitespace-pre-line text-red-700">{{ unidade.rejection_reason }}</dd>
                                 </div>
                             </div>
@@ -954,7 +960,8 @@ const salvarCessao = () => {
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Mídias da Unidade</h3>
                                 <div v-if="midias && midias.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     <div v-for="midia in midias" :key="midia.id" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">{{ midia.midiaTipo?.nome || 'Tipo Desconhecido' }}:</dt>
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">{{ midia.midia_tipo?.nome || 'Tipo Desconhecido' }}:</dt>
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">{{ (midia.tamanho / 1024).toFixed(2) }} KB</dt>
                                         <dd class="mt-1">
                                             <div v-if="isImage(midia)" class="relative">
                                                 <img :src="midia.url" @click="openModal(midia)" class="w-full h-32 object-cover rounded cursor-pointer" alt="Imagem da mídia" />
@@ -973,12 +980,41 @@ const salvarCessao = () => {
                         </div>
 
                         <!-- Modal de Visualização de Imagem -->
-                        <div v-if="isModalOpen" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-                            <div class="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full">
-                                <button @click="closeModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
-                                    <i class="fas fa-times"></i>
+                         <div 
+                            v-if="isModalOpen" 
+                            class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[1001]"
+                            @click="closeModal"
+                        >
+                            <div 
+                                class="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full relative"
+                                @click.stop
+                            >
+                                <button 
+                                    @click="closeModal" 
+                                    class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 bg-white rounded-full p-2 shadow-md flex items-center justify-center"
+                                    aria-label="Fechar"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
                                 </button>
-                                <img :src="selectedMedia.url" class="w-full h-auto max-h-[80vh] object-contain" :alt="selectedMedia.midiaTipo?.nome || 'Imagem'" />
+                                <img 
+                                    :src="selectedMedia.url" 
+                                    class="w-full h-auto max-h-[75vh] object-contain" 
+                                    :alt="selectedMedia.midia_tipo?.nome || 'Imagem'" 
+                                />
+                                <div class="mt-4 flex justify-end">
+                                    <a 
+                                        :href="selectedMedia.url" 
+                                        download 
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                        Baixar
+                                    </a>
+                                </div>
                             </div>
                         </div>
 

@@ -79,6 +79,7 @@ Route::middleware([
         Route::prefix('unidades')->name('unidades.')->group(function () {
             Route::get('/create/{teamId?}', [UnidadeController::class, 'create'])->name('create');
             Route::get('/{team}/{unidade}', [UnidadeController::class, 'show'])->name('show');
+            Route::get('/{team}/{unidade}/edit', [UnidadeController::class, 'edit'])->name('edit');
             Route::post('/dados-gerais', [UnidadeController::class, 'saveDadosGerais'])->name('saveDadosGerais');
             Route::post('/acessibilidade', [UnidadeController::class, 'saveAcessibilidade'])->name('saveAcessibilidade');
             Route::post('/informacoes-estruturais', [UnidadeController::class, 'saveInformacoesEstruturais'])->name('saveInformacoesEstruturais');
@@ -87,6 +88,8 @@ Route::middleware([
 
         // Gerenciamento de mídias
         Route::post('/midias/store', [MidiaController::class, 'store'])->name('midias.store');
+        Route::post('/midias/update/{unidade_id}', [MidiaController::class, 'update'])->name('midias.update');
+        Route::delete('/midias/{id}', [MidiaController::class, 'destroy'])->name('midias.destroy');
     });
 
     // Rotas de superadministrador

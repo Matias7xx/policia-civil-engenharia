@@ -187,6 +187,17 @@ const formatarTelefones = computed(() => {
                                 <div class="bg-red-50 p-3 rounded-md shadow-sm">
                                     <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Motivo da Reprovação:</dt>
                                     <dd class="mt-1 whitespace-pre-line text-red-700">{{ unidade.rejection_reason }}</dd>
+
+                                    <div class="flex justify-end">
+                                        <Link 
+                                            v-if="unidade?.status && unidade.status !== 'aprovada'" 
+                                            :href="route('unidades.edit', { team: unidade.team_id, unidade: unidade.id })" 
+                                            class="inline-flex items-center px-4 py-2 bg-black border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                        >
+                                            <i class="fas fa-edit mr-2"></i> Editar Informações
+                                        </Link>
+                                    </div>
+
                                 </div>
                             </div>
                         </div>

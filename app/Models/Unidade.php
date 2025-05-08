@@ -199,7 +199,7 @@ class Unidade extends Model
             case 'em_revisao':
                 return 'Em Revisão';
             default:
-                return 'Desconhecido';
+                return 'Sem Cadastro';
         }
     }
 
