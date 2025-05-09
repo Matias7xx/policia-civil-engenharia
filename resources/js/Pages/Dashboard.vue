@@ -57,13 +57,13 @@ const page = usePage();
 
 const welcomeMessage = computed(() => {
     if (props.isSuperAdmin) {
-        return "Bem-vindo ao Painel de Administração";
+        return "Bem-vindo(a) ao Painel de Administração";
     } else if (props.isAdmin) {
         return props.unidadeCadastrada 
-            ? "Obrigado por participar do Censo Anual da Engenharia" 
-            : "Bem-vindo ao Sistema de Censo Anual da Engenharia";
+            ? "Obrigado por participar do Censo de Imóveis da DIERI-PCPB" 
+            : "Bem-vindo(a) ao Censo de Imóveis da DIERI-PCPB";
     } else {
-        return "Bem-vindo ao Sistema de Censo Anual da Engenharia";
+        return "Bem-vindo(a) ao Censo de Imóveis da DIERI-PCPB";
     }
 });
 
@@ -149,10 +149,10 @@ const statusInfo = computed(() => {
                         <img src="/images/logo-pc-branca.png" alt="Logo da Polícia Civil" class="h-14 w-auto" />
                     </Link>
                     <div class="border-l border-white h-8 hidden sm:block"></div>
-                    <span class="text-white text-xl font-serif pl-2 border-b-2 border-[#bea55a] pb-1 hidden sm:inline-block">ENGENHARIA</span>
+                    <span class="text-white text-xl font-bold pl-2 border-b-2 border-[#bea55a] pb-1 hidden sm:inline-block">ENGENHARIA</span>
                 </div>
                 <div class="text-white text-sm font-medium hidden md:block">
-                    Sistema de Censo Anual <span class="bg-[#bea55a] text-black px-2 py-1 rounded">{{ new Date().getFullYear() }}</span>
+                    Censo de Imóveis <span class="bg-[#bea55a] text-black px-2 py-1 rounded">{{ new Date().getFullYear() }}</span>
                 </div>
             </div>
         </template>
@@ -207,6 +207,28 @@ const statusInfo = computed(() => {
                                 <BuildingOfficeIcon class="h-5 w-5 mr-2 -ml-1 text-black" />
                                 Gerenciar Unidades
                             </Link>
+                            
+                            <Link 
+                                ref="actionButton"
+                                :href="route('admin.users.index')" 
+                                class="inline-flex items-center justify-center px-6 py-3 bg-black border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-wider hover:bg-gray-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-black active:bg-gray-900 transition ease-in-out duration-150"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 mr-2 -ml-1">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                                </svg>
+                                Gerenciar Usuários
+                            </Link>
+                            
+                            <Link 
+                                ref="actionButton"
+                                :href="route('admin.orgaos.index')" 
+                                class="inline-flex items-center justify-center px-6 py-3 bg-gray-100 border border-transparent rounded-md font-semibold text-sm text-black uppercase tracking-wider hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-100 active:bg-gray-200 transition ease-in-out duration-150"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 mr-2 -ml-1">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+                                </svg>
+                                Gerenciar Órgãos
+                            </Link>
                         </div>
                     </div>
                     
@@ -215,14 +237,14 @@ const statusInfo = computed(() => {
                         <p class="text-lg mb-4 text-gray-700">
                             {{ unidadeCadastrada 
                                 ? "Sua unidade já está cadastrada no sistema!" 
-                                : "Você ainda não cadastrou sua unidade no censo anual."
+                                : "Sua unidade não está cadastrada no sistema."
                             }}
                         </p>
                         <div v-if="!unidadeCadastrada" class="p-5 rounded-lg bg-amber-50 text-amber-800 mb-6 flex items-start space-x-3 shadow-sm">
                             <ExclamationTriangleIcon class="h-6 w-6 text-[#bea55a] flex-shrink-0 mt-0.5" />
                             <div>
                                 <h3 class="font-semibold">Ação Necessária</h3>
-                                <p class="mt-1">Para participar do censo anual da engenharia, cadastre sua unidade no sistema.</p>
+                                <p class="mt-1">Para participar do censo, cadastre sua unidade.</p>
                             </div>
                         </div>
                         
@@ -276,7 +298,7 @@ const statusInfo = computed(() => {
                     
                     <!-- Conteúdo para Servidores -->
                     <div v-if="isServidor" class="mb-6">
-                        <p class="text-lg mb-4 text-gray-700">Bem-vindo ao sistema de gerenciamento de unidades!</p>
+                        <p class="text-lg mb-4 text-gray-700">Bem-vindo ao Censo de Imóveis!</p>
                         
                         <!-- Status da unidade cadastrada -->
                         <div v-if="unidadeCadastrada && unidadeStatus" 
@@ -298,7 +320,7 @@ const statusInfo = computed(() => {
                             <CheckCircleIcon class="h-6 w-6 text-[#bea55a] flex-shrink-0 mt-0.5" />
                             <div>
                                 <h3 class="font-semibold">Cadastro Ativo</h3>
-                                <p class="mt-1">Sua unidade está cadastrada no sistema de censo anual.</p>
+                                <p class="mt-1">Sua unidade está cadastrada no sistema.</p>
                             </div>
                         </div>
                         
@@ -341,7 +363,7 @@ const statusInfo = computed(() => {
                         Sobre o Sistema
                     </h2>
                     <p class="text-gray-700 mb-4">
-                        O Sistema de Censo Anual da Engenharia foi desenvolvido para coletar informações sobre as unidades policiais, 
+                        O Sistema de Censo de Imóveis da Diretoria de Engenharia e Recursos Imobiliarios foi desenvolvido para coletar informações sobre as unidades policiais, 
                         permitindo melhor planejamento de reformas e adequações estruturais.
                     </p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">

@@ -140,19 +140,19 @@ router.on('navigate', () => {
                                 <!-- Links apenas para SuperAdmin -->
                                 <template v-if="isSuperAdmin">
                                     <NavLink 
-                                        :href="route('admin.users.index')" 
-                                        :active="route().current('admin.users.index')"
-                                        class="text-black hover:text-white font-sans transition-colors duration-150 font-medium"
-                                    >
-                                        Usuários
-                                    </NavLink>
-                                
-                                    <NavLink 
                                         :href="route('admin.unidades.index')" 
                                         :active="route().current('admin.unidades.index')"
                                         class="text-black hover:text-white font-sans transition-colors duration-150 font-medium"
                                     >
                                         Unidades
+                                    </NavLink>
+                                    
+                                    <NavLink 
+                                        :href="route('admin.users.index')" 
+                                        :active="route().current('admin.users.index')"
+                                        class="text-black hover:text-white font-sans transition-colors duration-150 font-medium"
+                                    >
+                                        Usuários
                                     </NavLink>
 
                                     <NavLink 

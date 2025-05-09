@@ -366,9 +366,7 @@ const getTabelas = computed(() => {
     const tiposAgrupados = {};
     
     midiaTipos.value.forEach(tipo => {
-        const categoria = tipo.nome.includes('foto_') ? 'Fotos Externas' :
-                         tipo.nome.includes('recepcao') || tipo.nome.includes('wc') || tipo.nome.includes('gabinete') ? 'Áreas Internas' :
-                         'Outras Mídias';
+        const categoria = tipo.nome.includes('foto_') ? 'Área Externa' : 'Área Interna';
         
         if (!tiposAgrupados[categoria]) {
             tiposAgrupados[categoria] = [];

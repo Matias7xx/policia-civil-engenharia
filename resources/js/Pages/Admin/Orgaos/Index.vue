@@ -6,7 +6,7 @@ import DialogModal from '@/Components/DialogModal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { MagnifyingGlassIcon, FunnelIcon, PlusIcon, XMarkIcon, PencilIcon, TrashIcon, BuildingOfficeIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, FunnelIcon, PlusIcon, XMarkIcon, PencilIcon, TrashIcon, BuildingOffice2Icon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     orgaos: Object,
@@ -99,7 +99,7 @@ const closeModal = () => {
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                     <div class="bg-amber-50 border-b border-gray-200 px-6 py-4">
                         <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-                            <BuildingOfficeIcon class="h-6 w-6 text-[#bea55a] mr-2" />
+                            <BuildingOffice2Icon class="h-6 w-6 text-[#bea55a] mr-2" />
                             Lista de Órgãos
                         </h3>
                         <p class="mt-1 text-sm text-gray-600">

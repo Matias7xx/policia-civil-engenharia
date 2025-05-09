@@ -365,7 +365,7 @@ const salvarCessao = () => {
                         <!-- Status da unidade -->
                         <div v-if="unidade?.status" class="mb-6">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-medium text-gray-600">Status:</span>
+                                <span class="font-medium text-gray-600">Preenchimento do Formulário:</span>
                                 <span 
                                     class="px-3 py-1 rounded-full text-xs sm:text-sm font-medium shadow-sm"
                                     :class="getStatusLabel.class"

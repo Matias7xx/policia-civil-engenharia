@@ -92,7 +92,7 @@ const clearFilters = () => {
                                     id="search" 
                                     v-model="searchQuery" 
                                     type="text" 
-                                    placeholder="Buscar por nome, cidade, Unidade Gestora..." 
+                                    placeholder="Buscar por nome, cidade, unidade gestora..." 
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#bea55a] focus:ring-[#bea55a] text-base"
                                 />
                                 <div v-if="isLoading" class="absolute right-3 top-10 text-gray-500">
@@ -105,7 +105,7 @@ const clearFilters = () => {
                             <div class="md:w-64">
                                 <label for="status" class="block text-sm font-medium text-gray-700 flex items-center">
                                     <FunnelIcon class="h-5 w-5 text-gray-400 mr-2" />
-                                    Status
+                                    Status Formulário
                                 </label>
                                 <select 
                                     id="status" 
@@ -167,7 +167,7 @@ const clearFilters = () => {
                                                         Unidade Sub-Gestora
                                                     </th>
                                                     <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Status
+                                                        Status Formulário
                                                     </th>
                                                     <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                         Nota

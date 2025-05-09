@@ -193,9 +193,9 @@ class Unidade extends Model
             case 'pendente_avaliacao':
                 return 'Pendente de Avaliação';
             case 'aprovada':
-                return 'Aprovada';
+                return 'Aprovado';
             case 'reprovada':
-                return 'Reprovada';
+                return 'Reprovado';
             case 'em_revisao':
                 return 'Em Revisão';
             default:
