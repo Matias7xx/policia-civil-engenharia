@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Helpers\RoleHelper;
 use App\Models\Orgao;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class UnidadeController extends Controller
@@ -20,102 +21,142 @@ class UnidadeController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {
-        // Verificar se o usuário é SuperAdmin
-        if (!Auth::user()->isSuperAdmin) {
-            abort(403, 'Ação não autorizada.');
-        }
-
-        // Iniciar a consulta base, filtrando apenas unidades com is_draft = false
-        $unidadesQuery = Unidade::with(['team:id,name', 'avaliacoes'])
-            ->where('is_draft', false);
-
-        if ($request->has('search') && $request->search) {
-            $searchTerms = array_filter(explode(' ', trim($request->search)));
-            $unidadesQuery->where(function ($query) use ($searchTerms) {
-                foreach ($searchTerms as $term) {
-                    $query->where(function ($subQuery) use ($term) {
-                        $subQuery->whereRaw('LOWER(nome) LIKE ?', ['%' . strtolower($term) . '%'])
-                                 ->orWhereRaw('LOWER(cidade) LIKE ?', ['%' . strtolower($term) . '%'])
-                                 ->orWhereRaw('LOWER(srpc) LIKE ?', ['%' . strtolower($term) . '%'])
-                                 ->orWhereRaw('LOWER(dspc) LIKE ?', ['%' . strtolower($term) . '%']);
-                    });
-                }
-            });
-        }
-
-        if ($request->has('status') && $request->status !== 'todos') {
-            $unidadesQuery->where('status', $request->status);
-        }
-
-        if ($request->has('nota') && $request->nota !== 'todas') {
-            $unidadesQuery->whereHas('avaliacoes', function ($query) use ($request) {
-                $query->where('nota_geral', $request->nota);
-            });
-        }
-
-        // Paginar resultados (10 por página)
-        $unidades = $unidadesQuery->orderBy('status')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->through(function ($unidade) {
-                $avaliacao = $unidade->avaliacoes()->latest()->first();
-                return [
-                    'id' => $unidade->id,
-                    'nome' => $unidade->nome,
-                    'codigo' => $unidade->codigo,
-                    'cidade' => $unidade->cidade ?? 'N/A',
-                    'srpc' => $unidade->srpc ?? 'N/A',
-                    'dspc' => $unidade->dspc ?? 'N/A',
-                    'status' => $unidade->status,
-                    'status_formatado' => $unidade->status_formatado,
-                    'nota_geral' => $avaliacao ? $avaliacao->nota_geral : null,
-                    'created_at' => $unidade->created_at->format('d/m/Y'),
-                    'team' => $unidade->team ? [
-                        'id' => $unidade->team->id,
-                        'name' => $unidade->team->name,
-                    ] : null,
-                ];
-            });
-
-        // Preservar os parâmetros de consulta na paginação
-        $unidades->appends($request->all());
-
-        // Obter opções para os filtros
-        $statusOptions = [
-            ['key' => 'todos', 'name' => 'Todos'],
-            ['key' => 'pendente_avaliacao', 'name' => 'Pendente de Avaliação'],
-            ['key' => 'aprovada', 'name' => 'Aprovado'],
-            ['key' => 'reprovada', 'name' => 'Reprovado'],
-            ['key' => 'em_revisao', 'name' => 'Em Revisão'],
-            ['key' => '', 'name' => 'Sem Cadastro']
-        ];
-
-        $notaOptions = [
-            ['key' => 'todas', 'name' => 'Todas'],
-            ['key' => '10.0', 'name' => '10.0 (A)'],
-            ['key' => '9.0', 'name' => '9.0 (B)'],
-            ['key' => '8.0', 'name' => '8.0 (C)'],
-            ['key' => '7.0', 'name' => '7.0 (D)'],
-            ['key' => '6.0', 'name' => '6.0 (E)'],
-            ['key' => '5.0', 'name' => '5.0 (F)'],
-            ['key' => '4.0', 'name' => '4.0 (G)'],
-            ['key' => '3.0', 'name' => '3.0 (H)'],
-            ['key' => '2.0', 'name' => '2.0 (I)'],
-            ['key' => '1.0', 'name' => '1.0 (J)'],
-        ];
-
-        return Inertia::render('Admin/Unidades/Index', [
-            'unidades' => $unidades,
-            'filters' => [
-                'search' => $request->search ?? '',
-                'status' => $request->status ?? 'todos',
-                'nota' => $request->nota ?? 'todas',
-            ],
-            'statusOptions' => $statusOptions,
-            'notaOptions' => $notaOptions,
-        ]);
+{
+    // Verificar se o usuário é SuperAdmin
+    if (!Auth::user()->isSuperAdmin) {
+        abort(403, 'Ação não autorizada.');
     }
+
+    // Subconsulta para identificar os IDs das avaliações mais recentes para cada unidade
+    $ultimasAvaliacoesQuery = DB::table('avaliacoes_unidade as a1')
+        ->select('a1.id')
+        ->whereRaw('a1.id = (SELECT MAX(a2.id) FROM avaliacoes_unidade as a2 WHERE a2.unidade_id = a1.unidade_id)');
+
+    // Iniciar a consulta base, filtrando apenas unidades com is_draft = false
+    // e adicionando um LEFT JOIN para as avaliações mais recentes
+    $unidadesQuery = Unidade::select('unidades.*')
+        ->leftJoin('avaliacoes_unidade', function ($join) use ($ultimasAvaliacoesQuery) {
+            $join->on('unidades.id', '=', 'avaliacoes_unidade.unidade_id')
+                 ->whereIn('avaliacoes_unidade.id', $ultimasAvaliacoesQuery);
+        })
+        ->with(['team:id,name'])
+        ->where('unidades.is_draft', false);
+
+    // Aplicar filtro de busca textual
+    if ($request->has('search') && $request->search) {
+        $searchTerms = array_filter(explode(' ', trim($request->search)));
+        $unidadesQuery->where(function ($query) use ($searchTerms) {
+            foreach ($searchTerms as $term) {
+                $query->where(function ($subQuery) use ($term) {
+                    $subQuery->whereRaw('LOWER(unidades.nome) LIKE ?', ['%' . strtolower($term) . '%'])
+                             ->orWhereRaw('LOWER(unidades.cidade) LIKE ?', ['%' . strtolower($term) . '%'])
+                             ->orWhereRaw('LOWER(unidades.srpc) LIKE ?', ['%' . strtolower($term) . '%'])
+                             ->orWhereRaw('LOWER(unidades.dspc) LIKE ?', ['%' . strtolower($term) . '%']);
+                });
+            }
+        });
+    }
+
+    // Aplicar filtro por status
+    if ($request->has('status') && $request->status !== 'todos') {
+        $unidadesQuery->where('unidades.status', $request->status);
+    }
+
+    if ($request->has('nota') && $request->nota !== 'todas') {
+        $notaFiltro = (string)$request->nota;
+        
+        // Definir os intervalos de notas por classificação de letra
+        $intervalos = [
+            '10.0' => [9.5, 10.0],  // A+ (9.5-10.0)
+            '9.0' => [9.0, 9.4],    // A (9.0-9.4)
+            '8.0' => [8.0, 8.9],    // B (8.0-8.9)
+            '7.0' => [7.0, 7.9],    // C (7.0-7.9)
+            '6.0' => [6.0, 6.9],    // D (6.0-6.9)
+            '5.0' => [5.0, 5.9],    // E (5.0-5.9)
+            '4.0' => [4.0, 4.9],    // F (4.0-4.9)
+            '3.0' => [3.0, 3.9],    // G (3.0-3.9)
+            '2.0' => [2.0, 2.9],    // H (2.0-2.9)
+            '1.0' => [1.0, 1.9],    // I (1.0-1.9)
+            '0.0' => [0.0, 0.9],    // J (0.0-0.9)
+        ];
+        
+        // Verificar se a nota de filtro existe nos intervalos definidos
+        if (isset($intervalos[$notaFiltro])) {
+            list($min, $max) = $intervalos[$notaFiltro];
+            $unidadesQuery->whereBetween('avaliacoes_unidade.nota_geral', [$min, $max]);
+        }
+    }
+
+    // Selecionar colunas adicionais da última avaliação
+    $unidadesQuery->addSelect([
+        'avaliacoes_unidade.nota_geral',
+        'avaliacoes_unidade.nota_estrutura',
+        'avaliacoes_unidade.nota_acessibilidade',
+        'avaliacoes_unidade.created_at as avaliacao_data'
+    ]);
+
+    // Paginar resultados (10 por página)
+    $unidades = $unidadesQuery->orderBy('unidades.status')
+        ->orderBy('unidades.created_at', 'desc')
+        ->paginate(10)
+        ->through(function ($unidade) {
+            return [
+                'id' => $unidade->id,
+                'nome' => $unidade->nome,
+                'codigo' => $unidade->codigo,
+                'cidade' => $unidade->cidade ?? 'N/A',
+                'srpc' => $unidade->srpc ?? 'N/A',
+                'dspc' => $unidade->dspc ?? 'N/A',
+                'status' => $unidade->status,
+                'status_formatado' => $unidade->status_formatado,
+                'nota_geral' => $unidade->nota_geral,
+                'created_at' => $unidade->created_at->format('d/m/Y'),
+                'team' => $unidade->team ? [
+                    'id' => $unidade->team->id,
+                    'name' => $unidade->team->name,
+                ] : null,
+            ];
+        });
+
+    // Preservar os parâmetros de consulta na paginação
+    $unidades->appends($request->all());
+
+    // Opções para os filtros
+    $statusOptions = [
+        ['key' => 'todos', 'name' => 'Todos'],
+        ['key' => 'pendente_avaliacao', 'name' => 'Pendente de Avaliação'],
+        ['key' => 'aprovada', 'name' => 'Aprovado'],
+        ['key' => 'reprovada', 'name' => 'Reprovado'],
+        ['key' => 'em_revisao', 'name' => 'Em Revisão'],
+        ['key' => '', 'name' => 'Sem Cadastro']
+    ];
+
+    $notaOptions = [
+        ['key' => 'todas', 'name' => 'Todas'],
+        ['key' => '10.0', 'name' => '9.5~10.0 (A+)'], /* 9.5-10.0 (A+) - Excelente */
+        ['key' => '9.0', 'name' => '9.0~9.4 (A)'], /* 9.0-9.4 (A) - Excelente */
+        ['key' => '8.0', 'name' => '8.0~8.9 (B)'],
+        ['key' => '7.0', 'name' => '7.0~7.9 (C)'],
+        ['key' => '6.0', 'name' => '6.0~6.9 (D)'], /* 6.0-6.9 (D) - Satisfatório */
+        ['key' => '5.0', 'name' => '5.0~5.9 (E)'],
+        ['key' => '4.0', 'name' => '4.0~4.9 (F)'],
+        ['key' => '3.0', 'name' => '3.0~3.9 (G)'],
+        ['key' => '2.0', 'name' => '2.0~2.9 (H)'],
+        ['key' => '1.0', 'name' => '1.0~1.9 (I)'], /* 1.0-1.9 (I) - Péssimo */
+        ['key' => '0.0', 'name' => '0.0~0.9 (J)'], /* 0.0-0.9 (J) - Crítico */
+    ];
+
+    return Inertia::render('Admin/Unidades/Index', [
+        'unidades' => $unidades,
+        'filters' => [
+            'search' => $request->search ?? '',
+            'status' => $request->status ?? 'todos',
+            'nota' => $request->nota ?? 'todas',
+        ],
+        'statusOptions' => $statusOptions,
+        'notaOptions' => $notaOptions,
+    ]);
+}
 
     /**
      * Display the specified resource.

@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { MagnifyingGlassIcon, FunnelIcon, BuildingOfficeIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, FunnelIcon, BuildingOfficeIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     unidades: Object,
@@ -52,6 +52,73 @@ const clearFilters = () => {
     statusFilter.value = 'todos';
     notaFilter.value = 'todas';
     router.get(route('admin.unidades.index'), {}, { preserveState: true });
+};
+
+// Função para obter a letra correspondente à nota
+const getNotaLetra = (nota) => {
+    if (!nota) return '';
+    
+    const notaNum = parseFloat(nota);
+    if (isNaN(notaNum)) return '';
+    
+    if (notaNum >= 9.5) return 'A+';
+    if (notaNum >= 9.0) return 'A';
+    if (notaNum >= 8.0) return 'B';
+    if (notaNum >= 7.0) return 'C';
+    if (notaNum >= 6.0) return 'D';
+    if (notaNum >= 5.0) return 'E';
+    if (notaNum >= 4.0) return 'F';
+    if (notaNum >= 3.0) return 'G';
+    if (notaNum >= 2.0) return 'H';
+    if (notaNum >= 1.0) return 'I';
+    return 'J';
+};
+
+// Função para formatar a nota para exibição
+const formatNota = (nota) => {
+    if (!nota) return 'N/A';
+    
+    // Converter para número para garantir
+    const notaNum = parseFloat(nota);
+    if (isNaN(notaNum)) return 'N/A';
+    
+    // Formatar com uma casa decimal e adicionar a letra
+    return `${notaNum.toFixed(1)} (${getNotaLetra(notaNum)})`;
+};
+
+// Função para obter a classe CSS com base na nota
+const getNotaClass = (nota) => {
+    if (!nota) return 'bg-gray-100 text-gray-800';
+    
+    const notaNum = parseFloat(nota);
+    if (isNaN(notaNum)) return 'bg-gray-100 text-gray-800';
+    
+    if (notaNum >= 9.0) return 'bg-green-600 text-white';
+    if (notaNum >= 7.0) return 'bg-green-500 text-white';
+    if (notaNum >= 5.0) return 'bg-yellow-500 text-white';
+    if (notaNum >= 3.0) return 'bg-orange-500 text-white';
+    return 'bg-red-500 text-white';
+};
+
+// Obter a descrição da nota para o tooltip
+const getNotaTooltip = (nota) => {
+    if (!nota) return '';
+    
+    const letra = getNotaLetra(nota);
+    switch (letra) {
+        case 'A+':
+        case 'A': return 'Excelente: Condições ideais sem necessidade de melhorias';
+        case 'B': return 'Ótimo: Condições muito boas com pequenas melhorias necessárias';
+        case 'C': return 'Bom: Condições adequadas com algumas melhorias recomendadas';
+        case 'D': return 'Satisfatório: Condições básicas atendidas, melhorias necessárias';
+        case 'E': return 'Regular: Atende minimamente, melhorias significativas necessárias';
+        case 'F': return 'Insuficiente: Não atende adequadamente, melhorias urgentes';
+        case 'G': return 'Ruim: Condições precárias, necessidade de intervenção';
+        case 'H': return 'Muito Ruim: Condições críticas, intervenção imediata';
+        case 'I': return 'Péssimo: Condições extremamente precárias, risco à segurança';
+        case 'J': return 'Crítico: Inapto para uso, riscos severos à segurança';
+        default: return '';
+    }
 };
 </script>
 
@@ -120,7 +187,7 @@ const clearFilters = () => {
                             <div class="md:w-64">
                                 <label for="nota" class="block text-sm font-medium text-gray-700 flex items-center">
                                     <FunnelIcon class="h-5 w-5 text-gray-400 mr-2" />
-                                    Nota
+                                    Nota Geral
                                 </label>
                                 <select 
                                     id="nota" 
@@ -170,7 +237,7 @@ const clearFilters = () => {
                                                         Status Formulário
                                                     </th>
                                                     <th scope="col" class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Nota
+                                                        Nota Geral
                                                     </th>
                                                 </tr>
                                             </thead>
@@ -194,13 +261,21 @@ const clearFilters = () => {
                                                         <div class="text-base text-gray-900">{{ unidade.dspc }}</div>
                                                     </td>
                                                     <td class="px-6 py-4 whitespace-nowrap">
-                                                        <span class="px-2 inline-flex text-sm leading-5 font-semibold rounded-full" :class="unidade.status_class">
-                                                            {{ unidade.status_formatado }}
+                                                        <span class="px-2 inline-flex text-sm leading-5 font-semibold rounded-full" :class="unidade.status_class || 'bg-gray-100 text-gray-800'">
+                                                            {{ unidade.status_formatado || 'Sem Status' }}
                                                         </span>
                                                     </td>
                                                     <td class="px-6 py-4 whitespace-nowrap">
-                                                        <span class="px-2 inline-flex text-sm leading-5 font-semibold rounded-full bg-amber-100 text-black">
-                                                            {{ unidade.nota_geral ? unidade.nota_geral + ' (' + String.fromCharCode(65 + (10 - unidade.nota_geral)) + ')' : 'N/A' }}
+                                                        <span 
+                                                            v-if="unidade.nota_geral" 
+                                                            class="px-2 inline-flex text-sm leading-5 font-semibold rounded-full" 
+                                                            :class="getNotaClass(unidade.nota_geral)"
+                                                            :title="getNotaTooltip(unidade.nota_geral)"
+                                                        >
+                                                            {{ formatNota(unidade.nota_geral) }}
+                                                        </span>
+                                                        <span v-else class="px-2 inline-flex text-sm leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                            N/A
                                                         </span>
                                                     </td>
                                                 </tr>

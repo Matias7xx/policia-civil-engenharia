@@ -27,12 +27,8 @@ class Avaliacao extends Model
         'user_id',
         'nota_estrutura',
         'nota_acessibilidade',
-        'nota_instalacoes',
-        'nota_conservacao',
         'nota_geral',
         'observacoes',
-        'status',
-        'recomendacoes',
     ];
 
     /**
@@ -43,8 +39,6 @@ class Avaliacao extends Model
     protected $casts = [
         'nota_estrutura' => 'decimal:1',
         'nota_acessibilidade' => 'decimal:1',
-        'nota_instalacoes' => 'decimal:1',
-        'nota_conservacao' => 'decimal:1',
         'nota_geral' => 'decimal:1',
     ];
 
@@ -62,36 +56,6 @@ class Avaliacao extends Model
     public function avaliador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
-    }
-
-    /**
-     * Calcula a nota geral a partir das notas específicas.
-     */
-    public function calcularNotaGeral()
-    {
-        // Pesos para cada categoria
-        $pesos = [
-            'nota_estrutura' => 0.3,
-            'nota_acessibilidade' => 0.2,
-            'nota_instalacoes' => 0.3,
-            'nota_conservacao' => 0.2,
-        ];
-
-        $somaNotas = 0;
-        $somaPesos = 0;
-
-        foreach ($pesos as $campo => $peso) {
-            if (!is_null($this->$campo)) {
-                $somaNotas += $this->$campo * $peso;
-                $somaPesos += $peso;
-            }
-        }
-
-        if ($somaPesos > 0) {
-            return round($somaNotas / $somaPesos, 1);
-        }
-
-        return null;
     }
 
     /**

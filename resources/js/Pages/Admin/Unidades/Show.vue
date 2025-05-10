@@ -1,9 +1,11 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import AvaliacaoForm from '@/Pages/Admin/Unidades/Partials/AvaliacaoForm.vue';
+import AvaliacaoHistorico from '@/Pages/Admin/Unidades/Partials/AvaliacaoHistorico.vue';
 import { ref, watch, computed } from 'vue';
 import { useForm, usePage, Link } from '@inertiajs/vue3';
 import TextInput from '@/Components/TextInput.vue';
+import { ChartBarIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     team: Object,
@@ -19,6 +21,7 @@ const props = defineProps({
 
 const page = usePage();
 const activeTab = ref('dados-gerais');
+const activeAvaliacaoTab = ref('historico');
 const flashMessage = ref(null);
 const mobileMenuOpen = ref(false);
 
@@ -1018,54 +1021,69 @@ const salvarCessao = () => {
                             </div>
                         </div>
 
-                        <!-- Avaliações -->
-                        <div v-if="activeTab === 'avaliacoes'" class="grid grid-cols-1 gap-6">
-                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Avaliações da Unidade</h3>
-                                <div v-if="avaliacoes && avaliacoes.length > 0" class="space-y-4">
-                                    <div v-for="avaliacao in avaliacoes" :key="avaliacao.id" class="bg-white p-4 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between">
-                                            <div>
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nota Geral:</dt>
-                                                <dd class="mt-1 text-lg font-semibold">{{ avaliacao.nota_geral || 'N/A' }}</dd>
-                                            </div>
-                                            <div class="mt-2 sm:mt-0">
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Data:</dt>
-                                                <dd class="mt-1">{{ formatarData(avaliacao.created_at) }}</dd>
-                                            </div>
-                                            <div v-if="avaliacao.avaliador" class="mt-2 sm:mt-0">
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Avaliador:</dt>
-                                                <dd class="mt-1">{{ avaliacao.avaliador.name || 'Desconhecido' }}</dd>
-                                            </div>
-                                        </div>
-                                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div>
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Estrutura:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_estrutura || 'N/A' }}</dd>
-                                            </div>
-                                            <div>
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Acessibilidade:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_acessibilidade || 'N/A' }}</dd>
-                                            </div>
-                                            <div>
-                                                <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Conservação:</dt>
-                                                <dd class="mt-1">{{ avaliacao.nota_conservacao || 'N/A' }}</dd>
-                                            </div>
-                                        </div>
-                                        <div v-if="avaliacao.observacoes" class="mt-4">
-                                            <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Observações:</dt>
-                                            <dd class="mt-1 whitespace-pre-line">{{ avaliacao.observacoes }}</dd>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div v-else class="bg-white p-6 rounded-md shadow-sm text-center">
-                                    <i class="fas fa-star text-gray-400 text-4xl mb-4"></i>
-                                    <p class="text-gray-600">Nenhuma avaliação cadastrada para esta unidade.</p>
-                                </div>
-                                <div v-if="isSuperAdmin" class="mt-6">
-                                    <AvaliacaoForm :unidade-id="unidade.id" />
-                                </div>
+                       <!-- Aba de Avaliações -->
+                        <div v-if="activeTab === 'avaliacoes'" class="space-y-6">
+                        <!-- Cabeçalho da seção -->
+                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Avaliações da Unidade</h3>
+                            
+                            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                            <!-- Navegação em abas -->
+                            <div class="border-b border-gray-200">
+                                <nav class="flex -mb-px" aria-label="Tabs">
+                                <button
+                                    @click="activeAvaliacaoTab = 'historico'"
+                                    :class="[
+                                    activeAvaliacaoTab === 'historico'
+                                        ? 'border-[#bea55a] text-[#816d33]'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                                    'w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm'
+                                    ]"
+                                >
+                                    <span class="flex items-center justify-center">
+                                    <ChartBarIcon class="w-5 h-5 mr-2" />
+                                    Histórico de Avaliações
+                                    </span>
+                                </button>
+                                <button
+                                    v-if="isSuperAdmin"
+                                    @click="activeAvaliacaoTab = 'avaliacao'"
+                                    :class="[
+                                    activeAvaliacaoTab === 'avaliacao'
+                                        ? 'border-[#bea55a] text-[#816d33]'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                                    'w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm'
+                                    ]"
+                                >
+                                    <span class="flex items-center justify-center">
+                                    <ClipboardDocumentListIcon class="w-5 h-5 mr-2" />
+                                    Nova Avaliação
+                                    </span>
+                                </button>
+                                </nav>
                             </div>
+
+                            <!-- Conteúdo das abas -->
+                            <div class="p-6">
+                                <div v-show="activeAvaliacaoTab === 'historico'">
+                                <AvaliacaoHistorico
+                                    :avaliacoes="avaliacoes"
+                                    :unidade="unidade"
+                                    :is-super-admin="isSuperAdmin"
+                                />
+                                </div>
+
+                                <div v-show="activeAvaliacaoTab === 'avaliacao'" v-if="isSuperAdmin">
+                                <AvaliacaoForm
+                                    :unidade="unidade"
+                                    :avaliacoes="avaliacoes"
+                                    :is-new="true"
+                                />
+                            </div>
+                        </div>
+                        </div>
+
+                        </div>
                         </div>
                     </div>
                 </div>
