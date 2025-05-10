@@ -91,6 +91,22 @@ const getUnidadeLink = computed(() => {
     return null;
 });
 
+const getEditUnidadeLink = computed(() => {
+    if (props.isAdmin || props.isServidor) {
+        if (props.unidadeCadastrada && props.unidadeStatus !== 'aprovada') {
+            // Só mostra o botão para editar se a unidade não estiver aprovada
+            const teamId = page.props.auth.user.current_team_id;
+            const unidadeId = page.props.auth.unidade_id;
+            return {
+                href: route('unidades.edit', { team: teamId, unidade: unidadeId }),
+                text: 'Editar Informações',
+                icon: PencilIcon
+            };
+        }
+    }
+    return null;
+});
+
 // Novo computed para obter classe CSS e texto baseado no status
 const statusInfo = computed(() => {
     switch(props.unidadeStatus) {
