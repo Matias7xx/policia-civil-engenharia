@@ -379,7 +379,7 @@ const statusInfo = computed(() => {
                         Sobre o Sistema
                     </h2>
                     <p class="text-gray-700 mb-4">
-                        O Sistema de Censo de Imóveis da Diretoria de Engenharia e Recursos Imobiliarios foi desenvolvido para coletar informações sobre as unidades policiais, 
+                        O Sistema de Censo de Imóveis da Diretoria de Engenharia e Recursos Imobiliários foi desenvolvido para coletar informações sobre as unidades policiais, 
                         permitindo melhor planejamento de reformas e adequações estruturais.
                     </p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">

@@ -66,7 +66,7 @@ const handleSubmit = () => {
             <img src="/images/logo-pc.png" alt="Logo Polícia Civil" class="w-32 sm:w-40 h-auto filter drop-shadow-lg">
             <div class="mt-3 text-center">
                 <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Censo de Imóveis</h1>
-                <div class="mt-1 text-sm text-gray-600">Diretoria de Engenharia e Recursos Imobiliarios</div>
+                <div class="mt-1 text-sm text-gray-600">Diretoria de Engenharia e Recursos Imobiliários</div>
             </div>
         </div>
 
