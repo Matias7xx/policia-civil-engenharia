@@ -9,7 +9,6 @@ use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Session\TokenMismatchException;
-use Throwable;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(

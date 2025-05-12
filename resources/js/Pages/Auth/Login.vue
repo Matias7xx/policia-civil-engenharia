@@ -13,7 +13,7 @@ defineProps({
 });
 
 const form = useForm({
-    email: '',
+    matricula: '',
     password: '',
     remember: false,
 });
@@ -84,27 +84,29 @@ const handleSubmit = () => {
             </div>
 
             <form @submit.prevent="handleSubmit" class="space-y-6">
-                <!-- Email -->
+                <!-- Matrícula -->
                 <div ref="formElements" class="relative">
-                    <InputLabel for="email" value="E-mail" class="text-gray-700" />
+                    <InputLabel for="matricula" value="Matrícula" class="text-gray-700" />
                     <div class="mt-1 relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                            </svg>
-                        </div>
+                        <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                        </svg>
+                    </div>
                         <TextInput
-                            id="email"
-                            v-model="form.email"
-                            type="email"
+                            id="matricula"
+                            v-model="form.matricula"
+                            type="text"
                             class="pl-10 pr-4 block w-full border-gray-300 focus:border-[#bea55a] focus:ring-[#bea55a] rounded-md shadow-sm transition-colors duration-200"
                             required
                             autofocus
-                            autocomplete="username"
-                            placeholder="seu.email@exemplo.com"
+                            autocomplete="matricula"
+                            placeholder="Informe sua Matrícula"
+                            maxlength="7"
+                            minlength="7"
                         />
                     </div>
-                    <InputError class="mt-2" :message="form.errors.email" />
+                    <InputError class="mt-2" :message="form.errors.matricula" />
                 </div>
 
                 <!-- Senha -->

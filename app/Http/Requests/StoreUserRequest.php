@@ -27,7 +27,7 @@ class StoreUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', Password::defaults(), 'confirmed'],
-            'matricula' => ['required', 'string', 'min:7', 'max:7', 'unique:users'],
+            'matricula' => ['required', 'string', 'size:7', 'unique:users'],
             'cargo' => ['nullable', 'string', 'max:100'],
             'telefone' => ['nullable', 'string', 'max:20'],
             'team_id' => ['required', 'exists:teams,id'],

@@ -30,7 +30,7 @@ class UpdateUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($userId)],
             'password' => ['nullable', 'string', Password::defaults(), 'confirmed'],
-            'matricula' => ['required', 'string', 'min:7', 'max:7', Rule::unique('users')->ignore($userId)],
+            'matricula' => ['required', 'string', 'size:7', Rule::unique('users')->ignore($userId)],
             'cargo' => ['nullable', 'string', 'max:100'],
             'telefone' => ['nullable', 'string', 'max:20'],
             'team_id' => ['required', 'exists:teams,id'],
