@@ -19,7 +19,7 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('Auth/Login', [
         'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
+        /* 'canRegister' => Route::has('register'), */
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
@@ -31,25 +31,11 @@ Route::prefix('geocoding')->name('geocoding.')->group(function () {
     Route::get('/reverse', [GeocodingController::class, 'reverse'])->name('reverse');
 });
 
-// Rota de depuração
-Route::get('/debug/user-role', function () {
-    $user = auth()->user();
-    return [
-        'user' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-        ],
-        'team' => [
-            'id' => $user->currentTeam->id,
-            'name' => $user->currentTeam->name,
-        ],
-        'isSuperAdmin' => \App\Helpers\RoleHelper::isSuperAdmin($user),
-        'isAdmin' => \App\Helpers\RoleHelper::isAdmin($user),
-        'isServidor' => \App\Helpers\RoleHelper::isServidor($user),
-        'teamRole' => $user->teamRole($user->currentTeam) ? $user->teamRole($user->currentTeam)->key : null,
-    ];
-})->name('debug.user-role');
+if (app()->environment('local')) {
+    Route::get('/error/{code}', function ($code) {
+        abort((int)$code);
+    })->name('error.test');
+}
 
 // Rotas autenticadas
 Route::middleware([
@@ -65,8 +51,8 @@ Route::middleware([
 
     // Rotas de equipes (teams)
     Route::prefix('teams')->name('teams.')->group(function () {
-        Route::get('/', [TeamController::class, 'index'])->name('index');
-        Route::get('/{team}', [TeamController::class, 'show'])->name('show');
+        /* Route::get('/', [TeamController::class, 'index'])->name('index');
+        Route::get('/{team}', [TeamController::class, 'show'])->name('show'); */
         
         Route::middleware('verify.no.unit')->group(function () {
             Route::get('/create', [TeamController::class, 'create'])->name('create');
@@ -77,9 +63,19 @@ Route::middleware([
     Route::middleware('role:admin')->group(function () {
         // Gerenciamento de unidades
         Route::prefix('unidades')->name('unidades.')->group(function () {
-            Route::get('/create/{teamId?}', [UnidadeController::class, 'create'])->name('create');
-            Route::get('/{team}/{unidade}', [UnidadeController::class, 'show'])->name('show');
-            Route::get('/{team}/{unidade}/edit', [UnidadeController::class, 'edit'])->name('edit');
+            
+            Route::get('/create/{teamId?}', [UnidadeController::class, 'create'])
+            ->middleware('check.unidade.status:') //Só entra se o status for SEM CADASTRO
+            ->name('create');
+
+            Route::get('/{team}/{unidade}', [UnidadeController::class, 'show'])
+            ->middleware('check.unidade.status:pendente_avaliacao,aprovada,reprovada,em_revisao')
+            ->name('show');
+
+            Route::get('/{team}/{unidade}/edit', [UnidadeController::class, 'edit'])
+            ->middleware('check.unidade.status:pendente_avaliacao,reprovada,em_revisao')
+            ->name('edit');
+
             Route::post('/dados-gerais', [UnidadeController::class, 'saveDadosGerais'])->name('saveDadosGerais');
             Route::post('/acessibilidade', [UnidadeController::class, 'saveAcessibilidade'])->name('saveAcessibilidade');
             Route::post('/informacoes-estruturais', [UnidadeController::class, 'saveInformacoesEstruturais'])->name('saveInformacoesEstruturais');
@@ -94,7 +90,6 @@ Route::middleware([
 
     // Rotas de superadministrador
     Route::middleware('role:superadmin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', fn() => Inertia::render('Admin/Dashboard'))->name('dashboard');
 
         // Gerenciamento de unidades
         Route::prefix('unidades')->name('unidades.')->group(function () {
@@ -137,6 +132,8 @@ Route::middleware([
 
     // Rotas para servidores
     Route::middleware('role:servidor')->prefix('servidor')->name('servidor.')->group(function () {
-        Route::get('/dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
+        Route::get('/{team}/{unidade}', [UnidadeController::class, 'show'])
+            ->middleware('check.unidade.status:pendente_avaliacao,aprovada,reprovada,em_revisao')
+            ->name('show');
     });
 });

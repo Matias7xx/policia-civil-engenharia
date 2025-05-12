@@ -124,7 +124,7 @@ const statusInfo = computed(() => {
                 icon: CheckCircleIcon,
                 iconColor: 'text-green-500',
                 title: 'Aprovado',
-                message: 'Sua formulário foi aprovado pela Engenharia.'
+                message: 'Seu formulário foi aprovado pela Engenharia.'
             };
         case 'reprovada':
             return {
