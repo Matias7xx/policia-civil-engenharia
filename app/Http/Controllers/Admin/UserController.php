@@ -53,20 +53,22 @@ class UserController extends Controller
     }
     
     // Paginar resultados (10 por página)
-    $users = $usersQuery->paginate(10)->through(function ($user) {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            /* 'email' => $user->email, */
-            'matricula' => $user->matricula,
-            'created_at' => $user->created_at->format('d/m/Y'),
-            'team' => $user->currentTeam ? [
-                'id' => $user->currentTeam->id,
-                'name' => $user->currentTeam->name,
-            ] : null,
-            'role' => $this->getUserRole($user),
-        ];
-    });
+    $users = $usersQuery->orderBy('name')
+        ->paginate(10)
+        ->through(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                /* 'email' => $user->email, */
+                'matricula' => $user->matricula,
+                'created_at' => $user->created_at->format('d/m/Y'),
+                'team' => $user->currentTeam ? [
+                    'id' => $user->currentTeam->id,
+                    'name' => $user->currentTeam->name,
+                ] : null,
+                'role' => $this->getUserRole($user),
+            ];
+        });
 
     // Preservar os parâmetros de consulta na paginação
     $users->appends($request->all());

@@ -17,6 +17,9 @@ const form = useForm({
     _method: 'PUT',
     name: props.user.name,
     email: props.user.email,
+    matricula: props.user.matricula,
+    cargo: props.user.cargo,
+    telefone: props.user.telefone,
 });
 
 const verificationLinkSent = ref(null);
@@ -44,7 +47,7 @@ const sendEmailVerification = () => {
         <template #form>
             <!-- Name -->
             <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="name" value="Name" />
+                <InputLabel for="name" value="Nome" />
                 <TextInput
                     id="name"
                     v-model="form.name"
@@ -70,6 +73,51 @@ const sendEmailVerification = () => {
                     disabled
                 />
                 <InputError :message="form.errors.email" class="mt-2" />
+            </div>
+
+            <!-- Matrícula -->
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="matricula" value="Matrícula" />
+                <TextInput
+                    id="matricula"
+                    v-model="form.matricula"
+                    type="text"
+                    class="bg-gray-100 mt-1 block w-full"
+                    required
+                    autocomplete="matricula"
+                    disabled
+                />
+                <InputError :message="form.errors.matricula" class="mt-2" />
+            </div>
+
+            <!-- Cargo -->
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="cargo" value="Cargo" />
+                <TextInput
+                    id="cargo"
+                    v-model="form.cargo"
+                    type="text"
+                    class="bg-gray-100 mt-1 block w-full"
+                    required
+                    autocomplete="cargo"
+                    disabled
+                />
+                <InputError :message="form.errors.cargo" class="mt-2" />
+            </div>
+
+            <!-- Telefone -->
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="telefone" value="Telefone" />
+                <TextInput
+                    id="telefone"
+                    v-model="form.telefone"
+                    type="text"
+                    class="bg-gray-100 mt-1 block w-full"
+                    required
+                    autocomplete="telefone"
+                    disabled
+                />
+                <InputError :message="form.errors.telefone" class="mt-2" />
             </div>
         </template>
 
