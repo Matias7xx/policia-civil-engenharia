@@ -1,61 +1,189 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema de Censo de Imóveis - Polícia Civil
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+<div align="center">
+  <img src="public/images/logo-pc.png" alt="Logo Polícia Civil" width="150">
+  <h3>Sistema de cadastro e avaliação de imóveis da Polícia Civil</h3>
+</div>
 
-## About Laravel
+## 📋 Sobre o Projeto
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Este sistema permite o cadastramento, gerenciamento e avaliação dos imóveis utilizados pela Polícia Civil. Desenvolvido com Laravel e Vue.js (Inertia), oferece uma interface moderna e responsiva para todos os tipos de usuários, desde servidores até administradores.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Principais Funcionalidades
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- 🏢 **Cadastro completo de unidades policiais**
+  - Informações gerais (nome, código, localização)
+  - Dados estruturais do imóvel
+  - Acessibilidade
+  - Fotos e documentação visual
 
-## Learning Laravel
+- 👮 **Gestão de usuários com níveis de acesso**
+  - Super Administradores (acesso total)
+  - Administradores (gerenciam suas unidades)
+  - Servidores (visualizam informações)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- ⭐ **Sistema de avaliação de imóveis**
+  - Aprovação de cadastros
+  - Avaliação com notas para estrutura e acessibilidade
+  - Histórico de avaliações
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- 📊 **Gestão de informações**
+  - Contratos de locação
+  - Termos de cessão
+  - Órgãos que compartilham imóveis
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🔧 Tecnologias Utilizadas
 
-## Laravel Sponsors
+### Backend
+- [PHP 8.2+](https://www.php.net/) - Foi desenvolvido com o PHP 8.4.1
+- [Laravel 12](https://laravel.com/)
+- [Laravel Jetstream](https://jetstream.laravel.com/) - Autenticação e gerenciamento de equipes
+- [PostgreSQL 17](https://www.postgresql.org/) - Banco de dados
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Frontend
+- [Vue.js 3.0](https://vuejs.org/)
+- [Inertia.js 2.0](https://inertiajs.com/) - SPA sem API
+- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
+- [Heroicons](https://heroicons.com/) - Conjunto de ícones
 
-### Premium Partners
+### Serviços Externos
+- [TomTom API](https://developer.tomtom.com/) - Geocodificação de endereços
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development/)**
-- **[Active Logic](https://activelogic.com)**
+## 🚀 Instalação e Configuração
 
-## Contributing
+### Pré-requisitos
+- PHP 8.2 ou superior
+- Composer
+- Node.js e NPM
+- PostgreSQL
+- Servidor web
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Passos para Instalação
 
-## Code of Conduct
+1. **Clone o repositório**
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+2. **Instale as dependências PHP**
+   ```bash
+   composer install
+   ```
 
-## Security Vulnerabilities
+3. **Instale as dependências JavaScript**
+   ```bash
+   npm install
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+4. **Configure o ambiente**
+   ```bash
+   cp .env.example .env
+   # Edite o arquivo .env com as configurações do seu ambiente
+   ```
 
-## License
+5. **Gere a chave da aplicação**
+   ```bash
+   php artisan key:generate
+   ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+6. **Execute as migrações e seeders**
+   ```bash
+   php artisan migrate --seed
+   ```
+
+7. **Crie o link simbólico para o storage**
+   ```bash
+   php artisan storage:link
+   ```
+
+8. **Compile os assets**
+   ```bash
+   npm run dev   # Para desenvolvimento
+   # ou
+   npm run build # Para produção
+   ```
+
+9. **Inicie o servidor de desenvolvimento**
+   ```bash
+   php artisan serve
+   ```
+
+### Usando Docker (opcional)
+O projeto inclui configuração Docker via Laravel Sail:
+
+```bash
+# Iniciar os containers
+./vendor/bin/sail up -d
+
+# Executar comandos dentro do container
+./vendor/bin/sail artisan migrate --seed
+./vendor/bin/sail npm install
+./vendor/bin/sail npm run build
+```
+
+## 🔍 Como Usar o Sistema
+
+### Acessando o Sistema
+
+Após a instalação, você pode acessar o sistema com as seguintes credenciais padrão:
+
+**Super Administrador**
+- Matrícula: 0000001
+- Senha: password
+
+**Administradores**
+- RH: Matrícula: 0000002
+- Financeiro: Matrícula: 0000005
+- Senha: password
+
+### Fluxo de Trabalho
+
+1. **Cadastro de Unidades**
+   - Administradores cadastram suas unidades
+   - Preenchem informações gerais, estruturais e de acessibilidade
+   - Fazem upload de fotos exigidas
+
+2. **Avaliação**
+   - Super Administradores revisam as informações
+   - Aprovam ou rejeitam cadastros
+   - Realizam avaliações técnicas
+
+3. **Consulta e Atualização**
+   - Servidores podem visualizar informações
+   - Administradores podem atualizar dados quando necessário
+
+## 📦 Preparando para Produção
+
+Antes de colocar o sistema em produção, execute:
+
+```bash
+# Otimizar dependências
+composer install --no-dev --optimize-autoloader
+
+# Otimizar Laravel
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan optimize
+
+# Compilar assets
+npm run build
+```
+
+## 🔐 Segurança
+
+O sistema utiliza as seguintes medidas de segurança:
+
+- Autenticação por matrícula e senha
+- Autorização baseada em papéis
+- Proteção CSRF em formulários
+- Validação de dados
+- Armazenamento seguro de senhas com hash
+
+## 👨‍💻 Autores
+
+- Seu Nome - [GitHub](https://github.com/seu-usuario) - email@exemplo.com
+
+## 🙏 Agradecimentos
+
+- [Laravel](https://laravel.com/) - Framework PHP
+- [Vue.js](https://vuejs.org/) - Framework JavaScript
+- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
+- [TomTom](https://developer.tomtom.com/) - API de Geocodificação
