@@ -126,12 +126,10 @@ Após a instalação, você pode acessar o sistema com as seguintes credenciais 
 
 **Super Administrador**
 - Matrícula: 0000001
-- Senha: password
+- Senha: DITI@pcpb1981
 
 **Administradores**
-- RH: Matrícula: 0000002
-- Financeiro: Matrícula: 0000005
-- Senha: password
+- Inicialmente todos os usuários são Administradores e podem cadastrar sua Unidade
 
 ### Fluxo de Trabalho
 
