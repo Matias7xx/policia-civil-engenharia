@@ -33,11 +33,9 @@ const orgaoIds = props.unidade?.orgaosCompartilhados?.length
 const form = useForm({
     team_id: props.team?.id || '',
     nome: props.unidade?.nome || props.team?.name || '',
-    codigo: props.unidade?.codigo || '',
     tipo_estrutural: props.unidade?.tipo_estrutural || '',
     srpc: props.unidade?.srpc || '',
     dspc: props.unidade?.dspc || '',
-    nivel: props.unidade?.nivel || '',
     sede: props.unidade?.sede || false,
     cidade: props.unidade?.cidade || '',
     cep: props.unidade?.cep || '',
@@ -405,18 +403,6 @@ const saveDadosGerais = () => {
                         <InputError :message="form.errors.nome" class="mt-1" />
                     </div>
                     <div>
-                        <InputLabel for="codigo" value="Código" class="text-sm font-medium text-gray-700" />
-                        <TextInput
-                            id="codigo"
-                            v-model="form.codigo"
-                            type="text"
-                            class="mt-1 block w-full"
-                            :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            placeholder="Código da Unidade"
-                        />
-                        <InputError :message="form.errors.codigo" class="mt-1" />
-                    </div>
-                    <div>
                         <InputLabel for="tipo_estrutural" value="Tipo Estrutural *" class="text-sm font-medium text-gray-700" />
                         <SelectInput
                             id="tipo_estrutural"
@@ -457,18 +443,6 @@ const saveDadosGerais = () => {
                             placeholder="COORDEAM, 1ª DSPC, etc"
                         />
                         <InputError :message="form.errors.dspc" class="mt-1" />
-                    </div>
-                    <div>
-                        <InputLabel for="nivel" value="Nível" class="text-sm font-medium text-gray-700" />
-                        <TextInput
-                            id="nivel"
-                            v-model="form.nivel"
-                            type="text"
-                            class="mt-1 block w-full"
-                            :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            placeholder="Nível da Unidade"
-                        />
-                        <InputError :message="form.errors.nivel" class="mt-1" />
                     </div>
                     <div class="flex items-center">
                         <div class="flex items-center h-full mt-6">

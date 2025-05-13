@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
                 ['email' => 'superadmin@example.com'],
                 [
                     'name' => 'ROOT',
-                    'password' => Hash::make('password'),
+                    'password' => Hash::make('DITI@pcpb1981'),
                     'matricula' => '0000001', // Adicionar matrícula
                 ]
             );
@@ -44,7 +44,7 @@ class UserSeeder extends Seeder
             $superadmin->save();
 
             // Criar times compartilhados, com superadmin como owner
-            $teams = [
+            /* $teams = [
                 ['name' => 'RH', 'personal_team' => false],
                 ['name' => 'Financeiro', 'personal_team' => false],
             ];
@@ -59,20 +59,20 @@ class UserSeeder extends Seeder
                     ]
                 );
                 $teamIds[$teamData['name']] = $team->id;
-            }
+            } */
 
             // Definir usuários para os times RH e Financeiro, todos com role 'admin'
-            $rhUsers = [
+            /* $rhUsers = [
                 ['name' => 'RH Admin 1', 'email' => 'rh_admin1@example.com', 'team' => 'RH', 'matricula' => '0000002'],
                 ['name' => 'RH Admin 2', 'email' => 'rh_admin2@example.com', 'team' => 'RH', 'matricula' => '0000003'],
                 ['name' => 'RH Admin 3', 'email' => 'rh_admin3@example.com', 'team' => 'RH', 'matricula' => '0000004'],
                 ['name' => 'Financeiro Admin 1', 'email' => 'fin_admin1@example.com', 'team' => 'Financeiro', 'matricula' => '0000005'],
                 ['name' => 'Financeiro Admin 2', 'email' => 'fin_admin2@example.com', 'team' => 'Financeiro', 'matricula' => '0000006'],
                 ['name' => 'Financeiro Admin 3', 'email' => 'fin_admin3@example.com', 'team' => 'Financeiro', 'matricula' => '0000007'],
-            ];
+            ]; */
 
             // Criar e associar usuários aos times
-            foreach ($rhUsers as $rhUserData) {
+            /* foreach ($rhUsers as $rhUserData) {
                 $user = User::firstOrCreate(
                     ['email' => $rhUserData['email']],
                     [
@@ -80,16 +80,16 @@ class UserSeeder extends Seeder
                         'password' => Hash::make('password'), // Usando Hash::make
                         'matricula' => $rhUserData['matricula'], // Adicionar matrícula
                     ]
-                );
+                ); */
 
                 // Associar usuário ao time especificado com role 'admin'
-                $teamId = $teamIds[$rhUserData['team']];
+                /* $teamId = $teamIds[$rhUserData['team']];
                 $user->teams()->sync([$teamId => ['role' => 'admin']]);
                 
                 // Definir o time como o atual do usuário
                 $user->current_team_id = $teamId;
                 $user->save();
-            }
+            } */
         });
     }
 }

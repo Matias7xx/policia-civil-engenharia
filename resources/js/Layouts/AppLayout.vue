@@ -7,7 +7,7 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { UserIcon, Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { UserIcon, Bars3Icon, XMarkIcon, EnvelopeIcon } from '@heroicons/vue/24/outline';
 import Footer from '@/Components/Footer.vue';
 
 const props = defineProps({
@@ -102,6 +102,18 @@ router.on('navigate', () => {
             'sticky top-0 z-[1000] transition-all duration-300', // Aumente o z-index
             scrolled ? 'shadow-md' : ''
         ]">
+            <!-- Barra de Contato -->
+            <div class="bg-black text-white py-1 text-xs">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-end">
+                    <a href="mailto:dieri.dg@pc.pb.gov.br" class="inline-flex items-center text-[#bea55a] hover:text-[#d4bf7a] transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Contato: dieri.dg@pc.pb.gov.br
+                    </a>
+                </div>
+            </div>
+            
             <!-- Page header section (optional) -->
             <div v-if="$slots.header" class="bg-black shadow">
                 <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -177,10 +189,6 @@ router.on('navigate', () => {
                                             class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-black bg-[#bea55a] focus:outline-none transition-colors duration-150"
                                         >
                                             {{ $page.props.auth.user.current_team.name }}
-
-                                            <!-- <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                                            </svg> -->
                                         </span>
                                     </span>
                                 </template>
@@ -359,6 +367,19 @@ router.on('navigate', () => {
                                 Órgãos
                             </ResponsiveNavLink>
                         </template>
+                        
+                        <!-- Exibir contato na versão móvel -->
+                        <div class="mt-2 pt-2 border-t border-[#816d33]">
+                            <a 
+                                href="mailto:dieri.dg@pc.pb.gov.br" 
+                                class="flex items-center px-3 py-2 text-black hover:text-white hover:bg-[#816d33] transition-colors duration-150 rounded-md text-sm font-medium"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                Contato: dieri.dg@pc.pb.gov.br
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Responsive Settings Options -->

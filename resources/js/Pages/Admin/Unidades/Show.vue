@@ -473,16 +473,8 @@ const salvarCessao = () => {
                                         <dd class="mt-1">{{ unidade?.dspc || 'Não informado' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Código:</dt>
-                                        <dd class="mt-1">{{ unidade?.codigo || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Tipo Estrutural:</dt>
                                         <dd class="mt-1">{{ unidade?.tipo_estrutural || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Nível:</dt>
-                                        <dd class="mt-1">{{ unidade?.nivel || 'Não informado' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Sede:</dt>
