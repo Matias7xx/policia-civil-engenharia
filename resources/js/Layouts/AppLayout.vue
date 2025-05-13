@@ -253,7 +253,7 @@ router.on('navigate', () => {
                                                 class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-black hover:bg-[#a89043] focus:outline-none transition-colors duration-150"
                                             >
                                                 <UserIcon class="h-5 w-5 mr-2" />
-                                                <span class="max-w-[100px] truncate">{{ $page.props.auth.user.name }}</span>
+                                                <span class="max-w-[100px] truncate">{{ $page.props.auth.user.name.split(' ')[0] }}</span>
 
                                                 <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -340,7 +340,7 @@ router.on('navigate', () => {
                                 :active="route().current('admin.unidades.index')"
                                 class="text-black hover:text-white hover:bg-[#816d33] transition-colors duration-150 block px-3 py-2 rounded-md text-base font-medium"
                             >
-                                Gerenciar Unidades
+                                Unidades
                             </ResponsiveNavLink>
 
                             <ResponsiveNavLink 
@@ -348,7 +348,15 @@ router.on('navigate', () => {
                                 :active="route().current('admin.users.index')"
                                 class="text-black hover:text-white hover:bg-[#816d33] transition-colors duration-150 block px-3 py-2 rounded-md text-base font-medium"
                             >
-                                Gerenciar Usuários
+                                Usuários
+                            </ResponsiveNavLink>
+
+                            <ResponsiveNavLink 
+                                :href="route('admin.orgaos.index')" 
+                                :active="route().current('admin.orgaos.index')"
+                                class="text-black hover:text-white hover:bg-[#816d33] transition-colors duration-150 block px-3 py-2 rounded-md text-base font-medium"
+                            >
+                                Órgãos
                             </ResponsiveNavLink>
                         </template>
                     </div>
@@ -399,61 +407,6 @@ router.on('navigate', () => {
                                     Sair
                                 </ResponsiveNavLink>
                             </form>
-
-                            <!-- Team Management -->
-                            <template v-if="$page.props.jetstream.hasTeamFeatures">
-                                <div class="border-t border-[#816d33] my-2"></div>
-
-                                <div class="block px-4 py-2 text-xs font-medium text-black">
-                                    Gerenciar Unidade
-                                </div>
-
-                                <!-- Team Settings -->
-                                <ResponsiveNavLink 
-                                    :href="unidadeRoute"
-                                    :active="route().current('unidades.show')"
-                                    class="text-black hover:text-white hover:bg-[#816d33] transition-colors duration-150 block px-3 py-2"
-                                >
-                                    Configurações da Unidade
-                                </ResponsiveNavLink>
-
-                                <ResponsiveNavLink 
-                                    v-if="$page.props.jetstream.canCreateTeams" 
-                                    :href="route('unidades.create')" 
-                                    :active="route().current('unidades.create')"
-                                    class="text-black hover:text-white hover:bg-[#816d33] transition-colors duration-150 block px-3 py-2"
-                                >
-                                    Criar Nova Unidade
-                                </ResponsiveNavLink>
-
-                                <!-- Team Switcher -->
-                                <template v-if="hasTeams">
-                                    <div class="border-t border-[#816d33] my-2"></div>
-
-                                    <div class="block px-4 py-2 text-xs font-medium text-black">
-                                        Alternar Unidades
-                                    </div>
-
-                                    <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">
-                                        <form @submit.prevent="switchToTeam(team)">
-                                            <ResponsiveNavLink as="button" class="w-full">
-                                                <div class="flex items-center">
-                                                    <svg v-if="team.id == $page.props.auth.user.current_team_id" 
-                                                         class="mr-2 h-5 w-5 text-black" 
-                                                         xmlns="http://www.w3.org/2000/svg" 
-                                                         fill="none" 
-                                                         viewBox="0 0 24 24" 
-                                                         stroke-width="1.5" 
-                                                         stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <div class="truncate max-w-[200px] text-black">{{ team.name }}</div>
-                                                </div>
-                                            </ResponsiveNavLink>
-                                        </form>
-                                    </template>
-                                </template>
-                            </template>
                         </div>
                     </div>
                 </div>

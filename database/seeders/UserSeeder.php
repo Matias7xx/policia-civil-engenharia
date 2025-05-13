@@ -22,7 +22,7 @@ class UserSeeder extends Seeder
             $superadmin = User::firstOrCreate(
                 ['email' => 'superadmin@example.com'],
                 [
-                    'name' => 'Super Administrador',
+                    'name' => 'ROOT',
                     'password' => Hash::make('password'),
                     'matricula' => '0000001', // Adicionar matrícula
                 ]
@@ -30,7 +30,7 @@ class UserSeeder extends Seeder
 
             // Criar time pessoal para o superadmin
             $superadminTeam = Team::firstOrCreate(
-                ['name' => 'Engenharia', 'user_id' => $superadmin->id],
+                ['name' => 'DITI', 'user_id' => $superadmin->id],
                 [
                     'user_id' => $superadmin->id,
                     'personal_team' => true,

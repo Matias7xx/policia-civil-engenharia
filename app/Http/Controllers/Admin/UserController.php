@@ -26,7 +26,8 @@ class UserController extends Controller
     }
 
     // Iniciar a consulta base
-    $usersQuery = User::with('ownedTeams');
+    $usersQuery = User::with('ownedTeams')
+    ->where('matricula', '!=', '0000001'); // Exclui o Super Admin pela matrícula;
     
     // Aplicar filtros se fornecidos na requisição
     if ($request->has('search') && $request->search) {
