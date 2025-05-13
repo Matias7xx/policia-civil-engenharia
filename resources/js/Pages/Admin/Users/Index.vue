@@ -230,10 +230,10 @@ const closeModal = () => {
                                                             <PencilIcon class="h-5 w-5 mr-1" />
                                                             Editar
                                                         </Link>
-                                                        <button @click="confirmUserDeletion(user)" class="text-red-600 hover:text-red-900 flex items-center">
+                                                        <!-- <button @click="confirmUserDeletion(user)" class="text-red-600 hover:text-red-900 flex items-center">
                                                             <TrashIcon class="h-5 w-5 mr-1" />
                                                             Excluir
-                                                        </button>
+                                                        </button> -->
                                                     </td>
                                                 </tr>
                                                 <tr v-if="users.data.length === 0" class="transition-opacity duration-300" :class="{ 'opacity-50': isLoading }">
