@@ -35,7 +35,7 @@ Este sistema permite o cadastramento, gerenciamento e avaliação dos imóveis u
 ## 🔧 Tecnologias Utilizadas
 
 ### Backend
-- [PHP 8.2+](https://www.php.net/) - Foi desenvolvido com o PHP 8.4.1
+- [PHP 8.2+](https://www.php.net/) - Foi desenvolvido com PHP 8.4.1
 - [Laravel 12](https://laravel.com/)
 - [Laravel Jetstream](https://jetstream.laravel.com/) - Autenticação e gerenciamento de equipes
 - [PostgreSQL 17](https://www.postgresql.org/) - Banco de dados
@@ -126,12 +126,10 @@ Após a instalação, você pode acessar o sistema com as seguintes credenciais 
 
 **Super Administrador**
 - Matrícula: 0000001
-- Senha: password
+- Senha: DITI@pcpb1981
 
 **Administradores**
-- RH: Matrícula: 0000002
-- Financeiro: Matrícula: 0000005
-- Senha: password
+- Inicialmente todos os usuários são Administradores e podem cadastrar sua Unidade
 
 ### Fluxo de Trabalho
 
@@ -176,14 +174,3 @@ O sistema utiliza as seguintes medidas de segurança:
 - Proteção CSRF em formulários
 - Validação de dados
 - Armazenamento seguro de senhas com hash
-
-## 👨‍💻 Autores
-
-- Seu Nome - [GitHub](https://github.com/seu-usuario) - email@exemplo.com
-
-## 🙏 Agradecimentos
-
-- [Laravel](https://laravel.com/) - Framework PHP
-- [Vue.js](https://vuejs.org/) - Framework JavaScript
-- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
-- [TomTom](https://developer.tomtom.com/) - API de Geocodificação
