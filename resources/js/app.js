@@ -1,11 +1,22 @@
 import './bootstrap';
 import '../css/app.css';
 import axios from 'axios';
+import 'leaflet/dist/leaflet.css';
+
+// Corrige o problema dos ícones do Leaflet no webpack/vite
+/* import { Icon } from 'leaflet';
+delete Icon.Default.prototype._getIconUrl;
+
+Icon.Default.mergeOptions({
+    iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
+    iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).href,
+    shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
+}); */
 
 // Configuração global do axios
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_APP_URL || 'http://localhost:8000';
-axios.defaults.timeout = 30000; // 30 segundos de timeout
+axios.defaults.timeout = 90000; // 90 segundos de timeout
 
 // Cache do token CSRF para evitar requisições desnecessárias
 let csrfTokenInitialized = false;
@@ -106,7 +117,6 @@ createInertiaApp({
         // Manipulador global de erros
         app.config.errorHandler = (error, vm, info) => {
             console.error('Erro na aplicação Vue:', error, info);
-            // Aqui você poderia enviar o erro para um serviço de monitoramento como Sentry
         };
         
         // Montagem da aplicação

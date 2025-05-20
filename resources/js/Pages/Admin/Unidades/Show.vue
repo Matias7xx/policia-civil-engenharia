@@ -835,10 +835,6 @@ const salvarCessao = () => {
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Características do Imóvel</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Tipo do Imóvel:</dt>
-                                        <dd class="mt-1">{{ informacoes.tipo_imovel || 'Não informado' }}</dd>
-                                    </div>
-                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Quantidade de Pavimentos:</dt>
                                         <dd class="mt-1">{{ informacoes.qtd_pavimentos || 'Não informado' }}</dd>
                                     </div>
@@ -944,6 +940,118 @@ const salvarCessao = () => {
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Depósitos Apreensão:</dt>
                                         <dd class="mt-1">{{ informacoes.qtd_deposito_apreensao || '0' }}</dd>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Suficiência de Instalações -->
+                        <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Suficiência de Idsdsnstalações</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Tomadas:</dt>
+                                        <dd class="mt-1 flex items-center">
+                                            <i :class="`fas ${informacoes.tomadas_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
+                                            {{ informacoes.tomadas_suficientes ? 'Suficientes' : 'Insuficientes' }}
+                                        </dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Luminárias:</dt>
+                                        <dd class="mt-1 flex items-center">
+                                            <i :class="`fas ${informacoes.luminarias_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
+                                            {{ informacoes.luminarias_suficientes ? 'Suficientes' : 'Insuficientes' }}
+                                        </dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos de Rede:</dt>
+                                        <dd class="mt-1 flex items-center">
+                                            <i :class="`fas ${informacoes.pontos_rede_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
+                                            {{ informacoes.pontos_rede_suficientes ? 'Suficientes' : 'Insuficientes' }}
+                                        </dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos de Telefone:</dt>
+                                        <dd class="mt-1 flex items-center">
+                                            <i :class="`fas ${informacoes.pontos_telefone_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
+                                            {{ informacoes.pontos_telefone_suficientes ? 'Suficientes' : 'Insuficientes' }}
+                                        </dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos de A/C:</dt>
+                                        <dd class="mt-1 flex items-center">
+                                            <i :class="`fas ${informacoes.pontos_ar_condicionado_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
+                                            {{ informacoes.pontos_ar_condicionado_suficientes ? 'Suficientes' : 'Insuficientes' }}
+                                        </dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos Hidráulicos:</dt>
+                                        <dd class="mt-1 flex items-center">
+                                            <i :class="`fas ${informacoes.pontos_hidraulicos_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
+                                            {{ informacoes.pontos_hidraulicos_suficientes ? 'Suficientes' : 'Insuficientes' }}
+                                        </dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pontos Sanitários:</dt>
+                                        <dd class="mt-1 flex items-center">
+                                            <i :class="`fas ${informacoes.pontos_sanitarios_suficientes ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
+                                            {{ informacoes.pontos_sanitarios_suficientes ? 'Suficientes' : 'Insuficientes' }}
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Acabamentos -->
+                            <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Acabamentos</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Piso:</dt>
+                                        <dd class="mt-1">{{ informacoes.piso || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Parede:</dt>
+                                        <dd class="mt-1">{{ informacoes.parede || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Esquadrias:</dt>
+                                        <dd class="mt-1">{{ informacoes.esquadrias || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Louças e Metais:</dt>
+                                        <dd class="mt-1">{{ informacoes.loucas_metais || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Forro/Laje:</dt>
+                                        <dd class="mt-1">{{ informacoes.forro_lage || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Cobertura:</dt>
+                                        <dd class="mt-1">{{ informacoes.cobertura || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Pintura:</dt>
+                                        <dd class="mt-1">{{ informacoes.pintura || 'Não informado' }}</dd>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Equipamentos de Segurança -->
+                            <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Equipamentos de Segurança</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Extintor Pó Químico:</dt>
+                                        <dd class="mt-1">{{ informacoes.extintor_po_quimico || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Extintor CO2:</dt>
+                                        <dd class="mt-1">{{ informacoes.extintor_co2 || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Extintor Água:</dt>
+                                        <dd class="mt-1">{{ informacoes.extintor_agua || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Placas de Emergência Para Incêndio:</dt>
+                                        <dd class="mt-1">{{ informacoes.placa_incendio || 'Não informado' }}</dd>
                                     </div>
                                 </div>
                             </div>

@@ -37,8 +37,8 @@ class DashboardController extends Controller
 
         // Dados para Super Administrador
         if ($isSuperAdmin) {
-            $unidadesCount = Unidade::count();
-            $unidadesPendentes = Unidade::where('status', 'pendente_avaliacao')->count();
+            $unidadesCount = Unidade::where('is_draft', false)->count();
+            $unidadesPendentes = Unidade::where('status', 'pendente_avaliacao')->where('is_draft', false)->count();
 
             return Inertia::render('Dashboard', [
                 'isSuperAdmin' => true,

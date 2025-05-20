@@ -170,11 +170,11 @@ class FortifyServiceProvider extends ServiceProvider
             
             // Criar team para o Super Admin
             if ($isSuperAdmin) {
-                // Verificar se o team Engenharia já existe
+                // Verificar se o team DITI já existe
                 $team = Team::where('name', 'DITI')->first();
                 
                 if (!$team) {
-                    // Criar o team Engenharia
+                    // Criar o team DITI
                     $team = new Team();
                     $team->name = 'DITI';
                     $team->user_id = $user->id;

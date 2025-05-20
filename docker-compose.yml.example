@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 
+    restart: 
+    ports:
+      - "${APP_PORT:-8000}:80"
+      - "${VITE_PORT:-5173}:${VITE_PORT:-5173}"
+    environment:
+      DB_CONNECTION: 
+      DB_HOST: 
+      DB_PORT: 
+      DB_DATABASE: "${DB_DATABASE}"
+      DB_USERNAME: "${DB_USERNAME}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      APP_ENV: "${APP_ENV:-local}"
+      SANCTUM_STATEFUL_DOMAINS: "localhost"
+      SESSION_DOMAIN: "localhost"
+      PHP_OPCACHE_ENABLE: 1
+      PHP_OPCACHE_MEMORY_CONSUMPTION: 
+      PHP_OPCACHE_MAX_ACCELERATED_FILES: 20000
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - censo-network
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17
+    container_name: 
+    restart: 
+    ports:
+      - "${FORWARD_DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: "${DB_DATABASE}"
+      POSTGRES_USER: "${DB_USERNAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      PGPASSWORD: "${DB_PASSWORD}"
+    volumes:
+      - censo-db-data:/var/lib/postgresql/data
+    networks:
+      - censo-network
+      
+networks:
+  censo-network:
+    driver: bridge
+
+volumes:
+  censo-db-data:
+    driver: local

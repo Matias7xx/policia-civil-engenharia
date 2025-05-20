@@ -1,0 +1,2 @@
+# Laravel Queue Worker para processamento de filas
+*/5 * * * * www-data php /var/www/html/artisan queue:work --stop-when-empty --timeout=300 >> /var/www/html/storage/logs/queue.log 2>&1

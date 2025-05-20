@@ -143,14 +143,6 @@ const saveInformacoesEstruturais = () => {
     });
 };
 
-// Opções para tipos de imóvel
-const tiposImovel = [
-    { value: 'proprio', label: 'Próprio' },
-    { value: 'locado', label: 'Locado' },
-    { value: 'cedido', label: 'Cedido' },
-    { value: 'outro', label: 'Outro' }
-];
-
 // Lista de opções para pavimentação
 const tiposPavimentacao = [
     { value: 'asfalto', label: 'Asfalto' },
@@ -321,12 +313,11 @@ const buttonText = computed(() => {
                             <InputLabel for="telefone_fixo" value="Telefone Fixo" class="text-sm" />
                             <TextInput
                                 id="telefone_fixo"
-                                :value="form.telefone_fixo"
+                                v-model="form.telefone_fixo"
                                 type="text"
                                 placeholder="Possui/Não Possui"
                                 class="mt-1 block w-full"
                                 :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
-                                @update:modelValue="methods.updateField('telefone_fixo', $event)"
                             />
                             <InputError :message="form.errors.telefone_fixo" class="mt-1 text-xs" />
                         </div>
@@ -335,97 +326,17 @@ const buttonText = computed(() => {
                             <InputLabel for="telefone_movel" value="Telefone Móvel" class="text-sm" />
                             <TextInput
                                 id="telefone_movel"
-                                :value="form.telefone_movel"
+                                v-model="form.telefone_movel"
                                 type="text"
                                 placeholder="Possui/Não Possui"
                                 class="mt-1 block w-full"
                                 :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
-                                @update:modelValue="methods.updateField('telefone_movel', $event)"
                             />
                             <InputError :message="form.errors.telefone_movel" class="mt-1 text-xs" />
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- 2. Características do Imóvel -->
-            <!-- <div class="col-span-6">
-                <div 
-                    @click="methods.toggleSection('imovel')" 
-                    class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200"
-                >
-                    <InputLabel value="2. Características do Imóvel" class="text-base font-semibold" />
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        class="h-5 w-5 transition-transform duration-200" 
-                        :class="expandedSections.imovel ? 'transform rotate-180' : ''"
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                    >
-                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-                
-                <div 
-                    v-show="expandedSections.imovel" 
-                    class="p-4 border border-gray-200 rounded-b-lg mb-4 bg-white shadow-sm transition-all duration-300"
-                >
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <InputLabel for="tipo_imovel" value="Tipo do Imóvel" class="text-sm" />
-                            <SelectInput
-                                id="tipo_imovel"
-                                v-model="form.tipo_imovel"
-                                :options="tiposImovel"
-                                class="mt-1 block w-full"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
-                            >
-                                <option value="">Selecione o tipo</option>
-                            </SelectInput>
-                            <InputError :message="form.errors.tipo_imovel" class="mt-1 text-xs" />
-                        </div>
-
-                        <div v-if="form.tipo_imovel === 'locado'">
-                            <InputLabel for="contrato_locacao_id" value="Identificação do Contrato" class="text-sm" />
-                            <TextInput
-                                id="contrato_locacao_id"
-                                v-model="form.contrato_locacao_id"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Nº do contrato"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
-                            />
-                            <InputError :message="form.errors.contrato_locacao_id" class="mt-1 text-xs" />
-                        </div>
-
-                        <div v-if="form.tipo_imovel === 'locado' || form.tipo_imovel === 'cedido'">
-                            <InputLabel for="responsavel_locacao_cessao" value="Responsável pela Locação/Cessão" class="text-sm" />
-                            <TextInput
-                                id="responsavel_locacao_cessao"
-                                v-model="form.responsavel_locacao_cessao"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Nome do responsável"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
-                            />
-                            <InputError :message="form.errors.responsavel_locacao_cessao" class="mt-1 text-xs" />
-                        </div>
-
-                        <div v-if="form.tipo_imovel === 'proprio'">
-                            <InputLabel for="escritura_publica" value="Escritura Pública" class="text-sm" />
-                            <TextInput
-                                id="escritura_publica"
-                                v-model="form.escritura_publica"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Nº da escritura"
-                                :disabled="!permissions?.canUpdateTeam || unidade?.is_draft === false"
-                            />
-                            <InputError :message="form.errors.escritura_publica" class="mt-1 text-xs" />
-                        </div>
-                    </div>
-                </div>
-            </div> -->
 
             <!-- 2. Características Estruturais -->
             <div class="col-span-6">
