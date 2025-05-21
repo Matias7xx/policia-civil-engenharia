@@ -15,6 +15,10 @@ use App\Http\Controllers\UnidadeController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\URL;
+
+URL::forceScheme(env('HTTP_SCHEMA'));
+URL::forceRootUrl(env('APP_URL'));
 
 Route::get('/', function () {
     return Inertia::render('Auth/Login', [
