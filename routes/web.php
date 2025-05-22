@@ -81,6 +81,7 @@ Route::middleware([
             ->name('edit');
 
             Route::post('/dados-gerais', [UnidadeController::class, 'saveDadosGerais'])->name('saveDadosGerais');
+            Route::post('/saveLocalizacao', [UnidadeController::class, 'saveLocalizacao'])->name('saveLocalizacao');
             Route::post('/acessibilidade', [UnidadeController::class, 'saveAcessibilidade'])->name('saveAcessibilidade');
             Route::post('/informacoes-estruturais', [UnidadeController::class, 'saveInformacoesEstruturais'])->name('saveInformacoesEstruturais');
             Route::post('/finalize/{unidade}', [UnidadeController::class, 'finalize'])->name('finalize');

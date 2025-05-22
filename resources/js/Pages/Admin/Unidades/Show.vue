@@ -620,7 +620,11 @@ const salvarCessao = () => {
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Anexo</label>
-                                        <input type="file" @change="contratoForm.anexo = $event.target.files[0]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                        <input
+                                            type="file" 
+                                            @change="contratoForm.anexo = $event.target.files[0]" 
+                                            accept="application/pdf"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                                         <p v-if="contratoForm.errors.anexo" class="text-red-500 text-xs mt-1">{{ contratoForm.errors.anexo }}</p>
                                     </div>
                                     <div class="col-span-full">
@@ -670,7 +674,12 @@ const salvarCessao = () => {
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Termo de Cessão</label>
-                                        <input type="file" @change="cessaoForm.termo_cessao = $event.target.files[0]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                        <input 
+                                            type="file"
+                                            @change="cessaoForm.termo_cessao = $event.target.files[0]" 
+                                            accept="application/pdf"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            />
                                         <p v-if="cessaoForm.errors.termo_cessao" class="text-red-500 text-xs mt-1">{{ cessaoForm.errors.termo_cessao }}</p>
                                     </div>
                                     <div class="col-span-full">

@@ -2,6 +2,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import UnidadeDetailsForm from '@/Pages/Unidades/Partials/UnidadeDetailsForm.vue';
+import LocalizacaoForm from '@/Pages/Unidades/Partials/LocalizacaoForm.vue';
 import AcessibilidadeForm from '@/Pages/Unidades/Partials/AcessibilidadeForm.vue';
 import InformacoesUnidadeForm from '@/Pages/Unidades/Partials/InformacoesUnidadeForm.vue';
 import MidiasUnidadeForm from '@/Pages/Unidades/Partials/MidiasUnidadeForm.vue';
@@ -35,6 +36,7 @@ watch(() => page.props.flash, (flash) => {
 
 const tabs = [
     { id: 'dados-gerais', label: 'Dados Gerais', icon: 'fa-building' },
+    { id: 'localizacao', label: 'Localização', icon: 'fa-map-marker-alt' },
     { id: 'acessibilidade', label: 'Acessibilidade', icon: 'fa-wheelchair' },
     { id: 'informacoes', label: 'Estruturais', icon: 'fa-info-circle' },
     { id: 'midias', label: 'Mídias', icon: 'fa-camera' },
@@ -87,7 +89,6 @@ const handleSaved = (error = null) => {
         <div class="py-6 sm:py-12">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-
                     <div class="p-4 sm:p-8 bg-white border-b border-gray-200">
                         <!-- Mensagem de erro ou sucesso -->
                         <transition name="fade">
@@ -110,7 +111,6 @@ const handleSaved = (error = null) => {
                         <!-- Tabs -->
                         <div class="border-b border-gray-200 overflow-x-auto pb-2">
                             <nav class="-mb-px flex space-x-4 sm:space-x-8" aria-label="Tabs">
-                                
                                 <button
                                     v-for="tab in tabs"
                                     :key="tab.id"
@@ -137,6 +137,17 @@ const handleSaved = (error = null) => {
                                     :team="team"
                                     :unidade="unidade"
                                     :orgaos="orgaos"
+                                    :permissions="permissions"
+                                    :is-new="false"
+                                    :is-editable="true"
+                                    @saved="handleSaved"
+                                />
+                            </div>
+
+                            <div v-if="activeTab === 'localizacao'" class="animate-fade-in">
+                                <LocalizacaoForm
+                                    :team="team"
+                                    :unidade="unidade"
                                     :permissions="permissions"
                                     :is-new="false"
                                     :is-editable="true"

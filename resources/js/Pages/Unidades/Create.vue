@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import UnidadeDetailsForm from '@/Pages/Unidades/Partials/UnidadeDetailsForm.vue';
+import LocalizacaoForm from '@/Pages/Unidades/Partials/LocalizacaoForm.vue';
 import AcessibilidadeForm from '@/Pages/Unidades/Partials/AcessibilidadeForm.vue';
 import InformacoesUnidadeForm from '@/Pages/Unidades/Partials/InformacoesUnidadeForm.vue';
 import MidiasUnidadeForm from '@/Pages/Unidades/Partials/MidiasUnidadeForm.vue';
@@ -13,7 +14,12 @@ const initializeCompletedTabs = () => {
     const dadosGeraisCompleted = props.unidade?.id &&
         props.unidade?.nome &&
         props.unidade?.tipo_estrutural &&
-        props.unidade?.tipo_judicial &&
+        props.unidade?.tipo_judicial;
+
+    completedTabs.value['dados-gerais'] = !!dadosGeraisCompleted;
+
+    // Aba "Localização": Verifica se todos os campos obrigatórios estão preenchidos
+    const localizacaoCompleted = props.unidade?.id &&
         props.unidade?.cidade &&
         props.unidade?.cep &&
         props.unidade?.rua &&
@@ -21,7 +27,7 @@ const initializeCompletedTabs = () => {
         props.unidade?.latitude &&
         props.unidade?.longitude;
 
-    completedTabs.value['dados-gerais'] = !!dadosGeraisCompleted;
+    completedTabs.value['localizacao'] = !!localizacaoCompleted;
 
     // Aba "Acessibilidade": Verifica se todos os campos obrigatórios estão preenchidos
     const acessibilidadeCompleted = props.acessibilidade?.id &&
@@ -57,6 +63,7 @@ const activeTab = ref('dados-gerais');
 const errorMessage = ref(null);
 const completedTabs = ref({
     'dados-gerais': false,
+    'localizacao': false,
     'acessibilidade': false,
     'informacoes': false,
     'midias': false,
@@ -93,6 +100,7 @@ watch(() => page.props.flash, (flash) => {
 
 const tabs = [
     { id: 'dados-gerais', label: 'Dados Gerais', icon: 'fa-building' },
+    { id: 'localizacao', label: 'Localização', icon: 'fa-map-marker-alt' },
     { id: 'acessibilidade', label: 'Acessibilidade', icon: 'fa-wheelchair' },
     { id: 'informacoes', label: 'Estruturais', icon: 'fa-info-circle' },
     { id: 'midias', label: 'Mídias', icon: 'fa-camera' },
@@ -101,10 +109,11 @@ const tabs = [
 // Função para verificar se uma aba pode ser acessada
 const canAccessTab = (tabId) => {
     if (!props.unidade?.is_draft) return true; // Permite visualização se não for rascunho
-    const tabOrder = ['dados-gerais', 'acessibilidade', 'informacoes', 'midias'];
+    const tabOrder = ['dados-gerais', 'localizacao', 'acessibilidade', 'informacoes', 'midias'];
     const currentIndex = tabOrder.indexOf(tabId);
     // Permite acesso à aba atual ou anteriores se já preenchidas
-    return currentIndex === 0 || tabOrder.slice(0, currentIndex).every((tab) => completedTabs.value[tab]);
+    const canAccess = currentIndex === 0 || tabOrder.slice(0, currentIndex).every((tab) => completedTabs.value[tab]);
+    return canAccess;
 };
 
 // Função para mudar a aba
@@ -130,7 +139,7 @@ const handleSaved = (nextTab, tabId, error = null) => {
 
     // Definir próxima aba com base na aba atual
     if (!nextTab && tabId) {
-        const tabOrder = ['dados-gerais', 'acessibilidade', 'informacoes', 'midias'];
+        const tabOrder = ['dados-gerais', 'localizacao', 'acessibilidade', 'informacoes', 'midias'];
         const currentIndex = tabOrder.indexOf(tabId);
         if (currentIndex < tabOrder.length - 1) {
             nextTab = tabOrder[currentIndex + 1];
@@ -160,11 +169,13 @@ const handleFinalSave = (nextTab, error = null) => {
 
 // Verifica se todas as abas estão completas
 const allTabsCompleted = () => {
-    return (
+    const allCompleted = (
         completedTabs.value['dados-gerais'] &&
+        completedTabs.value['localizacao'] &&
         completedTabs.value['acessibilidade'] &&
         completedTabs.value['informacoes']
     );
+    return allCompleted;
 };
 
 // Classe de progresso para exibir visualmente o status de cada etapa
@@ -207,7 +218,7 @@ const tabProgressClass = computed(() => (tabId) => {
                             <div class="w-full bg-gray-200 rounded-full h-2.5">
                                 <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
                                     :style="{
-                                        width: `${(Object.values(completedTabs).filter(Boolean).length / 4) * 100}%`
+                                        width: `${(Object.values(completedTabs).filter(Boolean).length / 5) * 100}%`
                                     }"></div>
                             </div>
                         </div>
@@ -270,6 +281,17 @@ const tabProgressClass = computed(() => (tabId) => {
                                 />
                             </div>
 
+                            <div v-if="activeTab === 'localizacao'" class="animate-fade-in">
+                                <LocalizacaoForm
+                                    :team="team"
+                                    :unidade="unidade"
+                                    :permissions="permissions"
+                                    :is-new="!unidade?.id"
+                                    :is-editable="unidade?.is_draft ?? true"
+                                    @saved="(nextTab, error) => handleSaved(nextTab, 'localizacao', error)"
+                                />
+                            </div>
+
                             <div v-if="activeTab === 'acessibilidade'" class="animate-fade-in">
                                 <AcessibilidadeForm
                                     :team="team"
@@ -283,7 +305,7 @@ const tabProgressClass = computed(() => (tabId) => {
                             </div>
 
                             <div v-if="activeTab === 'informacoes'" class="animate-fade-in">
-                                <InformacoesUnidadeForm
+                                <<InformacoesUnidadeForm
                                     :team="team"
                                     :unidade="unidade"
                                     :informacoes="informacoes"

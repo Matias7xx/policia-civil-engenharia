@@ -238,7 +238,10 @@ class UnidadeController extends Controller
         'valor_locacao' => 'required|numeric|min:0',
         'data_inicio' => 'required|date',
         'data_fim' => 'nullable|date|after_or_equal:data_inicio',
-        'anexo' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+        'anexo' => 'nullable|file|mimes:pdf|max:10240',
+    ], [
+        'anexo.mimes' => 'O arquivo deve ser um PDF válido.',
+        'anexo.max' => 'O arquivo não pode exceder 10MB.',
     ]);
 
     $contrato = $unidade->contratoLocacao ?: new ContratoLocacaoUnidade(['unidade_id' => $unidade->id]);
@@ -319,8 +322,11 @@ class UnidadeController extends Controller
 
         $validated = $request->validate([
             'orgao_cedente' => 'required|string|max:255',
-            'termo_cessao' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'termo_cessao' => 'nullable|file|mimes:pdf|max:10240',
             'prazo_cessao' => 'required|date',
+        ], [
+            'anexo.mimes' => 'O arquivo deve ser um PDF válido.',
+            'anexo.max' => 'O arquivo não pode exceder 10MB.',
         ]);
 
         $unidade->update([
