@@ -366,7 +366,16 @@ const getTabelas = computed(() => {
     const tiposAgrupados = {};
     
     midiaTipos.value.forEach(tipo => {
-        const categoria = tipo.nome.includes('foto_') ? 'Área Externa' : 'Área Interna';
+        let categoria;
+        
+        // Categorizar os tipos de mídia
+        if (['rampa_acesso', 'corrimao', 'piso_tatil', 'banheiro_adaptado', 'elevador', 'sinalizacao_braile'].includes(tipo.nome)) {
+            categoria = 'Acessibilidade';
+        } else if (tipo.nome.includes('foto_')) {
+            categoria = 'Área Externa';
+        } else {
+            categoria = 'Área Interna';
+        }
         
         if (!tiposAgrupados[categoria]) {
             tiposAgrupados[categoria] = [];
@@ -375,7 +384,12 @@ const getTabelas = computed(() => {
         tiposAgrupados[categoria].push(tipo);
     });
     
-    return Object.entries(tiposAgrupados);
+    // Ordenar as categorias para ter uma ordem fixa: Área Externa, Área Interna, Acessibilidade
+    const categoriaOrdem = ['Área Externa', 'Área Interna', 'Acessibilidade'];
+    
+    return Object.entries(tiposAgrupados).sort((a, b) => {
+        return categoriaOrdem.indexOf(a[0]) - categoriaOrdem.indexOf(b[0]);
+    });
 });
 
 // Determina o texto do botão com base no modo (criar/editar)
@@ -571,7 +585,7 @@ const buttonText = computed(() => {
 
         <template v-if="permissions?.canUpdateTeam && isEditable" #actions>
             <div class="flex items-center">
-        <!-- Mensagem de sucesso melhorada -->
+        <!-- Mensagem de sucesso -->
         <div v-if="tipoFeedback === 'success'" 
              class="mr-4 inline-flex items-center px-3 py-1 rounded-md bg-green-100 text-green-800 text-sm animate-fade-in">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">

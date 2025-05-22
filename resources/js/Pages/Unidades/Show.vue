@@ -388,6 +388,10 @@ const formatarTelefones = computed(() => {
                                         <dd class="mt-1">{{ informacoes.caixa_dagua || 'Não informado' }}</dd>
                                     </div>
                                 </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow mt-4 w-fit">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Ponto de energia próximo a algum ponto de água para a instalação de um purificador de água:</dt>
+                                        <dd class="mt-1">{{ informacoes.ponto_energia_agua || 'Não informado' }}</dd>
+                                    </div>
                             </div>
 
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
@@ -415,6 +419,10 @@ const formatarTelefones = computed(() => {
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Características do Imóvel</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Área Aproximada da Unidade (m²):</dt>
+                                        <dd class="mt-1">{{ informacoes.area_aproximada_unidade + " m²" || 'Não informado' }}</dd>
+                                    </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Quantidade de Pavimentos:</dt>
                                         <dd class="mt-1">{{ informacoes.qtd_pavimentos || 'Não informado' }}</dd>
@@ -501,8 +509,20 @@ const formatarTelefones = computed(() => {
                                         <dd class="mt-1">{{ informacoes.qtd_wc_alojamento_feminino || '0' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Celas:</dt>
-                                        <dd class="mt-1">{{ informacoes.qtd_celas_carceragem || '0' }}</dd>
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Xadrez masculino:</dt>
+                                        <dd class="mt-1">{{ informacoes.qtd_xadrez_masculino || '0' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Área Xadrez masculino:</dt>
+                                        <dd class="mt-1">{{ informacoes.area_xadrez_masculino + ' m²' || '0' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Xadrez feminino:</dt>
+                                        <dd class="mt-1">{{ informacoes.qtd_xadrez_feminino || '0' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Área Xadrez feminino:</dt>
+                                        <dd class="mt-1">{{ informacoes.area_xadrez_feminino + ' m²' || '0' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Salas Identificação:</dt>

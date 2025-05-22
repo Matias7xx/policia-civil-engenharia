@@ -54,11 +54,16 @@ class InformacoesUnidade extends Model
         'qtd_wc_alojamento_masculino',
         'qtd_alojamento_feminino',
         'qtd_wc_alojamento_feminino',
-        'qtd_celas_carceragem',
+        'qtd_xadrez_masculino',
+        'area_xadrez_masculino',  
+        'qtd_xadrez_feminino', 
+        'area_xadrez_feminino', 
         'qtd_sala_identificacao',
         'qtd_cozinha',
         'qtd_area_servico',
         'qtd_deposito_apreensao',
+        'area_aproximada_unidade', 
+        'ponto_energia_agua',
         'tomadas_suficientes',
         'luminarias_suficientes',
         'pontos_rede_suficientes',
@@ -101,11 +106,15 @@ class InformacoesUnidade extends Model
         'qtd_wc_alojamento_masculino' => 'integer',
         'qtd_alojamento_feminino' => 'integer',
         'qtd_wc_alojamento_feminino' => 'integer',
-        'qtd_celas_carceragem' => 'integer',
+        'qtd_xadrez_masculino' => 'integer',
+        'area_xadrez_masculino' => 'decimal:2',
+        'qtd_xadrez_feminino' => 'integer',
+        'area_xadrez_feminino' => 'decimal:2',
         'qtd_sala_identificacao' => 'integer',
         'qtd_cozinha' => 'integer',
         'qtd_area_servico' => 'integer',
         'qtd_deposito_apreensao' => 'integer',
+        'area_aproximada_unidade' => 'decimal:2',
         'tomadas_suficientes' => 'boolean',
         'luminarias_suficientes' => 'boolean',
         'pontos_rede_suficientes' => 'boolean',
@@ -126,7 +135,7 @@ class InformacoesUnidade extends Model
     /**
      * Obtém o contrato de locação referenciado, se houver.
      */
-        public function contratoLocacao(): BelongsTo
+    public function contratoLocacao(): BelongsTo
     {
         return $this->belongsTo(ContratoLocacaoUnidade::class, 'contrato_locacao_id', 'id');
     }

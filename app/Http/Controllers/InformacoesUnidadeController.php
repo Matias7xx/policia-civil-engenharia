@@ -35,8 +35,8 @@ class InformacoesUnidadeController extends Controller
             'caixa_dagua' => 'nullable|string|max:255',
             'internet_cabeada' => 'nullable|string|max:255',
             'internet_provedor' => 'nullable|string|max:255',
-            'telefone_fixo' => 'nullable|string|max:255',
-            'telefone_movel' => 'nullable|string|max:255',
+            'telefone_fixo' => 'nullable|string|max:20',
+            'telefone_movel' => 'nullable|string|max:20',
             
             // Características do imóvel
             'tipo_imovel' => 'nullable|string|max:255',
@@ -63,11 +63,16 @@ class InformacoesUnidadeController extends Controller
             'qtd_wc_alojamento_masculino' => 'nullable|integer',
             'qtd_alojamento_feminino' => 'nullable|integer',
             'qtd_wc_alojamento_feminino' => 'nullable|integer',
-            'qtd_celas_carceragem' => 'nullable|integer',
+            'qtd_xadrez_masculino' => 'nullable|integer',
+            'area_xadrez_masculino' => 'nullable|numeric',
+            'qtd_xadrez_feminino' => 'nullable|integer',
+            'area_xadrez_feminino' => 'nullable|numeric',
             'qtd_sala_identificacao' => 'nullable|integer',
             'qtd_cozinha' => 'nullable|integer',
             'qtd_area_servico' => 'nullable|integer',
             'qtd_deposito_apreensao' => 'nullable|integer',
+            'area_aproximada_unidade' => 'nullable|numeric',
+            'ponto_energia_agua' => 'nullable|string',
             
             // Suficiência de instalações
             'tomadas_suficientes' => 'nullable|boolean',
@@ -129,8 +134,8 @@ class InformacoesUnidadeController extends Controller
             'caixa_dagua' => 'nullable|string|max:255',
             'internet_cabeada' => 'nullable|string|max:255',
             'internet_provedor' => 'nullable|string|max:255',
-            'telefone_fixo' => 'nullable|string|max:255',
-            'telefone_movel' => 'nullable|string|max:255',
+            'telefone_fixo' => 'nullable|string|max:20',
+            'telefone_movel' => 'nullable|string|max:20',
             
             // Características do imóvel
             'tipo_imovel' => 'nullable|string|max:255',
@@ -139,6 +144,7 @@ class InformacoesUnidadeController extends Controller
             'escritura_publica' => 'nullable|string|max:255',
             
             // Características estruturais
+            'area_aproximada_unidade' => 'nullable|numeric',
             'qtd_pavimentos' => 'nullable|numeric',
             'cercado_muros' => 'nullable|boolean',
             'estacionamento_interno' => 'nullable|boolean',
@@ -157,13 +163,17 @@ class InformacoesUnidadeController extends Controller
             'qtd_wc_alojamento_masculino' => 'nullable|integer',
             'qtd_alojamento_feminino' => 'nullable|integer',
             'qtd_wc_alojamento_feminino' => 'nullable|integer',
-            'qtd_celas_carceragem' => 'nullable|integer',
+            'qtd_xadrez_masculino' => 'nullable|integer',
+            'area_xadrez_masculino' => 'nullable|numeric',
+            'qtd_xadrez_feminino' => 'nullable|integer',
+            'area_xadrez_feminino' => 'nullable|numeric',
             'qtd_sala_identificacao' => 'nullable|integer',
             'qtd_cozinha' => 'nullable|integer',
             'qtd_area_servico' => 'nullable|integer',
             'qtd_deposito_apreensao' => 'nullable|integer',
             
             // Suficiência de instalações
+            'ponto_energia_agua' => 'nullable|string',
             'tomadas_suficientes' => 'nullable|boolean',
             'luminarias_suficientes' => 'nullable|boolean',
             'pontos_rede_suficientes' => 'nullable|boolean',

@@ -48,6 +48,7 @@ const form = useForm({
     contrato_locacao_id: props.informacoes?.contrato_locacao_id || '',
     responsavel_locacao_cessao: props.informacoes?.responsavel_locacao_cessao || '',
     escritura_publica: props.informacoes?.escritura_publica || '',
+    area_aproximada_unidade: props.informacoes?.area_aproximada_unidade ? String(props.informacoes.area_aproximada_unidade) : '',
     qtd_pavimentos: props.informacoes?.qtd_pavimentos ? String(props.informacoes.qtd_pavimentos) : '',
     cercado_muros: props.informacoes?.cercado_muros || false,
     estacionamento_interno: props.informacoes?.estacionamento_interno || false,
@@ -64,11 +65,15 @@ const form = useForm({
     qtd_wc_alojamento_masculino: props.informacoes?.qtd_wc_alojamento_masculino ? String(props.informacoes.qtd_wc_alojamento_masculino) : '',
     qtd_alojamento_feminino: props.informacoes?.qtd_alojamento_feminino ? String(props.informacoes.qtd_alojamento_feminino) : '',
     qtd_wc_alojamento_feminino: props.informacoes?.qtd_wc_alojamento_feminino ? String(props.informacoes.qtd_wc_alojamento_feminino) : '',
-    qtd_celas_carceragem: props.informacoes?.qtd_celas_carceragem ? String(props.informacoes.qtd_celas_carceragem) : '',
+    qtd_xadrez_masculino: props.informacoes?.qtd_xadrez_masculino ? String(props.informacoes.qtd_xadrez_masculino) : '',
+    area_xadrez_masculino: props.informacoes?.area_xadrez_masculino ? String(props.informacoes.area_xadrez_masculino) : '',
+    qtd_xadrez_feminino: props.informacoes?.qtd_xadrez_feminino ? String(props.informacoes.qtd_xadrez_feminino) : '',
+    area_xadrez_feminino: props.informacoes?.area_xadrez_feminino ? String(props.informacoes.area_xadrez_feminino) : '',
     qtd_sala_identificacao: props.informacoes?.qtd_sala_identificacao ? String(props.informacoes.qtd_sala_identificacao) : '',
     qtd_cozinha: props.informacoes?.qtd_cozinha ? String(props.informacoes.qtd_cozinha) : '',
     qtd_area_servico: props.informacoes?.qtd_area_servico ? String(props.informacoes.qtd_area_servico) : '',
     qtd_deposito_apreensao: props.informacoes?.qtd_deposito_apreensao ? String(props.informacoes.qtd_deposito_apreensao) : '',
+    ponto_energia_agua: props.informacoes?.ponto_energia_agua || '',
     tomadas_suficientes: props.informacoes?.tomadas_suficientes || false,
     luminarias_suficientes: props.informacoes?.luminarias_suficientes || false,
     pontos_rede_suficientes: props.informacoes?.pontos_rede_suficientes || false,
@@ -335,6 +340,18 @@ const buttonText = computed(() => {
                             <InputError :message="form.errors.telefone_movel" class="mt-1 text-xs" />
                         </div>
                     </div>
+                            <div class="mt-4">
+                            <InputLabel for="ponto_energia_agua" value="Há ponto de energia próximo a algum ponto de água para a instalação de um purificador de água?" class="text-sm" />
+                            <TextInput
+                                id="ponto_energia_agua"
+                                v-model="form.ponto_energia_agua"
+                                type="text"
+                                placeholder="Sim/Não"
+                                class="mt-1"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                            />
+                            <InputError :message="form.errors.ponto_energia_agua" class="mt-1 text-xs" />
+                        </div>
                 </div>
             </div>
 
@@ -361,6 +378,21 @@ const buttonText = computed(() => {
                     class="p-4 border border-gray-200 rounded-b-lg mb-4 bg-white shadow-sm transition-all duration-300"
                 >
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div>
+                                <InputLabel for="area_aproximada_unidade" value="Área Aproximada da Unidade (m²)" class="text-sm" />
+                                <TextInput
+                                    id="area_aproximada_unidade"
+                                    v-model="form.area_aproximada_unidade"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    class="mt-1 block w-full"
+                                    placeholder="Ex: 3.5"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                />
+                                <InputError :message="form.errors.area_aproximada_unidade" class="mt-1 text-xs" />
+                            </div>
+
                         <div>
                             <InputLabel for="qtd_pavimentos" value="Quantidade de Pavimentos" class="text-sm" />
                             <TextInput
@@ -376,7 +408,7 @@ const buttonText = computed(() => {
                             <InputError :message="form.errors.qtd_pavimentos" class="mt-1 text-xs" />
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                        <div class="grid grid-cols-1 sm:grid-cols-1 gap-3 items-center">
                             <div class="flex items-center">
                                 <Checkbox 
                                     id="cercado_muros" 
@@ -631,16 +663,59 @@ const buttonText = computed(() => {
                             <h3 class="text-sm font-medium mb-2">Outras Instalações</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
-                                    <InputLabel for="qtd_celas_carceragem" value="Cela/Carceragem" class="text-sm" />
+                                    <InputLabel for="qtd_xadrez_masculino" value="Xadrez Masculino" class="text-sm" />
                                     <TextInput
-                                        id="qtd_celas_carceragem"
-                                        v-model="form.qtd_celas_carceragem"
+                                        id="qtd_xadrez_masculino"
+                                        v-model="form.qtd_xadrez_masculino"
                                         type="number"
                                         min="0"
                                         class="mt-1 block w-full"
                                         placeholder="Quantidade"
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="area_xadrez_masculino" value="Área Xadrez Masc. (m²)" class="text-sm" />
+                                    <TextInput
+                                        id="area_xadrez_masculino"
+                                        v-model="form.area_xadrez_masculino"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        class="mt-1 block w-full"
+                                        placeholder="Ex: 3.5"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                    />
+                                    <InputError :message="form.errors.area_xadrez_masculino" class="mt-1 text-xs" />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="qtd_xadrez_feminino" value="Xadrez Feminino" class="text-sm" />
+                                    <TextInput
+                                        id="qtd_xadrez_feminino"
+                                        v-model="form.qtd_xadrez_feminino"
+                                        type="number"
+                                        min="0"
+                                        class="mt-1 block w-full"
+                                        placeholder="Quantidade"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="area_xadrez_feminino" value="Área Xadrez Fem. (m²)" class="text-sm" />
+                                    <TextInput
+                                        id="area_xadrez_feminino"
+                                        v-model="form.area_xadrez_feminino"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        class="mt-1 block w-full"
+                                        placeholder="Ex: 3.5"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                    />
+                                    <InputError :message="form.errors.area_xadrez_feminino" class="mt-1 text-xs" />
                                 </div>
                                 
                                 <div>
@@ -734,7 +809,7 @@ const buttonText = computed(() => {
                                 v-model:checked="form.pontos_rede_suficientes" 
                                 :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
-                            <InputLabel for="pontos_rede_suficientes" value="Pontos de Rede" class="ml-2 text-sm" />
+                            <InputLabel for="pontos_rede_suficientes" value="Pontos de Rede Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
@@ -743,7 +818,7 @@ const buttonText = computed(() => {
                                 v-model:checked="form.pontos_telefone_suficientes" 
                                 :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
-                            <InputLabel for="pontos_telefone_suficientes" value="Pontos de Telefone" class="ml-2 text-sm" />
+                            <InputLabel for="pontos_telefone_suficientes" value="Pontos de Telefone Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
@@ -752,7 +827,7 @@ const buttonText = computed(() => {
                                 v-model:checked="form.pontos_ar_condicionado_suficientes" 
                                 :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
-                            <InputLabel for="pontos_ar_condicionado_suficientes" value="Ar Condicionado" class="ml-2 text-sm" />
+                            <InputLabel for="pontos_ar_condicionado_suficientes" value="Ares-Condicionados Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
@@ -761,7 +836,7 @@ const buttonText = computed(() => {
                                 v-model:checked="form.pontos_hidraulicos_suficientes" 
                                 :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
-                            <InputLabel for="pontos_hidraulicos_suficientes" value="Pontos Hidráulicos" class="ml-2 text-sm" />
+                            <InputLabel for="pontos_hidraulicos_suficientes" value="Pontos Hidráulicos Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
@@ -770,7 +845,7 @@ const buttonText = computed(() => {
                                 v-model:checked="form.pontos_sanitarios_suficientes" 
                                 :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
                             />
-                            <InputLabel for="pontos_sanitarios_suficientes" value="Pontos Sanitários" class="ml-2 text-sm" />
+                            <InputLabel for="pontos_sanitarios_suficientes" value="Pontos Sanitários Suficientes" class="ml-2 text-sm" />
                         </div>
                     </div>
                 </div>
