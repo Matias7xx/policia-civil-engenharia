@@ -421,7 +421,7 @@ const formatarTelefones = computed(() => {
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Área Aproximada da Unidade (m²):</dt>
-                                        <dd class="mt-1">{{ informacoes.area_aproximada_unidade + " m²" || 'Não informado' }}</dd>
+                                        <dd class="mt-1">{{ informacoes.area_aproximada_unidade ? `${informacoes.area_aproximada_unidade} m²` : 'Não informado' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Quantidade de Pavimentos:</dt>
@@ -514,7 +514,7 @@ const formatarTelefones = computed(() => {
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Área Xadrez masculino:</dt>
-                                        <dd class="mt-1">{{ informacoes.area_xadrez_masculino + ' m²' || '0' }}</dd>
+                                        <dd class="mt-1">{{ informacoes.area_xadrez_masculino ? `${informacoes.area_xadrez_masculino} m²` : 'Não informado' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Xadrez feminino:</dt>
@@ -522,7 +522,7 @@ const formatarTelefones = computed(() => {
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Área Xadrez feminino:</dt>
-                                        <dd class="mt-1">{{ informacoes.area_xadrez_feminino + ' m²' || '0' }}</dd>
+                                        <dd class="mt-1">{{ informacoes.area_xadrez_feminino ? `${informacoes.area_xadrez_feminino} m²` : 'Não informado' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Salas Identificação:</dt>

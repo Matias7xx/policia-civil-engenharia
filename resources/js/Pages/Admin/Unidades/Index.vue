@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { MagnifyingGlassIcon, FunnelIcon, BuildingOfficeIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, FunnelIcon, BuildingOfficeIcon, XMarkIcon, DocumentArrowDownIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     unidades: Object,
@@ -54,13 +54,15 @@ const clearFilters = () => {
     router.get(route('admin.unidades.index'), {}, { preserveState: true });
 };
 
-// Função para obter a letra correspondente à nota
+// Função para baixar relatório
+const downloadReport = (format) => {
+    window.location.href = route('admin.formularios.relatorio', { format });
+};
+
 const getNotaLetra = (nota) => {
     if (!nota) return '';
-    
     const notaNum = parseFloat(nota);
     if (isNaN(notaNum)) return '';
-    
     if (notaNum >= 9.5) return 'A+';
     if (notaNum >= 9.0) return 'A';
     if (notaNum >= 8.0) return 'B';
@@ -74,25 +76,17 @@ const getNotaLetra = (nota) => {
     return 'J';
 };
 
-// Função para formatar a nota para exibição
 const formatNota = (nota) => {
     if (!nota) return 'N/A';
-    
-    // Converter para número para garantir
     const notaNum = parseFloat(nota);
     if (isNaN(notaNum)) return 'N/A';
-    
-    // Formatar com uma casa decimal e adicionar a letra
     return `${notaNum.toFixed(1)} (${getNotaLetra(notaNum)})`;
 };
 
-// Função para obter a classe CSS com base na nota
 const getNotaClass = (nota) => {
     if (!nota) return 'bg-gray-100 text-gray-800';
-    
     const notaNum = parseFloat(nota);
     if (isNaN(notaNum)) return 'bg-gray-100 text-gray-800';
-    
     if (notaNum >= 9.0) return 'bg-green-600 text-white';
     if (notaNum >= 7.0) return 'bg-green-500 text-white';
     if (notaNum >= 5.0) return 'bg-yellow-500 text-white';
@@ -100,10 +94,8 @@ const getNotaClass = (nota) => {
     return 'bg-red-500 text-white';
 };
 
-// Obter a descrição da nota para o tooltip
 const getNotaTooltip = (nota) => {
     if (!nota) return '';
-    
     const letra = getNotaLetra(nota);
     switch (letra) {
         case 'A+':
@@ -199,13 +191,27 @@ const getNotaTooltip = (nota) => {
                                     </option>
                                 </select>
                             </div>
-                            <div class="flex items-end">
+                            <div class="flex items-end gap-2">
                                 <button 
                                     @click="clearFilters"
                                     class="mt-1 px-4 py-2 bg-gray-100 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 uppercase tracking-widest hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition ease-in-out duration-150 flex items-center"
                                 >
                                     <XMarkIcon class="h-5 w-5 mr-2" />
                                     Limpar Filtros
+                                </button>
+                                <button 
+                                    @click="downloadReport('pdf')"
+                                    class="mt-1 px-4 py-2 bg-[#bea55a] border border-[#bea55a] rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-[#d4bf7a] focus:outline-none focus:ring-2 focus:ring-[#bea55a] transition ease-in-out duration-150 flex items-center"
+                                >
+                                    <DocumentArrowDownIcon class="h-5 w-5 mr-2" />
+                                    PDF
+                                </button>
+                                <button 
+                                    @click="downloadReport('excel')"
+                                    class="mt-1 px-4 py-2 bg-[#bea55a] border border-[#bea55a] rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-[#d4bf7a] focus:outline-none focus:ring-2 focus:ring-[#bea55a] transition ease-in-out duration-150 flex items-center"
+                                >
+                                    <DocumentArrowDownIcon class="h-5 w-5 mr-2" />
+                                    Excel
                                 </button>
                             </div>
                         </div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcessibilidadeUnidadeController;
+use App\Http\Controllers\Admin\FormularioController;
 use App\Http\Controllers\Admin\OrgaoController;
 use App\Http\Controllers\Admin\UnidadeController as AdminUnidadeController;
 use App\Http\Controllers\Admin\UserController;
@@ -107,6 +108,11 @@ Route::middleware([
             Route::get('/{id}/anexo', [AdminUnidadeController::class, 'anexo'])->name('anexo');
             Route::get('/{id}/termo-cessao', [AdminUnidadeController::class, 'termoCessao'])->name('termoCessao');
             Route::post('/{id}/status', [AdminUnidadeController::class, 'updateStatus'])->name('updateStatus');
+        });
+
+        // Rotas de relatórios
+            Route::prefix('formularios')->name('formularios.')->group(function () {
+            Route::get('/relatorio', [FormularioController::class, 'gerarRelatorio'])->name('relatorio');
         });
 
         // Gerenciamento de avaliações
