@@ -21,6 +21,7 @@ class OrgaosSeeder extends Seeder
             ['nome' => 'Departamento Estadual de Trânsito - DETRAN-PB', 'status' => 'ativo'],
             ['nome' => 'Conselho Tutelar', 'status' => 'ativo'],
             ['nome' => 'Tribunal de Justiça do Estado da Paraíba', 'status' => 'ativo'],
+            ['nome' => 'Outro(s)', 'status' => 'ativo'],
         ];
 
         foreach ($orgaos as $orgao) {

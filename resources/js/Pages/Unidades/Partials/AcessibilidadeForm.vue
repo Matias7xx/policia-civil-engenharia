@@ -65,13 +65,6 @@ const checkOptions = [
     { id: 'elevador', label: 'Elevador', description: 'Elevador para acesso a andares superiores' },
     { id: 'sinalizacao_braile', label: 'Sinalização em Braille', description: 'Sinalizações em Braille para deficientes visuais' }
 ];
-
-const buttonText = computed(() => {
-    if (props.isNew) {
-        return 'Salvar Alterações';
-    }
-    return 'Salvar e Continuar';
-});
 </script>
 
 <template>
@@ -151,10 +144,14 @@ const buttonText = computed(() => {
                         :disabled="form.processing"
                         color="gold"
                     >
-                        <svg v-if="unidade?.is_draft === true" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                        {{ buttonText }}
+                        {{ form.processing ? 'Salvando...' : (props.unidade?.is_draft === true ? 'Salvar e Continuar' : 'Atualizar Acessibilidade') }}
+                        <div v-if="form.processing" class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                            <svg v-else-if="props.unidade?.is_draft === true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
                     </PrimaryButton>
                 </div>
             </div>

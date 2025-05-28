@@ -44,9 +44,13 @@ class UnidadeController extends Controller
             $unidade->load('acessibilidade', 'informacoes', 'midias', 'orgaosCompartilhados');
         }
 
+        // Converter para array explicitamente - necessário para persistir órgãos compartilhados na view
+        $unidadeData = $unidade->toArray();
+        $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray();
+
         return Inertia::render('Unidades/Create', [
             'team' => $team,
-            'unidade' => $unidade,
+            'unidade' => $unidadeData,
             'acessibilidade' => $unidade->acessibilidade,
             'informacoes' => $unidade->informacoes,
             'midias' => $unidade->midias ?? [],
@@ -140,6 +144,11 @@ class UnidadeController extends Controller
             $unidade->orgaosCompartilhados()->detach();
         }
 
+        // Redirecionar para a rota de criação ou edição com a unidade atualizada
+        /* $route = $unidade->is_draft ? 'unidades.create' : 'unidades.edit';
+        $params = $unidade->is_draft ? ['teamId' => $unidade->team_id] : ['teamId' => $unidade->team_id, 'unidadeId' => $unidade->id];
+        return redirect()->route($route, $params)->with('success', 'Dados gerais salvos com sucesso.'); */
+
         return redirect()->back()->with('success', 'Dados gerais salvos com sucesso.');
     }
 
@@ -149,7 +158,7 @@ class UnidadeController extends Controller
         $validated = $request->validate([
             'team_id' => 'required|exists:teams,id',
             'cidade' => 'required|string|max:255',
-            'cep' => 'required|string|max:20',
+            'cep' => 'required|string|min:8|max:9',
             'rua' => 'required|string|max:255',
             'numero' => 'nullable|string|max:50',
             'bairro' => 'required|string|max:255',
@@ -341,9 +350,13 @@ class UnidadeController extends Controller
             ->with(['acessibilidade', 'informacoes', 'midias', 'orgaosCompartilhados'])
             ->findOrFail($unidadeId);
 
+            // Converter para array explicitamente - necessário para persistir órgãos compartilhados na view
+        $unidadeData = $unidade->toArray();
+        $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray();
+
         return Inertia::render('Unidades/Edit', [
             'team' => $team,
-            'unidade' => $unidade,
+            'unidade' => $unidadeData,
             'acessibilidade' => $unidade->acessibilidade,
             'informacoes' => $unidade->informacoes,
             'midias' => $unidade->midias ?? [],

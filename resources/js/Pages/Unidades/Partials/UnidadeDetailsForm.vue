@@ -7,7 +7,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SelectInput from '@/Components/SelectInput.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Checkbox from '@/Components/Checkbox.vue';
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed, nextTick } from 'vue';
 import { debounce } from 'lodash';
 
 const emit = defineEmits(['saved']);
@@ -21,10 +21,20 @@ const props = defineProps({
     isEditable: Boolean,
 });
 
-// Inicializar os IDs dos órgãos compartilhados, garantindo que sejam números
-const orgaoIds = props.unidade?.orgaosCompartilhados?.length
-    ? props.unidade.orgaosCompartilhados.map(orgao => Number(orgao.id))
-    : [];
+// Inicializar os IDs dos órgãos compartilhados
+const getInitialOrgaoIds = () => {
+    if (!props.unidade?.orgaosCompartilhados?.length) {
+        return [];
+    }
+    
+    const ids = props.unidade.orgaosCompartilhados.map(orgao => {
+        const id = Number(orgao.id);
+        return id;
+    });
+    return ids;
+};
+
+const initialOrgaoIds = getInitialOrgaoIds();
 
 const form = useForm({
     team_id: props.team?.id || '',
@@ -38,13 +48,33 @@ const form = useForm({
     telefone_2: props.unidade?.telefone_2 || '',
     tipo_judicial: props.unidade?.tipo_judicial || '',
     imovel_compartilhado_orgao: props.unidade?.imovel_compartilhado_orgao || false,
-    imovel_compartilhado_orgao_ids: orgaoIds,
+    imovel_compartilhado_orgao_ids: [...initialOrgaoIds], // Spread para criar nova referência
     observacoes: props.unidade?.observacoes || '',
     numero_medidor_agua: props.unidade?.numero_medidor_agua || '',
     numero_medidor_energia: props.unidade?.numero_medidor_energia || '',
 });
 
-const orgaoSelect = ref(null); // Referência ao select
+// Estados para o componente de órgãos
+const showOrgaoDropdown = ref(false);
+const orgaoSearchTerm = ref('');
+const dropdownRef = ref(null);
+
+// Computed para órgãos filtrados
+const filteredOrgaos = computed(() => {
+    if (!orgaoSearchTerm.value) return props.orgaos || [];
+    
+    return (props.orgaos || []).filter(orgao =>
+        orgao.nome.toLowerCase().includes(orgaoSearchTerm.value.toLowerCase())
+    );
+});
+
+// Computed para órgãos selecionados
+const selectedOrgaos = computed(() => {
+    const selected = (props.orgaos || []).filter(orgao => 
+        form.imovel_compartilhado_orgao_ids.includes(Number(orgao.id))
+    );
+    return selected;
+});
 
 const debouncedUpdate = debounce((field, value) => {
     form[field] = value;
@@ -54,8 +84,38 @@ const methods = {
     updateField: (field, value) => {
         debouncedUpdate(field, value);
     },
+    
+    toggleOrgao: (orgaoId) => {
+        const numericId = Number(orgaoId);
+        const currentIds = [...form.imovel_compartilhado_orgao_ids];
+        const index = currentIds.indexOf(numericId);
+        
+        if (index > -1) {
+            currentIds.splice(index, 1);
+        } else {
+            currentIds.push(numericId);
+        }
+        
+        form.imovel_compartilhado_orgao_ids = currentIds;
+    },
+    
+    removeOrgao: (orgaoId) => {
+        const numericId = Number(orgaoId);
+        form.imovel_compartilhado_orgao_ids = form.imovel_compartilhado_orgao_ids.filter(id => id !== numericId);
+    },
+    
+    isOrgaoSelected: (orgaoId) => {
+        return form.imovel_compartilhado_orgao_ids.includes(Number(orgaoId));
+    }
 };
 
+// Watch para monitorar mudanças em props.unidade
+watch(() => props.unidade, (newUnidade) => {
+    const newIds = getInitialOrgaoIds();
+    form.imovel_compartilhado_orgao_ids = [...newIds];
+}, { deep: true });
+
+// Watchers existentes
 watch(() => form.tipo_judicial, (newValue) => {
     if (newValue !== 'locado') {
         form.nome_proprietario = '';
@@ -78,16 +138,23 @@ watch(() => form.imovel_compartilhado_orgao, (newValue) => {
     }
 });
 
-onMounted(() => {
-    // Forçar atualização do select
-    if (orgaoSelect.value && form.imovel_compartilhado_orgao_ids.length) {
-        form.imovel_compartilhado_orgao_ids.forEach(id => {
-            const option = orgaoSelect.value.querySelector(`option[value="${id}"]`);
-            if (option) option.selected = true;
-        });
+// Fechar dropdown quando clicar fora
+const handleClickOutside = (event) => {
+    if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+        showOrgaoDropdown.value = false;
     }
+};
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
 });
 
+// Cleanup
+const cleanup = () => {
+    document.removeEventListener('click', handleClickOutside);
+};
+
+// Função de salvamento
 const saveDadosGerais = () => {
     if (!props.isEditable) {
         emit('saved', 'O cadastro está finalizado e não pode ser editado.');
@@ -96,6 +163,7 @@ const saveDadosGerais = () => {
 
     const requiredFields = ['nome', 'tipo_estrutural', 'tipo_judicial'];
     const errors = [];
+    
     requiredFields.forEach((field) => {
         if (!form[field]) {
             errors.push(`O campo ${field} é obrigatório.`);
@@ -113,6 +181,7 @@ const saveDadosGerais = () => {
         return;
     }
 
+    // Limpar telefones
     form.telefone_1 = form.telefone_1 ? form.telefone_1.replace(/[^0-9]/g, '') : '';
     form.telefone_2 = form.telefone_2 ? form.telefone_2.replace(/[^0-9]/g, '') : '';
 
@@ -120,7 +189,7 @@ const saveDadosGerais = () => {
         errorBag: 'saveDadosGerais',
         preserveScroll: true,
         onSuccess: () => {
-            emit('saved'); // Apenas emite o evento sem forçar transição de aba
+            emit('saved');
         },
         onError: (errors) => {
             emit('saved', 'Erro ao salvar os dados. Verifique os campos.');
@@ -133,6 +202,7 @@ const saveDadosGerais = () => {
     <div class="bg-white rounded-lg shadow-md">
         <form @submit.prevent="saveDadosGerais">
             <div class="p-6">
+                <!-- Informações Básicas -->
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Informações Básicas</h3>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 mb-6">
                     <div>
@@ -202,6 +272,7 @@ const saveDadosGerais = () => {
                     </div>
                 </div>
 
+                <!-- Informações de Contato -->
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Informações de Contato</h3>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 mb-6">
                     <div>
@@ -254,6 +325,7 @@ const saveDadosGerais = () => {
                     </div>
                 </div>
 
+                <!-- Informações Técnicas -->
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Informações Técnicas</h3>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 mb-6">
                     <div>
@@ -295,6 +367,8 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.numero_medidor_energia" class="mt-1" />
                     </div>
+                    
+                    <!-- Checkbox para imóvel compartilhado -->
                     <div class="md:col-span-3">
                         <div class="flex items-center mt-2">
                             <Checkbox 
@@ -302,27 +376,99 @@ const saveDadosGerais = () => {
                                 v-model:checked="form.imovel_compartilhado_orgao" 
                                 :disabled="!isEditable || !permissions?.canUpdateTeam" 
                             />
-                            <InputLabel for="imovel_compartilhado_orgao" value="Imóvel Compartilhado com Outro Órgão" class="ml-2" />
+                            <InputLabel for="imovel_compartilhado_orgao" value="Imóvel compartilhado com outro(s) órgão(s)" class="ml-2" />
                         </div>
                         <InputError :message="form.errors.imovel_compartilhado_orgao" class="mt-1" />
                     </div>
+                    
+                    <!-- Seletor de órgãos melhorado -->
                     <div v-if="form.imovel_compartilhado_orgao" class="md:col-span-3">
-                        <InputLabel for="imovel_compartilhado_orgao_ids" value="Órgãos Compartilhados *" class="text-sm font-medium text-gray-700" />
-                        <select
-                            id="imovel_compartilhado_orgao_ids"
-                            ref="orgaoSelect"
-                            v-model="form.imovel_compartilhado_orgao_ids"
-                            multiple
-                            class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                            :disabled="!isEditable || !permissions?.canUpdateTeam"
-                        >
-                            <option v-for="orgao in orgaos" :key="orgao.id" :value="Number(orgao.id)">
-                                {{ orgao.nome }}
-                            </option>
-                        </select>
-                        <p class="mt-1 text-sm text-gray-500">Segure Ctrl (ou Cmd) para selecionar múltiplos órgãos.</p>
+                        <InputLabel for="imovel_compartilhado_orgao_ids" value="Órgãos Compartilhados *" class="text-sm font-medium text-gray-700 mb-2" />
+                        
+                        <!-- Órgãos selecionados (tags) -->
+                        <div v-if="selectedOrgaos.length > 0" class="mb-3">
+                            <div class="flex flex-wrap gap-2">
+                                <span 
+                                    v-for="orgao in selectedOrgaos" 
+                                    :key="orgao.id"
+                                    class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                                >
+                                    {{ orgao.nome }}
+                                    <button 
+                                        v-if="isEditable && permissions?.canUpdateTeam"
+                                        type="button"
+                                        @click="methods.removeOrgao(orgao.id)"
+                                        class="ml-2 text-blue-600 hover:text-blue-800"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Dropdown personalizado -->
+                        <div class="relative" ref="dropdownRef">
+                            <button
+                                type="button"
+                                @click="showOrgaoDropdown = !showOrgaoDropdown"
+                                :disabled="!isEditable || !permissions?.canUpdateTeam"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-left flex items-center justify-between disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                                <span class="text-gray-700">
+                                    {{ selectedOrgaos.length === 0 ? 'Selecione os órgãos...' : `${selectedOrgaos.length} órgão(s) selecionado(s)` }}
+                                </span>
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            
+                            <!-- Dropdown menu -->
+                            <div 
+                                v-show="showOrgaoDropdown"
+                                class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
+                            >
+                                <!-- Campo de busca -->
+                                <div class="p-2">
+                                    <input
+                                        v-model="orgaoSearchTerm"
+                                        type="text"
+                                        placeholder="Buscar órgão..."
+                                        class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                    />
+                                </div>
+                                
+                                <!-- Lista de órgãos -->
+                                <div class="max-h-48 overflow-y-auto">
+                                    <div
+                                        v-for="orgao in filteredOrgaos"
+                                        :key="orgao.id"
+                                        @click="methods.toggleOrgao(orgao.id)"
+                                        class="px-3 py-2 cursor-pointer hover:bg-gray-100 flex items-center space-x-2"
+                                        :class="{ 'bg-blue-50': methods.isOrgaoSelected(orgao.id) }"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            v-model="form.imovel_compartilhado_orgao_ids"
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                            :value="Number(orgao.id)"
+                                        />
+                                        <span class="text-sm text-gray-900">{{ orgao.nome }}</span>
+                                    </div>
+                                    
+                                    <!-- Mensagem quando não há resultados -->
+                                    <div v-if="filteredOrgaos.length === 0" class="px-3 py-2 text-sm text-gray-500">
+                                        Nenhum órgão encontrado
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <InputError :message="form.errors.imovel_compartilhado_orgao_ids" class="mt-1" />
                     </div>
+                    
+                    <!-- Observações -->
                     <div class="md:col-span-3">
                         <InputLabel for="observacoes" value="Observações" class="text-sm font-medium text-gray-700" />
                         <textarea
@@ -338,6 +484,7 @@ const saveDadosGerais = () => {
                 </div>
             </div>
 
+            <!-- Botão de ação -->
             <div v-if="isEditable && permissions?.canUpdateTeam" class="border-t border-gray-200 px-6 py-4 bg-gray-50 flex items-center justify-between sticky bottom-0">
                 <div class="text-sm text-gray-600">
                     <span class="text-red-500">*</span> Campos obrigatórios
@@ -351,10 +498,14 @@ const saveDadosGerais = () => {
                         :disabled="form.processing"
                         color="gold"
                     >
-                        Salvar e Continuar
-                        <svg v-if="unidade?.is_draft === true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
+                        {{ form.processing ? 'Salvando...' : (props.unidade?.is_draft === true ? 'Salvar e Continuar' : 'Atualizar Dados Gerais') }}
+                        <div v-if="form.processing" class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                            <svg v-else-if="props.unidade?.is_draft === true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
                     </PrimaryButton>
                 </div>
             </div>

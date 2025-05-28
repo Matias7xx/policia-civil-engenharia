@@ -328,7 +328,7 @@ const salvarCessao = () => {
                                 v-for="tab in tabs"
                                 :key="tab.id"
                                 @click="changeTab(tab.id)"
-                                :class="[activeTab === tab.id ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-xs md:text-sm flex items-center transition-all']"
+                                :class="[activeTab === tab.id ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-xs md:text-sm flex items-center transition-all']"
                             >
                                 <i :class="`fas ${tab.icon} mr-2`"></i>
                                 {{ tab.label }}
@@ -629,7 +629,7 @@ const salvarCessao = () => {
                                     </div>
                                     <div class="col-span-full">
                                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
-                                            Salvar Contrato
+                                            Salvar
                                         </button>
                                     </div>
                                 </form>
@@ -684,7 +684,7 @@ const salvarCessao = () => {
                                     </div>
                                     <div class="col-span-full">
                                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
-                                            Salvar Cessão
+                                            Salvar
                                         </button>
                                     </div>
                                 </form>
