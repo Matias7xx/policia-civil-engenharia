@@ -3,18 +3,20 @@ import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
 import { globSync } from 'glob';
 
-//todos os arquivos .vue dentro de resources/js/Pages
+// Todas as páginas para garantir que estejam no manifesto
 const pageFiles = globSync('resources/js/Pages/**/*.vue');
 
 export default defineConfig({
     plugins: [
         laravel({
-            input: [ 'resources/js/app.js',
-                ...pageFiles, //carregando todas as PAGES (necessário para produção!!)
+            input: [
+                'resources/js/app.js', 
+                'resources/css/app.css',
+                ...pageFiles // FORÇAR inclusão de todas as páginas
             ],
             refresh: true,
             publicDirectory: 'public',
-            buildDirectory: 'build', // Isso cria /public/build
+            buildDirectory: 'build',
         }),
         vue({
             template: {
@@ -26,6 +28,21 @@ export default defineConfig({
         }),
     ],
     build: {
-        chunkSizeWarningLimit: 1000,
-    }
+        chunkSizeWarningLimit: 2000, // Aumentar limite para aceitar bundle maior
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    // separar vendor (bibliotecas externas)
+                    vendor: ['vue', '@inertiajs/vue3', 'axios'],
+                    // Leaflet separado (biblioteca grande)
+                    maps: ['leaflet']
+                }
+            }
+        }
+    },
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+        },
+    },
 });

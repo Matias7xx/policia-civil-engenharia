@@ -243,6 +243,7 @@ class UnidadeController extends Controller
             'responsavel_locacao_cessao' => 'nullable|string|max:255',
             'escritura_publica' => 'nullable|string|max:255',
             'area_aproximada_unidade' => 'nullable|numeric',
+            'area_aproximada_terreno' => 'nullable|numeric',
             'qtd_pavimentos' => 'nullable|numeric',
             'cercado_muros' => 'boolean',
             'estacionamento_interno' => 'boolean',

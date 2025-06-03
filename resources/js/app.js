@@ -97,12 +97,17 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 // Nome da aplicação
 const appName = import.meta.env.VITE_APP_NAME || 'Sistema de Censo da Engenharia';
 
-// Inicialização da aplicação com lazy-loading de componentes
 createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName,
     resolve: (name) => {
-        const pages = import.meta.glob('./Pages/**/*.vue', { eager: true });
-        return pages[`./Pages/${name}.vue`];
+        // Em produção: eager loading para melhor performance
+        // Em desenvolvimento: lazy loading para hot reload
+        if (import.meta.env.PROD) {
+            const pages = import.meta.glob('./Pages/**/*.vue', { eager: true });
+            return pages[`./Pages/${name}.vue`];
+        } else {
+            return resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue'));
+        }
     },
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });

@@ -420,8 +420,12 @@ const formatarTelefones = computed(() => {
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Características do Imóvel</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Área Aproximada da Unidade (m²):</dt>
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Área Aproximada da Unidade (Área Construída) m²:</dt>
                                         <dd class="mt-1">{{ informacoes.area_aproximada_unidade ? `${informacoes.area_aproximada_unidade} m²` : 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Área Aproximada do Terreno (m²):</dt>
+                                        <dd class="mt-1">{{ informacoes.area_aproximada_terreno ? `${informacoes.area_aproximada_terreno} m²` : 'Não informado' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Quantidade de Pavimentos:</dt>

@@ -2,3 +2,58 @@
 !private/
 !public/
 !.gitignore
+
+# Laravel Cache & Build
+/.phpunit.cache
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/vendor
+
+# Laravel Storage & Logs
+/storage/*.key
+/storage/pail
+/storage/debugbar
+/storage/clockwork
+
+# Environment
+.env
+.env.backup
+.env.production
+.env.local
+.env.testing
+
+# Testing & Debug
+.phpactor.json
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+
+# Package Managers
+npm-debug.log
+yarn-error.log
+/auth.json
+composer.lock  # opcional se quiser flexibilidade de versões
+
+# IDEs
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+
+# Docker (configuração pessoal)
+#docker-compose.override.yml
+docker-compose.yml
+
+# OS Specific
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+*~

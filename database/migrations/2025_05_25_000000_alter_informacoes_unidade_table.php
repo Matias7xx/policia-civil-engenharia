@@ -14,6 +14,7 @@ return new class extends Migration
     {
         Schema::table('informacoes_unidade', function (Blueprint $table) {
             $table->decimal('area_aproximada_unidade', 10, 2)->nullable()->after('escritura_publica');
+            $table->decimal('area_aproximada_terreno', 10, 2)->nullable()->after('area_aproximada_unidade');
             $table->string('ponto_energia_agua')->nullable()->after('recuo_fundos');
             $table->decimal('area_xadrez_masculino', 10, 2)->nullable()->after('qtd_xadrez_masculino');
             $table->integer('qtd_xadrez_feminino')->nullable()->after('area_xadrez_masculino');
@@ -32,6 +33,7 @@ return new class extends Migration
     {
         Schema::table('informacoes_unidade', function (Blueprint $table) {
             $table->dropColumn('area_aproximada_unidade');
+            $table->dropColumn('area_aproximada_terreno');
             $table->dropColumn('ponto_energia_agua');
             $table->dropColumn('area_xadrez_masculino');
             $table->dropColumn('qtd_xadrez_feminino');

@@ -49,6 +49,7 @@ const form = useForm({
     responsavel_locacao_cessao: props.informacoes?.responsavel_locacao_cessao || '',
     escritura_publica: props.informacoes?.escritura_publica || '',
     area_aproximada_unidade: props.informacoes?.area_aproximada_unidade ? String(props.informacoes.area_aproximada_unidade) : '',
+    area_aproximada_terreno: props.informacoes?.area_aproximada_terreno ? String(props.informacoes.area_aproximada_terreno) : '',
     qtd_pavimentos: props.informacoes?.qtd_pavimentos ? String(props.informacoes.qtd_pavimentos) : '',
     cercado_muros: props.informacoes?.cercado_muros || false,
     estacionamento_interno: props.informacoes?.estacionamento_interno || false,
@@ -372,7 +373,7 @@ const tiposPavimentacao = [
                 >
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <div>
-                                <InputLabel for="area_aproximada_unidade" value="Área Aproximada da Unidade (m²)" class="text-sm" />
+                                <InputLabel for="area_aproximada_unidade" value="Área Aproximada da Unidade (Área Construída) m²" class="text-sm" />
                                 <TextInput
                                     id="area_aproximada_unidade"
                                     v-model="form.area_aproximada_unidade"
@@ -384,6 +385,20 @@ const tiposPavimentacao = [
                                     :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 />
                                 <InputError :message="form.errors.area_aproximada_unidade" class="mt-1 text-xs" />
+                            </div>
+                            <div>
+                                <InputLabel for="area_aproximada_terreno" value="Área Aproximada do Terreno (m²)" class="text-sm" />
+                                <TextInput
+                                    id="area_aproximada_terreno"
+                                    v-model="form.area_aproximada_terreno"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    class="mt-1 block w-full"
+                                    placeholder="Ex: 3.5"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                />
+                                <InputError :message="form.errors.area_aproximada_terreno" class="mt-1 text-xs" />
                             </div>
 
                         <div>
@@ -432,7 +447,7 @@ const tiposPavimentacao = [
 
                         <div class="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                             <div>
-                                <InputLabel for="recuo_frontal" value="Recuo Frontal (m)" class="text-sm" />
+                                <InputLabel for="recuo_frontal" value="Recuo Frontal (jardim) m²" class="text-sm" />
                                 <TextInput
                                     id="recuo_frontal"
                                     v-model="form.recuo_frontal"
@@ -447,7 +462,7 @@ const tiposPavimentacao = [
                             </div>
 
                             <div>
-                                <InputLabel for="recuo_lateral" value="Recuo Lateral (m)" class="text-sm" />
+                                <InputLabel for="recuo_lateral" value="Recuo Lateral (beco) m²" class="text-sm" />
                                 <TextInput
                                 vue                                    id="recuo_lateral"
                                     v-model="form.recuo_lateral"
@@ -462,7 +477,7 @@ const tiposPavimentacao = [
                             </div>
 
                             <div>
-                                <InputLabel for="recuo_fundos" value="Recuo Fundos (m)" class="text-sm" />
+                                <InputLabel for="recuo_fundos" value="Recuo Fundos (quintal) m²" class="text-sm" />
                                 <TextInput
                                     id="recuo_fundos"
                                     v-model="form.recuo_fundos"

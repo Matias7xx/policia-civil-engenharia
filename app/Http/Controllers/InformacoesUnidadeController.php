@@ -72,6 +72,7 @@ class InformacoesUnidadeController extends Controller
             'qtd_area_servico' => 'nullable|integer',
             'qtd_deposito_apreensao' => 'nullable|integer',
             'area_aproximada_unidade' => 'nullable|numeric',
+            'area_aproximada_terreno' => 'nullable|numeric',
             'ponto_energia_agua' => 'nullable|string',
             
             // Suficiência de instalações
@@ -145,6 +146,7 @@ class InformacoesUnidadeController extends Controller
             
             // Características estruturais
             'area_aproximada_unidade' => 'nullable|numeric',
+            'area_aproximada_terreno' => 'nullable|numeric',
             'qtd_pavimentos' => 'nullable|numeric',
             'cercado_muros' => 'nullable|boolean',
             'estacionamento_interno' => 'nullable|boolean',

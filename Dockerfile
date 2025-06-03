@@ -13,8 +13,16 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     git \
+    curl \
+    wget \
+    dnsutils \
+    iputils-ping \
+    telnet \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_pgsql zip opcache bcmath
+
+# Configurar curl
+RUN echo "curl.cainfo=/etc/ssl/certs/ca-certificates.crt" >> /usr/local/etc/php/php.ini
 
 # Instale uma versão mais recente do Node.js (v22)
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
@@ -30,6 +38,9 @@ COPY apache.conf /etc/apache2/sites-available/000-default.conf
 # Configurar o tamanho máximo de upload e de post criando o arquivo customizado
 RUN echo "upload_max_filesize = 1G\npost_max_size = 1G\nmemory_limit = 1024M\nmax_execution_time = 1200" > /usr/local/etc/php/conf.d/uploads.ini \
     && cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
+
+# Configurações específicas para curl e resolução DNS
+RUN echo "default_socket_timeout = 60\nauto_detect_line_endings = On" >> /usr/local/etc/php/conf.d/network.ini
 
 # Configuração do OPcache para produção
 RUN echo "opcache.enable=1\nopcache.memory_consumption=256\nopcache.interned_strings_buffer=16\nopcache.max_accelerated_files=20000\nopcache.validate_timestamps=0\nopcache.save_comments=1\nopcache.fast_shutdown=1" > /usr/local/etc/php/conf.d/opcache.ini

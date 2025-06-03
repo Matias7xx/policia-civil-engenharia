@@ -52,14 +52,48 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
 
-        Fortify::authenticateUsing(function(Request $request){
+         Fortify::authenticateUsing(function(Request $request){
             try {
-                // Tenta autenticar via API
-                $response = Http::withToken(env('API_TOKEN'))
-                    ->post(env('API_LOGIN_URL').'/api/servidor/login', [
+                // Verificar se as variáveis de ambiente da API estão configuradas
+                $apiToken = env('API_TOKEN');
+                $apiLoginUrl = env('API_LOGIN_URL');
+                
+                if (empty($apiToken) || empty($apiLoginUrl)) {
+                    Log::warning('API não configurada, usando apenas autenticação local', [
+                        'api_token_empty' => empty($apiToken),
+                        'api_login_url_empty' => empty($apiLoginUrl)
+                    ]);
+                    
+                    // Fallback para banco local
+                    $user = User::where('matricula', $request->matricula)->first();
+                    if ($user && Hash::check($request->password, $user->password)) {
+                        return $user;
+                    }
+                    return null;
+                }
+                
+                Log::info('Tentativa de autenticação via API', [
+                    'matricula' => $request->matricula,
+                    'api_url' => $apiLoginUrl,
+                    'user_agent' => $request->header('User-Agent'),
+                    'ip' => $request->ip()
+                ]);
+                
+                // Tenta autenticar via API com configurações otimizadas
+                $response = Http::timeout(20) // Timeout mais longo
+                    ->connectTimeout(10) // Timeout de conexão
+                    ->retry(2, 1000) // Retry 2 vezes com 1 segundo de intervalo
+                    ->withToken($apiToken)
+                    ->post($apiLoginUrl . '/api/servidor/login', [
                         'matricula' => $request->matricula,
                         'senha' => $request->password
                     ]);
+                
+                Log::info('Resposta da API recebida', [
+                    'status' => $response->status(),
+                    'headers' => $response->headers(),
+                    'size' => strlen($response->body())
+                ]);
                 
                 if ($response->successful()) {
                     $data = $response->json();
@@ -89,24 +123,44 @@ class FortifyServiceProvider extends ServiceProvider
                     // Log da falha
                     Log::warning('Falha na autenticação com API', [
                         'status' => $response->status(),
-                        'body' => $response->body()
+                        'body' => $response->body(),
+                        'api_url' => $apiLoginUrl,
+                        'headers' => $response->headers()
                     ]);
                     
                     // Fallback para banco local
                     $user = User::where('matricula', $request->matricula)->first();
                     if ($user && Hash::check($request->password, $user->password)) {
+                        Log::info('Autenticação local bem-sucedida para matrícula: ' . $request->matricula);
                         return $user;
                     }
                     return null;
                 }
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                Log::error('Erro de conexão com a API', [
+                    'message' => $e->getMessage(),
+                    'api_url' => $apiLoginUrl,
+                    'curl_error' => $e->getCode()
+                ]);
+                
+                // Fallback para banco local
+                $user = User::where('matricula', $request->matricula)->first();
+                if ($user && Hash::check($request->password, $user->password)) {
+                    Log::info('Fallback para autenticação local (erro de conexão) para matrícula: ' . $request->matricula);
+                    return $user;
+                }
+                return null;
             } catch (\Exception $e) {
                 Log::error('Erro na autenticação: ' . $e->getMessage(), [
+                    'exception_class' => get_class($e),
+                    'api_url' => $apiLoginUrl,
                     'trace' => $e->getTraceAsString()
                 ]);
                 
                 // Fallback para banco local
                 $user = User::where('matricula', $request->matricula)->first();
                 if ($user && Hash::check($request->password, $user->password)) {
+                    Log::info('Fallback para autenticação local (exceção geral) para matrícula: ' . $request->matricula);
                     return $user;
                 }
                 return null;
