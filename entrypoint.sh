@@ -7,6 +7,12 @@ set -e
 MIGRATION_MARKER="/var/www/html/storage/app/.migrations_run"
 BUILD_MARKER="/var/www/html/storage/app/.build_completed"
 
+# Forçar rebuild e migrações se variável estiver definida
+if [ "$FORCE_REBUILD" = "true" ]; then
+    echo "🧨 Removendo marcadores para forçar rebuild e migração..."
+    rm -f "$BUILD_MARKER" "$MIGRATION_MARKER"
+fi
+
 # Instala as dependências do Composer, se o vendor não existir
 if [ ! -d "/var/www/html/vendor" ]; then
     echo "📦 Instalando dependências do Composer..."
@@ -16,15 +22,13 @@ fi
 # Instala as dependências do npm e executa o build apenas se o marcador não existir
 if [ ! -f "$BUILD_MARKER" ]; then
     echo "📦 Instalando dependências do npm se necessário..."
-    # Verifica se node_modules existe
     if [ ! -d "/var/www/html/node_modules" ]; then
         npm ci --no-audit --no-fund
     fi
-    
+
     echo "🏗️ Executando build do npm..."
     npm run build
-    
-    # Criar marcador na pasta storage (persistente)
+
     mkdir -p /var/www/html/storage/app
     touch "$BUILD_MARKER"
     echo "✅ Build concluído e marcador criado"
@@ -43,12 +47,11 @@ if [ ! -f "/var/www/html/.env" ] || ! grep -q "APP_KEY=" /var/www/html/.env; the
     php artisan key:generate --force
 fi
 
-# Executa as migrações e seed apenas se o arquivo .migrations_run não existir
+# Executa as migrações e seed apenas se o marcador não existir
 if [ ! -f "$MIGRATION_MARKER" ]; then
     echo "🗄️ Executando migrações e seeds..."
     php artisan migrate --seed --force
-    
-    # Cria o arquivo de controle no storage (persistente)
+
     mkdir -p /var/www/html/storage/app
     touch "$MIGRATION_MARKER"
     echo "✅ Migrações concluídas e marcador criado"
@@ -69,7 +72,6 @@ if [ "$APP_ENV" = "production" ]; then
     php artisan route:cache
     php artisan view:cache
 else
-    # Executa limpezas de cache
     echo "🧹 Limpando caches para desenvolvimento..."
     php artisan config:clear
     php artisan route:clear
