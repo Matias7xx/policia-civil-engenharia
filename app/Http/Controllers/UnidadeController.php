@@ -287,6 +287,11 @@ class UnidadeController extends Controller
             'extintor_co2' => 'nullable|string|max:255',
             'extintor_agua' => 'nullable|string|max:255',
             'placa_incendio' => 'nullable|string|max:255',
+            'tem_espaco_veiculos_apreendidos' => 'boolean',
+            'qtd_max_veiculos_automovel' => 'nullable|integer|min:0',
+            'seguranca_local_veiculos' => 'nullable|string|in:sim,nao,parcial',
+            'historico_invasao_veiculo' => 'boolean',
+            'observacoes_veiculos_apreendidos' => 'nullable|string|max:1000'
         ]);
 
         $unidade = Unidade::findOrFail($request->unidade_id);

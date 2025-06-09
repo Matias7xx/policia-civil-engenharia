@@ -83,6 +83,11 @@ class InformacoesUnidade extends Model
         'extintor_co2',
         'extintor_agua',
         'placa_incendio',
+        'tem_espaco_veiculos_apreendidos',
+        'qtd_max_veiculos_automovel',
+        'seguranca_local_veiculos',
+        'historico_invasao_veiculo',
+        'observacoes_veiculos_apreendidos',
     ];
 
     /**
@@ -124,6 +129,9 @@ class InformacoesUnidade extends Model
         'pontos_ar_condicionado_suficientes' => 'boolean',
         'pontos_hidraulicos_suficientes' => 'boolean',
         'pontos_sanitarios_suficientes' => 'boolean',
+        'tem_espaco_veiculos_apreendidos' => 'boolean',
+        'qtd_max_veiculos_automovel' => 'integer',
+        'historico_invasao_veiculo' => 'boolean',
     ];
 
     /**

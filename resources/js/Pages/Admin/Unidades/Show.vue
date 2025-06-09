@@ -979,7 +979,7 @@ const salvarCessao = () => {
 
                             <!-- Suficiência de Instalações -->
                         <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Suficiência de Idsdsnstalações</h3>
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Suficiência de Instalações</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Tomadas:</dt>
@@ -1085,6 +1085,81 @@ const salvarCessao = () => {
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Placas de Emergência Para Incêndio:</dt>
                                         <dd class="mt-1">{{ informacoes.placa_incendio || 'Não informado' }}</dd>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Informações sobre Veículos Apreendidos</h3>
+                                
+                                <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow mb-4">
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Na unidade policial tem espaço para guardar veículos apreendidos:</dt>
+                                    <dd class="mt-1 flex items-center">
+                                        <i :class="`fas ${informacoes.tem_espaco_veiculos_apreendidos ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"></i>
+                                        {{ informacoes.tem_espaco_veiculos_apreendidos ? 'Sim' : 'Não' }}
+                                    </dd>
+                                </div>
+
+                                <div v-if="informacoes.tem_espaco_veiculos_apreendidos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Quantos veículos do tipo automóvel podem ser guardados:</dt>
+                                        <dd class="mt-1 font-semibold text-lg">
+                                            {{ informacoes.qtd_max_veiculos_automovel ? `${informacoes.qtd_max_veiculos_automovel} veículos` : 'Não informado' }}
+                                        </dd>
+                                    </div>
+
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">O local apresenta segurança:</dt>
+                                        <dd class="mt-1 flex items-center">
+                                            <span 
+                                                class="inline-flex items-center px-2.5 py-2.5 rounded-full text-xs font-semibold"
+                                                :class="{
+                                                    'bg-green-100 text-green-800': informacoes.seguranca_local_veiculos === 'sim',
+                                                    'bg-red-100 text-red-800': informacoes.seguranca_local_veiculos === 'nao',
+                                                    'bg-yellow-100 text-yellow-800': informacoes.seguranca_local_veiculos === 'parcial',
+                                                    'bg-gray-100 text-gray-800': !informacoes.seguranca_local_veiculos
+                                                }"
+                                            >
+                                                <i 
+                                                    :class="{
+                                                        'fas fa-shield-alt mr-1': informacoes.seguranca_local_veiculos === 'sim',
+                                                        'fas fa-exclamation-triangle mr-1': informacoes.seguranca_local_veiculos === 'nao',
+                                                        'fas fa-shield-halved mr-1': informacoes.seguranca_local_veiculos === 'parcial',
+                                                        'fas fa-question mr-1': !informacoes.seguranca_local_veiculos
+                                                    }"
+                                                ></i>
+                                                {{ 
+                                                    informacoes.seguranca_local_veiculos === 'sim' ? 'Sim' :
+                                                    informacoes.seguranca_local_veiculos === 'nao' ? 'Não' :
+                                                    informacoes.seguranca_local_veiculos === 'parcial' ? 'Parcial' :
+                                                    'Não informado'
+                                                }}
+                                            </span>
+                                        </dd>
+                                    </div>
+
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Histórico de invasão/subtração:</dt>
+                                        <dd class="mt-1 flex items-center">
+                                            <i :class="`fas ${informacoes.historico_invasao_veiculo ? 'fa-exclamation-triangle text-red-500' : 'fa-check text-green-500'} mr-2`"></i>
+                                            <span :class="informacoes.historico_invasao_veiculo ? 'text-red-600 font-semibold' : 'text-green-600'">
+                                                {{ informacoes.historico_invasao_veiculo ? 'Sim, há histórico' : 'Não há histórico' }}
+                                            </span>
+                                        </dd>
+                                    </div>
+
+                                    <div v-if="informacoes.observacoes_veiculos_apreendidos" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow sm:col-span-2 md:col-span-3">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Observações sobre veículos apreendidos:</dt>
+                                        <dd class="mt-1 whitespace-pre-line text-gray-700">{{ informacoes.observacoes_veiculos_apreendidos }}</dd>
+                                    </div>
+                                </div>
+
+                                <div v-else class="bg-yellow-50 p-3 rounded-md border border-yellow-200">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                                        <p class="text-yellow-800 text-sm">
+                                            Esta unidade não possui espaço disponível para guardar veículos apreendidos.
+                                        </p>
                                     </div>
                                 </div>
                             </div>

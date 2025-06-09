@@ -57,6 +57,11 @@ const form = useForm({
     recuo_frontal: props.informacoes?.recuo_frontal ? String(props.informacoes.recuo_frontal) : '',
     recuo_lateral: props.informacoes?.recuo_lateral ? String(props.informacoes.recuo_lateral) : '',
     recuo_fundos: props.informacoes?.recuo_fundos ? String(props.informacoes.recuo_fundos) : '',
+    tem_espaco_veiculos_apreendidos: props.informacoes?.tem_espaco_veiculos_apreendidos || false,
+    qtd_max_veiculos_automovel: props.informacoes?.qtd_max_veiculos_automovel ? String(props.informacoes.qtd_max_veiculos_automovel) : '',
+    seguranca_local_veiculos: props.informacoes?.seguranca_local_veiculos || '',
+    historico_invasao_veiculo: props.informacoes?.historico_invasao_veiculo || false,
+    observacoes_veiculos_apreendidos: props.informacoes?.observacoes_veiculos_apreendidos || '',
     qtd_recepcao: props.informacoes?.qtd_recepcao ? String(props.informacoes.qtd_recepcao) : '',
     qtd_wc_publico: props.informacoes?.qtd_wc_publico ? String(props.informacoes.qtd_wc_publico) : '',
     qtd_gabinetes: props.informacoes?.qtd_gabinetes ? String(props.informacoes.qtd_gabinetes) : '',
@@ -156,6 +161,13 @@ const tiposPavimentacao = [
     { value: 'terra', label: 'Terra' },
     { value: 'cascalho', label: 'Cascalho' },
     { value: 'outro', label: 'Outro' }
+];
+
+// Opções para segurança do local
+const opcoesSegurancaVeiculos = [
+    { value: 'sim', label: 'Sim' },
+    { value: 'nao', label: 'Não' },
+    { value: 'parcial', label: 'Parcial' }
 ];
 </script>
 
@@ -489,6 +501,76 @@ const tiposPavimentacao = [
                                     :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 />
                                 <InputError :message="form.errors.recuo_fundos" class="mt-1 text-xs" />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Seção de Veículos Apreendidos -->
+                    <div class="col-span-1 sm:col-span-2 mt-6 p-4 bg-gray-50 rounded-lg border border-blue-200">
+                        <h4 class="text-sm font-medium mb-4">Informações sobre Veículos Apreendidos</h4>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center">
+                                <Checkbox 
+                                    id="tem_espaco_veiculos_apreendidos" 
+                                    v-model:checked="form.tem_espaco_veiculos_apreendidos" 
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                                />
+                                <InputLabel for="tem_espaco_veiculos_apreendidos" value="Na unidade policial tem espaço para guardar veículos apreendidos?" class="ml-2 text-sm" />
+                            </div>
+                            
+                            <!-- Campos condicionais que aparecem se tiver espaço para veículos -->
+                            <div v-if="form.tem_espaco_veiculos_apreendidos" class="ml-6 space-y-4 border-l-2 border-blue-300 pl-4">
+                                <div>
+                                    <InputLabel for="qtd_max_veiculos_automovel" value="Se sim, é possível guardar quantos veículos do tipo automóvel?" class="text-sm" />
+                                    <TextInput
+                                        id="qtd_max_veiculos_automovel"
+                                        v-model="form.qtd_max_veiculos_automovel"
+                                        type="number"
+                                        min="0"
+                                        max="999"
+                                        class="mt-1 block w-full sm:w-32"
+                                        placeholder="Ex: 5"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                    />
+                                    <InputError :message="form.errors.qtd_max_veiculos_automovel" class="mt-1 text-xs" />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="seguranca_local_veiculos" value="O local apresenta segurança para deixar os veículos guardados?" class="text-sm" />
+                                    <SelectInput
+                                        id="seguranca_local_veiculos"
+                                        v-model="form.seguranca_local_veiculos"
+                                        :options="opcoesSegurancaVeiculos"
+                                        class="mt-1 block w-full sm:w-48"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                    >
+                                        <option value="">Selecione uma opção</option>
+                                    </SelectInput>
+                                    <InputError :message="form.errors.seguranca_local_veiculos" class="mt-1 text-xs" />
+                                </div>
+
+                                <div class="flex items-center">
+                                    <Checkbox 
+                                        id="historico_invasao_veiculo" 
+                                        v-model:checked="form.historico_invasao_veiculo" 
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                                    />
+                                    <InputLabel for="historico_invasao_veiculo" value="Há histórico de invasão nesse espaço ou veículos já foram subtraídos ou tiveram peças subtraídas?" class="ml-2 text-sm" />
+                                </div>
+                                <div>
+                                    <InputLabel for="observacoes_veiculos_apreendidos" value="Observações sobre veículos apreendidos (opcional)" class="text-sm" />
+                                    <textarea
+                                        id="observacoes_veiculos_apreendidos"
+                                        v-model="form.observacoes_veiculos_apreendidos"
+                                        rows="3"
+                                        class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                        placeholder="Descreva detalhes adicionais sobre o espaço para veículos, segurança, histórico de problemas, etc."
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        maxlength="1000"
+                                    ></textarea>
+                                    <InputError :message="form.errors.observacoes_veiculos_apreendidos" class="mt-1 text-xs" />
+                                    <p class="mt-1 text-xs text-gray-500">{{ form.observacoes_veiculos_apreendidos?.length || 0 }}/1000 caracteres</p>
+                                </div>
                             </div>
                         </div>
                     </div>
