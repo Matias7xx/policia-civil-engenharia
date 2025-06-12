@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\MidiaTipo;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class MidiaTiposSeeder extends Seeder
 {
@@ -45,13 +45,14 @@ class MidiaTiposSeeder extends Seeder
         ];
 
         foreach ($tipos as $tipo) {
-            DB::table('midia_tipos')->insert([
-                'nome' => $tipo['nome'],
-                'descricao' => $tipo['descricao'],
-                'ativo' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            MidiaTipo::firstOrCreate(
+                ['nome' => $tipo['nome']], // busca por nome único
+                [
+                    'nome' => $tipo['nome'],
+                    'descricao' => $tipo['descricao'],
+                    'ativo' => true
+                ]
+            );
         }
     }
 }

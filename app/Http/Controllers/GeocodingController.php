@@ -5,16 +5,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 
-    class GeocodingController extends Controller
+class GeocodingController extends Controller
+{
+    private $apiKey;
+
+    public function __construct()
     {
-        private $apiKey;
+        $this->apiKey = env('TOMTOM_API_KEY', 'h8Fm96GC3rZVi28e6szdI31Rx1X0w0l7');
+    }
 
-        public function __construct()
-        {
-            $this->apiKey = env('TOMTOM_API_KEY', 'h8Fm96GC3rZVi28e6szdI31Rx1X0w0l7');
-        }
-
-        public function search(Request $request)
+    public function search(Request $request)
     {
         $query = $request->query('q');
         if (!$query) {
@@ -41,7 +41,7 @@ use Illuminate\Support\Facades\Cache;
                             'house_number' => $result['address']['streetNumber'] ?? null,
                             'suburb' => $result['address']['municipalitySubdivision'] ?? null,
                             'city' => $result['address']['municipality'] ?? null,
-                            'postcode' => $result['address']['postalCode'] ?? null,
+                            'postcode' => $this->formatBrazilianPostalCode($result['address']['postalCode'] ?? null),
                         ],
                     ];
                 }
@@ -78,7 +78,7 @@ use Illuminate\Support\Facades\Cache;
         $response = Http::get("https://api.tomtom.com/search/2/reverseGeocode/{$lat},{$lng}.json", [
             'key' => $this->apiKey,
             'limit' => 1,
-            'countrySet' => 'BR', // Restringe resultados ao Brasil
+            'countrySet' => 'BR',
         ]);
 
         if ($response->successful()) {
@@ -91,12 +91,47 @@ use Illuminate\Support\Facades\Cache;
                         'house_number' => $result['address']['streetNumber'] ?? null,
                         'suburb' => $result['address']['municipalitySubdivision'] ?? null,
                         'city' => $result['address']['municipality'] ?? null,
-                        'postcode' => $result['address']['postalCode'] ?? null,
+                        'postcode' => $this->formatBrazilianPostalCode($result['address']['postalCode'] ?? null),
                     ],
                 ]);
             }
         }
 
         return response()->json(['error' => 'Nenhum resultado encontrado'], 200);
+    }
+
+    /**
+     * Formata o CEP para o formato completo
+     * 
+     * @param string|null $postalCode
+     * @return string|null
+     */
+    private function formatBrazilianPostalCode($postalCode)
+    {
+        if (!$postalCode) {
+            return null;
+        }
+
+        // Remove caractere que não seja número
+        $cleanCode = preg_replace('/\D/', '', $postalCode);
+        
+        // Se tem 5 dígitos, adiciona -000
+        if (strlen($cleanCode) === 5) {
+            return $cleanCode . '-000';
+        }
+        
+        // Se tem 8 dígitos, formata
+        if (strlen($cleanCode) === 8) {
+            return substr($cleanCode, 0, 5) . '-' . substr($cleanCode, 5, 3);
+        }
+        
+        // Se tem entre 6-7 dígitos completa com zeros à direita
+        if (strlen($cleanCode) >= 6 && strlen($cleanCode) <= 7) {
+            $cleanCode = str_pad($cleanCode, 8, '0', STR_PAD_RIGHT);
+            return substr($cleanCode, 0, 5) . '-' . substr($cleanCode, 5, 3);
+        }
+        
+        // se não conseguir formatar
+        return $postalCode;
     }
 }
