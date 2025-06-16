@@ -46,6 +46,8 @@ class Unidade extends Model
         'latitude',
         'longitude',
         'tipo_judicial',
+        'imovel_compartilhado_unidades',
+        'imovel_compartilhado_unidades_texto',
         'status',
         'imovel_compartilhado_orgao',
         'observacoes',
@@ -65,6 +67,7 @@ class Unidade extends Model
      */
     protected $casts = [
         'sede' => 'boolean',
+        'imovel_compartilhado_unidades' => 'boolean',
         'imovel_compartilhado_orgao' => 'boolean',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',

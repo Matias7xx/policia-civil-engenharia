@@ -47,6 +47,8 @@ const form = useForm({
     telefone_1: props.unidade?.telefone_1 || '',
     telefone_2: props.unidade?.telefone_2 || '',
     tipo_judicial: props.unidade?.tipo_judicial || '',
+    imovel_compartilhado_unidades: props.unidade?.imovel_compartilhado_unidades || false, // Checkbox
+    imovel_compartilhado_unidades_texto: props.unidade?.imovel_compartilhado_unidades_texto || '', // Texto
     imovel_compartilhado_orgao: props.unidade?.imovel_compartilhado_orgao || false,
     imovel_compartilhado_orgao_ids: [...initialOrgaoIds], // Spread para criar nova referência
     observacoes: props.unidade?.observacoes || '',
@@ -132,6 +134,12 @@ watch(() => form.tipo_judicial, (newValue) => {
     }
 });
 
+watch(() => form.imovel_compartilhado_unidades, (newValue) => {
+    if (!newValue) {
+        form.imovel_compartilhado_unidades_texto = '';
+    }
+});
+
 watch(() => form.imovel_compartilhado_orgao, (newValue) => {
     if (!newValue) {
         form.imovel_compartilhado_orgao_ids = [];
@@ -174,6 +182,11 @@ const saveDadosGerais = () => {
     if (form.imovel_compartilhado_orgao && form.imovel_compartilhado_orgao_ids.length === 0) {
         errors.push('Selecione pelo menos um órgão.');
         form.errors.imovel_compartilhado_orgao_ids = 'Selecione pelo menos um órgão.';
+    }
+
+    if (form.imovel_compartilhado_unidades && !form.imovel_compartilhado_unidades_texto?.trim()) {
+        errors.push('Descreva quais unidades compartilham o imóvel.');
+        form.errors.imovel_compartilhado_unidades_texto = 'Este campo é obrigatório quando o imóvel é compartilhado com outras unidades.';
     }
 
     if (errors.length > 0) {
@@ -227,7 +240,7 @@ const saveDadosGerais = () => {
                         >
                             <option value="">Selecione o tipo</option>
                             <option value="delegacia">Delegacia</option>
-                            <option value="unidade_especializada">Unidade Especializada</option>
+                            <option value="especializada">Unidade Especializada</option>
                             <option value="instituto">Instituto</option>
                             <option value="academia">Academia</option>
                             <option value="superintendencia">Superintendência</option>
@@ -368,7 +381,34 @@ const saveDadosGerais = () => {
                         <InputError :message="form.errors.numero_medidor_energia" class="mt-1" />
                     </div>
                     
-                    <!-- Checkbox para imóvel compartilhado -->
+                    <!-- Checkbox para imóvel compartilhado com outras Unidades -->
+                    <div class="md:col-span-3">
+                        <div class="flex items-center mt-2">
+                            <Checkbox 
+                                id="imovel_compartilhado_unidades" 
+                                v-model:checked="form.imovel_compartilhado_unidades" 
+                                :disabled="!isEditable || !permissions?.canUpdateTeam" 
+                            />
+                            <InputLabel for="imovel_compartilhado_unidades" value="Imóvel compartilhado com outra(s) Unidades Policiais?" class="ml-2" />
+                        </div>
+                        <InputError :message="form.errors.imovel_compartilhado_unidades" class="mt-1" />
+                    </div>
+                    
+                    <!-- Campo de texto para descrever as unidades -->
+                    <div v-if="form.imovel_compartilhado_unidades" class="md:col-span-3">
+                        <InputLabel for="imovel_compartilhado_unidades_texto" value="Descreva quais unidades compartilham o imóvel *" class="text-sm font-medium text-gray-700" />
+                        <TextInput
+                            id="imovel_compartilhado_unidades_texto"
+                            v-model="form.imovel_compartilhado_unidades_texto"
+                            type="text"
+                            class="mt-1 block w-full"
+                            :disabled="!isEditable || !permissions?.canUpdateTeam"
+                            placeholder="Ex: Delegacia de Homicídios, 7ª Delegacia Distrital, etc."
+                        />
+                        <InputError :message="form.errors.imovel_compartilhado_unidades_texto" class="mt-1" />
+                    </div>
+                    
+                    <!-- Checkbox para imóvel compartilhado com órgãos -->
                     <div class="md:col-span-3">
                         <div class="flex items-center mt-2">
                             <Checkbox 

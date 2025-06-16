@@ -103,7 +103,7 @@ class UnidadeController extends Controller
             'team_id' => 'required|exists:teams,id',
             'nome' => 'required|string|max:255',
             'codigo' => 'nullable|string|max:50',
-            'tipo_estrutural' => 'required|string|in:delegacia,unidade_especializada,instituto,academia,superintendencia,outra',
+            'tipo_estrutural' => 'required|string|in:delegacia,especializada,instituto,academia,superintendencia,outra',
             'srpc' => 'nullable|string|max:255',
             'dspc' => 'nullable|string|max:255',
             'nivel' => 'nullable|string|max:50',
@@ -112,6 +112,8 @@ class UnidadeController extends Controller
             'telefone_1' => 'nullable|string|max:20',
             'telefone_2' => 'nullable|string|max:20',
             'tipo_judicial' => 'required|string|in:proprio,locado,cedido',
+            'imovel_compartilhado_unidades' => 'boolean',
+            'imovel_compartilhado_unidades_texto' => 'nullable|string',
             'imovel_compartilhado_orgao' => 'boolean',
             'imovel_compartilhado_orgao_ids' => 'nullable|array',
             'imovel_compartilhado_orgao_ids.*' => 'exists:orgaos,id',
@@ -126,6 +128,11 @@ class UnidadeController extends Controller
 
         $unidadeData = $validated;
         unset($unidadeData['imovel_compartilhado_orgao_ids']);
+
+        // Limpar o texto de unidades compartilhadas se o checkbox não estiver marcado
+        if (!$validated['imovel_compartilhado_unidades']) {
+            $unidadeData['imovel_compartilhado_unidades_texto'] = null;
+        }
 
         // Verificar se o status é 'reprovada' e alterar para 'pendente_avaliacao'
         $unidade = Unidade::where('team_id', $request->team_id)->first();

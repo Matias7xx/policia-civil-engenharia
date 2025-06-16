@@ -359,10 +359,27 @@ const formatarTelefones = computed(() => {
                                 </dl>
                             </div>
                             
-                            <div v-if="unidade?.imovel_compartilhado_orgao" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Compartilhamento de Imóvel</h3>
+                            <!-- Seção de Compartilhamento com Unidades -->
+                            <div v-if="unidade?.imovel_compartilhado_unidades" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Compartilhamento com Unidades Policiais</h3>
                                 <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Compartilhado com:</dt>
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Unidades que compartilham o imóvel:</dt>
+                                    <dd class="mt-1">
+                                        <span v-if="!unidade.imovel_compartilhado_unidades_texto?.trim()" class="text-gray-600">
+                                            Não informado
+                                        </span>
+                                        <span v-else class="text-gray-900">
+                                            {{ unidade.imovel_compartilhado_unidades_texto }}
+                                        </span>
+                                    </dd>
+                                </div>
+                            </div>
+                            
+                            <!-- Seção de Compartilhamento com Órgãos -->
+                            <div v-if="unidade?.imovel_compartilhado_orgao" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Compartilhamento com Órgãos</h3>
+                                <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Órgãos que compartilham o imóvel:</dt>
                                     <dd class="mt-1 flex flex-wrap gap-2">
                                         <span v-if="!unidade.orgaosCompartilhados || unidade.orgaosCompartilhados.length === 0" class="text-gray-600">
                                             Não informado
