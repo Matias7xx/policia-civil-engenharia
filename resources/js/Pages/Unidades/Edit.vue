@@ -183,6 +183,7 @@ const handleSaved = (error = null) => {
                                 <MidiasUnidadeForm
                                     :unidade="unidade"
                                     :midias="midias"
+                                    :acessibilidade="acessibilidade"
                                     :permissions="permissions"
                                     :is-editable="true"
                                     :is-new="false"

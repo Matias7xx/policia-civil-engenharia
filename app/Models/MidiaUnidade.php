@@ -25,6 +25,17 @@ class MidiaUnidade extends Model
     protected $fillable = [
         'unidade_id',
         'midia_id',
+        'nao_possui_ambiente',
+        'observacoes',
+    ];
+
+    /**
+     * Os atributos que devem ser convertidos.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'nao_possui_ambiente' => 'boolean',
     ];
 
     /**
@@ -41,5 +52,21 @@ class MidiaUnidade extends Model
     public function midia(): BelongsTo
     {
         return $this->belongsTo(Midia::class);
+    }
+
+    /**
+     *  buscar registros que indicam "não possui ambiente"
+     */
+    public function scopeNaoPossuiAmbiente($query)
+    {
+        return $query->where('nao_possui_ambiente', true);
+    }
+
+    /**
+     *  buscar registros que possuem mídia real
+     */
+    public function scopeComMidia($query)
+    {
+        return $query->where('nao_possui_ambiente', false);
     }
 }

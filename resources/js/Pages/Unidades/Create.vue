@@ -328,7 +328,7 @@ const tabProgressClass = computed(() => (tabId) => {
                             </div>
 
                             <div v-if="activeTab === 'informacoes'" class="animate-fade-in">
-                                <<InformacoesUnidadeForm
+                                <InformacoesUnidadeForm
                                     :team="team"
                                     :unidade="unidade"
                                     :informacoes="informacoes"
@@ -343,6 +343,7 @@ const tabProgressClass = computed(() => (tabId) => {
                                 <MidiasUnidadeForm
                                     :unidade="unidade"
                                     :midias="midias"
+                                    :acessibilidade="acessibilidade"
                                     :permissions="permissions"
                                     :is-editable="unidade?.is_draft ?? true"
                                     @saved="handleFinalSave"

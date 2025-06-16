@@ -19,6 +19,91 @@ const props = defineProps({
     isSuperAdmin: Boolean,
 });
 
+const midiasReais = computed(() => {
+    if (!props.midias || !Array.isArray(props.midias)) {
+        return [];
+    }
+    
+    // Filtrar apenas mídias reais (não os registros de "não possui")
+    return props.midias.filter(midia => {
+        // Excluir mídias que têm path = 'nao_possui_ambiente'
+        if (midia.path === 'nao_possui_ambiente') {
+            return false;
+        }
+        
+        // Excluir mídias que têm o flag nao_possui_ambiente = true no pivot
+        if (midia.pivot && midia.pivot.nao_possui_ambiente === true) {
+            return false;
+        }
+        
+        // Incluir apenas mídias com URL válida e que são imagens
+        return midia.url && isImage(midia);
+    });
+});
+
+const ambientesNaoPossui = computed(() => {
+    if (!props.midias || !Array.isArray(props.midias)) {
+        return [];
+    }
+    
+    // Filtrar apenas registros de "não possui ambiente"
+    return props.midias.filter(midia => {
+        // Incluir mídias  que têm path = 'nao_possui_ambiente'
+        if (midia.path === 'nao_possui_ambiente') {
+            return true;
+        }
+        
+        // Incluir mídias que têm o flag nao_possui_ambiente = true no pivot
+        if (midia.pivot && midia.pivot.nao_possui_ambiente === true) {
+            return true;
+        }
+        
+        return false;
+    }).map(midia => {
+        // Formatação dos nomes para exibição
+        const nome = midia.midia_tipo?.nome || midia.midiaTipo?.nome || 'Ambiente desconhecido';
+        return {
+            ...midia,
+            nomeFormatado: formatarNomeTipoMidia(nome)
+        };
+    });
+});
+
+const formatarNomeTipoMidia = (nome) => {
+    // Casos específicos - Área Interna
+    if (nome === 'recepção') return 'Recepção';
+    if (nome === 'sala_oitiva') return 'Sala de oitiva';
+    if (nome === 'sala_boletim_de_ocorrência') return 'Sala de boletim de ocorrência';
+    if (nome === 'gabinete_01') return 'Gabinete 01';
+    if (nome === 'gabinete_02') return 'Gabinete 02';
+    if (nome === 'cartório_01') return 'Cartório 01';
+    if (nome === 'cartório_02') return 'Cartório 02';
+    if (nome === 'sala_de_agentes') return 'Sala de agentes';
+    if (nome === 'wc_público_masculino') return 'WC público masculino';
+    if (nome === 'wc_público_feminino') return 'WC público feminino';
+    if (nome === 'wc_servidores_masculino') return 'WC servidores masculino';
+    if (nome === 'wc_servidores_feminino') return 'WC servidores feminino';
+    if (nome === 'alojamento_masculino') return 'Alojamento masculino';
+    if (nome === 'alojamento_feminino') return 'Alojamento feminino';
+    if (nome === 'xadrez_masculino_01') return 'Xadrez masculino 01';
+    if (nome === 'xadrez_masculino_02') return 'Xadrez masculino 02';
+    if (nome === 'xadrez_masculino_03') return 'Xadrez masculino 03';
+    if (nome === 'xadrez_feminino_01') return 'Xadrez feminino 01';
+    if (nome === 'xadrez_feminino_02') return 'Xadrez feminino 02';
+    if (nome === 'xadrez_feminino_03') return 'Xadrez feminino 03';
+    if (nome === 'parlatório') return 'Parlatório';
+    if (nome === 'sala_identificação') return 'Sala de identificação';
+    if (nome === 'cozinha') return 'Cozinha';
+    if (nome === 'copa') return 'Copa';
+    if (nome === 'área_de_serviço') return 'Área de serviço';
+    if (nome === 'dispensa') return 'Dispensa';
+    if (nome === 'depósito_apreensão') return 'Depósito de apreensão';
+    if (nome === 'garagem') return 'Garagem';
+    
+    // Formato padrão para outros tipos
+    return nome.replace('foto_', '').replace(/_/g, ' ');
+};
+
 const page = usePage();
 const activeTab = ref('dados-gerais');
 const activeAvaliacaoTab = ref('historico');
@@ -1169,8 +1254,8 @@ const salvarCessao = () => {
                         <div v-if="activeTab === 'midias'" class="grid grid-cols-1 gap-6">
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Mídias da Unidade</h3>
-                                <div v-if="midias && midias.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div v-for="midia in midias" :key="midia.id" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                <div v-if="midiasReais && midiasReais.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div v-for="midia in midiasReais" :key="midia.id" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">{{ midia.midia_tipo?.nome || 'Tipo Desconhecido' }}:</dt>
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">{{ (midia.tamanho / 1024).toFixed(2) }} KB</dt>
                                         <dd class="mt-1">
@@ -1187,6 +1272,67 @@ const salvarCessao = () => {
                                     <i class="fas fa-image text-gray-400 text-4xl mb-4"></i>
                                     <p class="text-gray-600">Nenhuma mídia cadastrada para esta unidade.</p>
                                 </div>
+                            </div>
+                            
+                            <div v-if="ambientesNaoPossui && ambientesNaoPossui.length > 0" class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4 flex items-center">
+                                    <i class="fas fa-ban text-orange-500 mr-2"></i>
+                                    Ambientes que a Unidade Não Possui
+                                    <span class="ml-2 text-sm font-normal text-gray-600">({{ ambientesNaoPossui.length }} ambiente{{ ambientesNaoPossui.length === 1 ? '' : 's' }})</span>
+                                </h3>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    <div 
+                                        v-for="ambiente in ambientesNaoPossui" 
+                                        :key="ambiente.id" 
+                                        class="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-all border-l-4 border-gray-400"
+                                    >
+                                        <div class="flex items-center justify-center mb-3">
+                                            <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-home-slash text-orange-600 text-xl"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="text-center">
+                                            <h4 class="font-medium text-gray-900 text-sm mb-1">
+                                                {{ ambiente.nomeFormatado }}
+                                            </h4>
+                                            <p class="text-xs text-gray-500 mb-2">Ambiente não disponível</p>
+                                            
+                                            <div class="flex items-center justify-center">
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                                    <i class="fas fa-times mr-1"></i>
+                                                    Não possui
+                                                </span>
+                                            </div>
+                                            
+                                            <!-- Observações se existirem -->
+                                            <div v-if="ambiente.pivot && ambiente.pivot.observacoes" class="mt-2 text-xs text-gray-600 italic p-2 bg-gray-50 rounded">
+                                                "{{ ambiente.pivot.observacoes }}"
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Informação adicional -->
+                                <div class="mt-4 bg-orange-50 border border-orange-200 rounded-md p-3">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-info-circle text-orange-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                                        <div class="text-sm">
+                                            <p class="font-medium text-orange-800 mb-1">Informação:</p>
+                                            <p class="text-orange-700">
+                                                Foi marcado que "A unidade não possui este ambiente" durante o cadastro da unidade. 
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Caso não haja nenhuma mídia nem ambientes "não possui" -->
+                            <div v-if="(!midiasReais || midiasReais.length === 0) && (!ambientesNaoPossui || ambientesNaoPossui.length === 0)" class="bg-white p-6 rounded-md shadow-sm text-center">
+                                <i class="fas fa-photo-video text-gray-400 text-4xl mb-4"></i>
+                                <p class="text-gray-600 mb-2">Nenhuma informação de mídia disponível para esta unidade.</p>
+                                <p class="text-sm text-gray-500">Não há fotos cadastradas nem ambientes marcados como "não possui".</p>
                             </div>
                         </div>
 

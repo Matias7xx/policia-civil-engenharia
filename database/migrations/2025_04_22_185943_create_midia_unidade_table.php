@@ -20,6 +20,8 @@ return new class extends Migration
             
             $table->foreign('unidade_id')->references('id')->on('unidades')->onDelete('cascade');
             $table->foreign('midia_id')->references('id')->on('midias')->onDelete('cascade');
+            $table->boolean('nao_possui_ambiente')->default(false)->after('midia_id');
+            $table->text('observacoes')->nullable()->after('nao_possui_ambiente');
             
             // Garantir que não haja duplicidade
             $table->unique(['unidade_id', 'midia_id']);
