@@ -212,7 +212,7 @@ const getTrendText = (field) => {
             </div>
             <div class="text-sm flex items-center">
               <UserIcon class="w-4 h-4 mr-2 text-gray-500" />
-              <span class="font-medium">Avaliador: </span> {{ selectedAvaliacao.avaliador?.name || 'Não informado' }}
+              <span class="font-medium mr-1">Avaliador(a): </span> {{ selectedAvaliacao.avaliador?.name || 'Não informado' }}
             </div>
           </div>
 

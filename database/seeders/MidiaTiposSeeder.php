@@ -56,6 +56,12 @@ class MidiaTiposSeeder extends Seeder
             ['nome' => 'banheiro_adaptado', 'descricao' => 'Foto do banheiro adaptado'],
             ['nome' => 'elevador', 'descricao' => 'Foto do elevador'],
             ['nome' => 'sinalizacao_braile', 'descricao' => 'Foto da sinalização em braile'],
+
+            // Equipamentos de Segurança
+            ['nome' => 'porta_principal', 'descricao' => 'Foto da porta principal da unidade'],
+            ['nome' => 'luminarias_emergencia', 'descricao' => 'Foto das luminárias de emergência'],
+            ['nome' => 'escada_acesso', 'descricao' => 'Foto da escada de acesso'],
+            ['nome' => 'demarcacao_extintor', 'descricao' => 'Foto da demarcação no piso do extintor'],
         ];
 
         foreach ($tipos as $tipo) {

@@ -495,7 +495,7 @@ const salvarCessao = () => {
 
                             <div v-if="unidade?.rejection_reason && unidade.status !== 'reprovada'" class="mt-4">
                                 <div class="bg-red-50 p-3 rounded-md shadow-sm">
-                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Essa Unidade já foi reprovada</dt>
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">O formulário enviado por esta unidade foi reprovado</dt>
                                     <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Motivo da última Reprovação:</dt>
                                     <dd class="mt-1 whitespace-pre-line text-red-700">{{ unidade.rejection_reason }}</dd>
                                 </div>
@@ -1184,8 +1184,24 @@ const salvarCessao = () => {
                                         <dd class="mt-1">{{ informacoes.extintor_agua || 'Não informado' }}</dd>
                                     </div>
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Demarcação no piso abaixo do extintor:</dt>
+                                        <dd class="mt-1">{{ informacoes.demarcacao_piso_extintor || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
                                         <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Placas de Emergência Para Incêndio:</dt>
                                         <dd class="mt-1">{{ informacoes.placa_incendio || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Possui luminárias de emergência:</dt>
+                                        <dd class="mt-1">{{ informacoes.possui_luminarias_emergencia || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">A porta principal abre para fora:</dt>
+                                        <dd class="mt-1">{{ informacoes.porta_principal_abre_fora || 'Não informado' }}</dd>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Escada de acesso possui corrimão:</dt>
+                                        <dd class="mt-1">{{ informacoes.escada_possui_corrimao || 'Não informado' }}</dd>
                                     </div>
                                 </div>
                             </div>

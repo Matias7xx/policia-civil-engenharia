@@ -500,6 +500,12 @@ const formatarNomeTipoMidia = (nome) => {
     if (nome === 'banheiro_adaptado') return 'Banheiro adaptado';
     if (nome === 'elevador') return 'Elevador';
     if (nome === 'sinalizacao_braile') return 'Sinalização em braille';
+
+    // Equipamentos de segurança
+    if (nome === 'porta_principal') return 'Porta principal';
+    if (nome === 'luminarias_emergencia') return 'Luminárias de emergência';
+    if (nome === 'escada_acesso') return 'Escada de acesso';
+    if (nome === 'demarcacao_extintor') return 'Demarcação no piso do extintor';
     
     // Formato padrão para outros tipos
     // Remove o prefixo 'foto_' e substitui underscores por espaços

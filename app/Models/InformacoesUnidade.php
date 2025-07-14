@@ -88,6 +88,10 @@ class InformacoesUnidade extends Model
         'seguranca_local_veiculos',
         'historico_invasao_veiculo',
         'observacoes_veiculos_apreendidos',
+        'porta_principal_abre_fora',
+        'possui_luminarias_emergencia',
+        'escada_possui_corrimao',
+        'demarcacao_piso_extintor'
     ];
 
     /**
@@ -132,6 +136,10 @@ class InformacoesUnidade extends Model
         'tem_espaco_veiculos_apreendidos' => 'boolean',
         'qtd_max_veiculos_automovel' => 'integer',
         'historico_invasao_veiculo' => 'boolean',
+        'porta_principal_abre_fora' => 'string',
+        'possui_luminarias_emergencia' => 'string',
+        'escada_possui_corrimao' => 'string',
+        'demarcacao_piso_extintor' => 'string',
     ];
 
     /**

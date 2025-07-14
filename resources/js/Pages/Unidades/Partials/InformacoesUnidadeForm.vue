@@ -98,6 +98,11 @@ const form = useForm({
     extintor_co2: props.informacoes?.extintor_co2 || '',
     extintor_agua: props.informacoes?.extintor_agua || '',
     placa_incendio: props.informacoes?.placa_incendio || '',
+    porta_principal_abre_fora: props.informacoes?.porta_principal_abre_fora || '',
+    possui_luminarias_emergencia: props.informacoes?.possui_luminarias_emergencia || '',
+    escada_possui_corrimao: props.informacoes?.escada_possui_corrimao || '',
+    demarcacao_piso_extintor: props.informacoes?.demarcacao_piso_extintor || '',
+
 });
 
 const methods = {
@@ -1111,7 +1116,19 @@ const opcoesSegurancaVeiculos = [
                         </div>
 
                         <div>
-                            <InputLabel for="placa_incendio" value="Placas de Sinalização de Emergência Para Incêndio" class="text-sm" />
+                            <InputLabel for="demarcacao_piso_extintor" value="No piso, abaixo do(s) extintor(es), existe demarcação?" class="text-sm" />
+                            <TextInput
+                                id="demarcacao_piso_extintor"
+                                v-model="form.demarcacao_piso_extintor"
+                                type="text"
+                                class="mt-1 block w-full"
+                                placeholder="Sim/Não"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                            />
+                        </div>
+
+                        <div>
+                            <InputLabel for="placa_incendio" value="Possui placas de sinalização de emergência para incêndio?" class="text-sm" />
                             <TextInput
                                 id="placa_incendio"
                                 v-model="form.placa_incendio"
@@ -1121,6 +1138,43 @@ const opcoesSegurancaVeiculos = [
                                 :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                         </div>
+
+                        <div>
+                            <InputLabel for="possui_luminarias_emergencia" value="A unidade policial possui luminárias de emergência?" class="text-sm" />
+                            <TextInput
+                                id="possui_luminarias_emergencia"
+                                v-model="form.possui_luminarias_emergencia"
+                                type="text"
+                                class="mt-1 block w-full"
+                                placeholder="Sim/Não"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                            />
+                        </div>
+
+                        <div>
+                            <InputLabel for="porta_principal_abre_fora" value="A porta principal da unidade abre para fora?" class="text-sm" />
+                            <TextInput
+                                id="porta_principal_abre_fora"
+                                v-model="form.porta_principal_abre_fora"
+                                type="text"
+                                class="mt-1 block w-full"
+                                placeholder="Sim/Não"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                            />
+                        </div>
+
+                        <div>
+                            <InputLabel for="escada_possui_corrimao" value="A escada de acesso à unidade policial possui corrimão?" class="text-sm" />
+                            <TextInput
+                                id="escada_possui_corrimao"
+                                v-model="form.escada_possui_corrimao"
+                                type="text"
+                                class="mt-1 block w-full"
+                                placeholder="Sim/Não"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                            />
+                        </div>
+
                     </div>
                 </div>
             </div>

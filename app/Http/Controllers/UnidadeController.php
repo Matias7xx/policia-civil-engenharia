@@ -298,7 +298,12 @@ class UnidadeController extends Controller
             'qtd_max_veiculos_automovel' => 'nullable|integer|min:0',
             'seguranca_local_veiculos' => 'nullable|string|in:sim,nao,parcial',
             'historico_invasao_veiculo' => 'boolean',
-            'observacoes_veiculos_apreendidos' => 'nullable|string|max:1000'
+            'observacoes_veiculos_apreendidos' => 'nullable|string|max:1000',
+
+            'porta_principal_abre_fora' => 'nullable|string|max:255',
+            'possui_luminarias_emergencia' => 'nullable|string|max:255',
+            'escada_possui_corrimao' => 'nullable|string|max:255',
+            'demarcacao_piso_extintor' => 'nullable|string|max:255'
         ]);
 
         $unidade = Unidade::findOrFail($request->unidade_id);
