@@ -14,6 +14,7 @@ use App\Helpers\RoleHelper;
 use App\Models\Orgao;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Helpers\StorageHelper;
 
 class UnidadeController extends Controller
 {
@@ -219,70 +220,72 @@ class UnidadeController extends Controller
     }
 
     public function updateContrato(Request $request, $id)
-{
-    $user = $request->user();
-    if (!RoleHelper::isSuperAdmin($user)) {
-        abort(403, 'Acesso não autorizado');
-    }
-
-    $unidade = Unidade::findOrFail($id);
-
-    if ($unidade->tipo_judicial !== 'locado') {
-        return back()->with('error', 'Unidade não é do tipo locado.');
-    }
-
-    $validated = $request->validate([
-        'nome_proprietario' => 'required|string|max:255',
-        'cpf_cnpj' => 'required|string|min:11|max:14',
-        'telefone' => 'nullable|string|min:10|max:11',
-        'valor_locacao' => 'required|numeric|min:0',
-        'data_inicio' => 'required|date',
-        'data_fim' => 'nullable|date|after_or_equal:data_inicio',
-        'anexo' => 'nullable|file|mimes:pdf|max:10240',
-    ], [
-        'anexo.mimes' => 'O arquivo deve ser um PDF válido.',
-        'anexo.max' => 'O arquivo não pode exceder 10MB.',
-    ]);
-
-    $contrato = $unidade->contratoLocacao ?: new ContratoLocacaoUnidade(['unidade_id' => $unidade->id]);
-
-    // Limpar caracteres não numéricos
-    $cleanedCpfCnpj = preg_replace('/\D/', '', $validated['cpf_cnpj']);
-    $cleanedTelefone = $validated['telefone'] ? preg_replace('/\D/', '', $validated['telefone']) : null;
-
-     // Validar comprimento após limpeza
-     if (strlen($cleanedCpfCnpj) < 11 || strlen($cleanedCpfCnpj) > 14) {
-        return redirect()->back()->withErrors(['cpf_cnpj' => 'O CPF/CNPJ deve conter entre 11 e 14 dígitos numéricos.'])->withInput();
-    }
-    if ($cleanedTelefone && strlen($cleanedTelefone) !== 11) {
-        return redirect()->back()->withErrors(['telefone' => 'O telefone deve conter exatamente 11 dígitos numéricos.'])->withInput();
-    }
-
-    $contrato->fill([
-        'nome_proprietario' => $validated['nome_proprietario'],
-        'cpf_cnpj' => $cleanedCpfCnpj,
-        'telefone' => $cleanedTelefone,
-        'valor_locacao' => $validated['valor_locacao'],
-        'data_inicio' => $validated['data_inicio'] . ' 12:00:00',
-        'data_fim' => $validated['data_fim'] ? $validated['data_fim'] . ' 12:00:00' : null,
-    ]);
-
-    if ($request->hasFile('anexo')) {
-        $nomeUnidade = Str::slug($unidade->nome);
-        $path = "contratos/{$nomeUnidade}";
-        if ($contrato->anexo) {
-            Storage::disk('public')->delete($contrato->anexo);
+    {
+        $user = $request->user();
+        if (!RoleHelper::isSuperAdmin($user)) {
+            abort(403, 'Acesso não autorizado');
         }
-        $anexoPath = $request->file('anexo')->store($path, 'public');
-        $contrato->anexo = $anexoPath;
+
+        $unidade = Unidade::findOrFail($id);
+
+        if ($unidade->tipo_judicial !== 'locado') {
+            return back()->with('error', 'Unidade não é do tipo locado.');
+        }
+
+        $validated = $request->validate([
+            'nome_proprietario' => 'required|string|max:255',
+            'cpf_cnpj' => 'required|string|min:11|max:14',
+            'telefone' => 'nullable|string|min:10|max:15',
+            'valor_locacao' => 'required|numeric|min:0',
+            'data_inicio' => 'required|date',
+            'data_fim' => 'nullable|date|after_or_equal:data_inicio',
+            'anexo' => 'nullable|file|mimes:pdf|max:10240',
+        ], [
+            'anexo.mimes' => 'O arquivo deve ser um PDF válido.',
+            'anexo.max' => 'O arquivo não pode exceder 10MB.',
+        ]);
+
+        $contrato = $unidade->contratoLocacao ?: new ContratoLocacaoUnidade(['unidade_id' => $unidade->id]);
+
+        // Limpar caracteres não numéricos
+        $cleanedCpfCnpj = preg_replace('/\D/', '', $validated['cpf_cnpj']);
+        $cleanedTelefone = $validated['telefone'] ? preg_replace('/\D/', '', $validated['telefone']) : null;
+
+        // Validar comprimento após limpeza
+        if (strlen($cleanedCpfCnpj) < 11 || strlen($cleanedCpfCnpj) > 14) {
+            return redirect()->back()->withErrors(['cpf_cnpj' => 'O CPF/CNPJ deve conter entre 11 e 14 dígitos numéricos.'])->withInput();
+        }
+        if ($cleanedTelefone && strlen($cleanedTelefone) !== 11) {
+            return redirect()->back()->withErrors(['telefone' => 'O telefone deve conter exatamente 11 dígitos numéricos.'])->withInput();
+        }
+
+        $contrato->fill([
+            'nome_proprietario' => $validated['nome_proprietario'],
+            'cpf_cnpj' => $cleanedCpfCnpj,
+            'telefone' => $cleanedTelefone,
+            'valor_locacao' => $validated['valor_locacao'],
+            'data_inicio' => $validated['data_inicio'],
+            'data_fim' => $validated['data_fim'],
+        ]);
+
+        if ($request->hasFile('anexo')) {
+            // Remover contrato anterior do MinIO
+            if ($contrato->anexo) {
+                StorageHelper::removerArquivo($contrato->anexo);
+            }
+            
+            // Salvar novo contrato no MinIO
+            $nomeArquivo = 'contrato_locacao.pdf';
+            $anexoPath = StorageHelper::salvarDocumento($unidade, $request->file('anexo'), $nomeArquivo);
+            $contrato->anexo = $anexoPath;
+        }
+
+        $contrato->save();
+
+        $unidade->load('contratoLocacao');
+
+        return back()->with('success', 'Contrato atualizado com sucesso.');
     }
-
-    $contrato->save();
-
-    $unidade->load('contratoLocacao');
-
-    return back()->with('success', 'Contrato atualizado com sucesso.');
-}
 
     public function anexo($id)
     {
@@ -298,13 +301,21 @@ class UnidadeController extends Controller
             abort(404, 'Anexo não encontrado.');
         }
 
-        $filePath = storage_path('app/public/' . $contrato->anexo);
-
-        if (!file_exists($filePath)) {
-            abort(404, 'Arquivo não encontrado.');
+        if (!StorageHelper::arquivoExiste($contrato->anexo)) {
+            abort(404, 'Arquivo não encontrado no servidor.');
         }
 
-        return response()->file($filePath);
+        try {
+            $conteudo = StorageHelper::obterArquivo($contrato->anexo);
+            
+            return response($conteudo, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="contrato_locacao.pdf"',
+                'Cache-Control' => 'public, max-age=3600',
+            ]);
+        } catch (\Exception $e) {
+            abort(500, 'Erro ao carregar arquivo');
+        }
     }
 
     public function updateCessao(Request $request, $id)
@@ -325,8 +336,8 @@ class UnidadeController extends Controller
             'termo_cessao' => 'nullable|file|mimes:pdf|max:10240',
             'prazo_cessao' => 'required|date',
         ], [
-            'anexo.mimes' => 'O arquivo deve ser um PDF válido.',
-            'anexo.max' => 'O arquivo não pode exceder 10MB.',
+            'termo_cessao.mimes' => 'O arquivo deve ser um PDF válido.',
+            'termo_cessao.max' => 'O arquivo não pode exceder 10MB.',
         ]);
 
         $unidade->update([
@@ -335,17 +346,14 @@ class UnidadeController extends Controller
         ]);
 
         if ($request->hasFile('termo_cessao')) {
-            // Sanitizar o nome da unidade para evitar caracteres inválidos
-            $nomeUnidade = Str::slug($unidade->nome);
-            $path = "cessoes/{$nomeUnidade}";
-
-            // Remover termo antigo, se existir
+            // Remover termo anterior do MinIO
             if ($unidade->termo_cessao) {
-                Storage::disk('public')->delete($unidade->termo_cessao);
+                StorageHelper::removerArquivo($unidade->termo_cessao);
             }
 
-            // Armazenar novo termo
-            $termoPath = $request->file('termo_cessao')->store($path, 'public');
+            // Salvar novo termo no MinIO
+            $nomeArquivo = 'termo_cessao.pdf';
+            $termoPath = StorageHelper::salvarDocumento($unidade, $request->file('termo_cessao'), $nomeArquivo);
             $unidade->termo_cessao = $termoPath;
             $unidade->save();
         }
@@ -357,7 +365,7 @@ class UnidadeController extends Controller
     {
         $user = Auth::user();
         if (!RoleHelper::isSuperAdmin($user)) {
-            abort(403, 'Acesso não autorizado');
+            abort(403, 'Acesso não autorizada');
         }
 
         $unidade = Unidade::findOrFail($id);
@@ -366,13 +374,21 @@ class UnidadeController extends Controller
             abort(404, 'Termo de cessão não encontrado.');
         }
 
-        $filePath = storage_path('app/public/' . $unidade->termo_cessao);
-
-        if (!file_exists($filePath)) {
-            abort(404, 'Arquivo não encontrado.');
+        if (!StorageHelper::arquivoExiste($unidade->termo_cessao)) {
+            abort(404, 'Arquivo não encontrado no servidor.');
         }
 
-        return response()->file($filePath);
+        try {
+            $conteudo = StorageHelper::obterArquivo($unidade->termo_cessao);
+            
+            return response($conteudo, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="termo_cessao.pdf"',
+                'Cache-Control' => 'public, max-age=3600',
+            ]);
+        } catch (\Exception $e) {
+            abort(500, 'Erro ao carregar arquivo');
+        }
     }
 
     public function updateStatus(Request $request, $id)

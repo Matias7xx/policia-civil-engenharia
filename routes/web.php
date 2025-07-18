@@ -53,6 +53,10 @@ Route::middleware([
 
     // Rotas de mídias
     Route::get('/midia-tipos/ativos', [MidiaTipoController::class, 'ativos'])->name('api.midia-tipos.ativos');
+    
+    // Rotas para visualização de mídias (MinIO)
+    Route::get('/midias/{id}/view', [MidiaController::class, 'view'])->name('midias.view');
+    Route::get('/midias/{id}/download', [MidiaController::class, 'download'])->name('midias.download');
 
     // Rotas de equipes (teams)
     Route::prefix('teams')->name('teams.')->group(function () {

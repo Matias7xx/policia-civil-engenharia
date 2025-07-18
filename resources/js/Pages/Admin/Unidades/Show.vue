@@ -24,20 +24,19 @@ const midiasReais = computed(() => {
         return [];
     }
     
-    // Filtrar apenas mídias reais (não os registros de "não possui")
     return props.midias.filter(midia => {
-        // Excluir mídias que têm path = 'nao_possui_ambiente'
+        // Excluir registros de "não possui ambiente"
         if (midia.path === 'nao_possui_ambiente') {
             return false;
         }
         
-        // Excluir mídias que têm o flag nao_possui_ambiente = true no pivot
+        // Excluir se tem flag nao_possui_ambiente = true no pivot
         if (midia.pivot && midia.pivot.nao_possui_ambiente === true) {
             return false;
         }
         
-        // Incluir apenas mídias com URL válida e que são imagens
-        return midia.url && isImage(midia);
+        // Incluir se tem URL válida (o Model sempre gera URL)
+        return midia.url && midia.url !== null;
     });
 });
 
@@ -118,14 +117,44 @@ const selectedMedia = ref(null);
 const isRejectionModalOpen = ref(false);
 const rejectionReason = ref('');
 
+// Função para formatar data para input date (LOCAÇÃO E CESSÃO)
+const formatarDataParaInput = (data) => {
+    if (!data) return '';
+    
+    try {
+        // Se for uma string no formato ISO
+        if (typeof data === 'string') {
+            // Se já está no formato YYYY-MM-DD, retorna direto
+            if (/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+                return data;
+            }
+            // Se está no formato ISO completo
+            if (/^\d{4}-\d{2}-\d{2}T/.test(data)) {
+                return data.split('T')[0];
+            }
+        }
+        
+        // Tentar converter para Date
+        const date = new Date(data);
+        if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
+        }
+        
+        return '';
+    } catch (e) {
+        console.error('Erro ao formatar data para input:', e);
+        return '';
+    }
+};
+
 // Formulário para edição de contrato de locação
 const contratoForm = useForm({
     nome_proprietario: props.unidade?.contrato_locacao?.nome_proprietario || '',
     cpf_cnpj: props.unidade?.contrato_locacao?.cpf_cnpj || '',
     telefone: props.unidade?.contrato_locacao?.telefone || '',
     valor_locacao: props.unidade?.contrato_locacao?.valor_locacao || '',
-    data_inicio: props.unidade?.contrato_locacao?.data_inicio || '',
-    data_fim: props.unidade?.contrato_locacao?.data_fim || '',
+    data_inicio: formatarDataParaInput(props.unidade?.contrato_locacao?.data_inicio),
+    data_fim: formatarDataParaInput(props.unidade?.contrato_locacao?.data_fim),
     anexo: null,
 });
 
@@ -133,7 +162,7 @@ const contratoForm = useForm({
 const cessaoForm = useForm({
     orgao_cedente: props.unidade?.orgao_cedente || '',
     termo_cessao: null,
-    prazo_cessao: props.unidade?.prazo_cessao || '',
+    prazo_cessao: formatarDataParaInput(props.unidade?.prazo_cessao),
 });
 
 // Formulário para atualização de status
@@ -143,13 +172,56 @@ const statusForm = useForm({
 });
 
 // Máscara para o campo telefone
-const telefoneMask = { mask: '(00) 00000-0000', maxLength: 15, lazy: false, overwrite: true };
+const telefoneMask = {
+    mask: [
+        { mask: '(00) 0000-0000' },     // Telefone fixo (10 dígitos)
+        { mask: '(00) 00000-0000' }     // Celular (11 dígitos)
+    ],
+    dispatch: function(appended, dynamicMasked) {
+        const numericValue = (dynamicMasked.value + appended).replace(/\D/g, '');
+        return numericValue.length <= 10 
+            ? dynamicMasked.compiledMasks[0] 
+            : dynamicMasked.compiledMasks[1];
+    },
+    // Função para processar o valor antes de aplicar a máscara
+    prepare: function(str, masked) {
+        // Remove caracteres não numéricos
+        const onlyNumbers = str.replace(/\D/g, '');
+        
+        // Se tem mais de 11 dígitos numéricos, limita a 11
+        if (onlyNumbers.length > 11) {
+            return onlyNumbers.slice(0, 11);
+        }
+        
+        return str;
+    },
+    // Pós-processamento do valor
+    commit: function(value, masked) {
+        // Se o valor final tem mais de 15 caracteres (incluindo formatação), corta
+        if (value.length > 15) {
+            return value.slice(0, 15);
+        }
+        return value;
+    }
+};
+
+// Função para limitar o telefone
+const limitarTelefone = (event) => {
+    let valor = event.target.value;
+    
+    // Se tem mais de 15 caracteres (incluindo formatação), remove os caracteres extras
+    if (valor.length > 15) {
+        valor = valor.slice(0, 15);
+        event.target.value = valor;
+        contratoForm.telefone = valor;
+    }
+};
 
 // Máscara para o campo CPF/CNPJ
 const cpfCnpjMask = {
     mask: [
-        { mask: '000.000.000-00', maxLength: 14 }, // CPF com formatação
-        { mask: '00.000.000/0000-00', maxLength: 18 } // CNPJ com formatação
+        { mask: '000.000.000-00' }, // CPF com formatação (14 caracteres)
+        { mask: '00.000.000/0000-00' } // CNPJ com formatação (18 caracteres)
     ],
     dispatch: function(appended, dynamicMasked) {
         const numericValue = (dynamicMasked.value + appended).replace(/\D/g, '');
@@ -157,6 +229,37 @@ const cpfCnpjMask = {
             ? dynamicMasked.compiledMasks[0] 
             : dynamicMasked.compiledMasks[1];
     },
+    // Função para processar o valor antes de aplicar a máscara
+    prepare: function(str, masked) {
+        // Remove caracteres não numéricos
+        const onlyNumbers = str.replace(/\D/g, '');
+        
+        // Se tem mais de 14 dígitos numéricos, limita a 14 (CNPJ)
+        if (onlyNumbers.length > 14) {
+            return onlyNumbers.slice(0, 14);
+        }
+        
+        return str;
+    },
+    // Pós-processamento do valor
+    commit: function(value, masked) {
+        // Se o valor final tem mais de 18 caracteres, corta
+        if (value.length > 18) {
+            return value.slice(0, 18);
+        }
+        return value;
+    }
+};
+
+const limitarCpfCnpj = (event) => {
+    let valor = event.target.value;
+    
+    // Se tem mais de 18 caracteres, remove os caracteres extras
+    if (valor.length > 18) {
+        valor = valor.slice(0, 18);
+        event.target.value = valor;
+        contratoForm.cpf_cnpj = valor;
+    }
 };
 
 // Exibe mensagens de flash
@@ -182,7 +285,10 @@ const changeTab = (tabId) => {
 };
 
 // Verificar tipos de mídia
-const isImage = (midia) => midia.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(midia.url);
+const isImage = (midia) => {
+    // Usar o atributo is_imagem (Model)
+    return midia.is_imagem === true || midia.is_imagem === 1;
+};
 
 // Função para abrir o modal com a imagem selecionada
 const openModal = (midia) => {
@@ -327,8 +433,12 @@ const salvarContrato = () => {
             contratoForm.cpf_cnpj = updatedContrato.cpf_cnpj || '';
             contratoForm.telefone = updatedContrato.telefone || '';
             contratoForm.valor_locacao = updatedContrato.valor_locacao || '';
-            contratoForm.data_inicio = updatedContrato.data_inicio ? new Date(updatedContrato.data_inicio).toISOString().split('T')[0] : '';
-            contratoForm.data_fim = updatedContrato.data_fim ? new Date(updatedContrato.data_fim).toISOString().split('T')[0] : '';
+            
+            contratoForm.data_inicio = updatedContrato.data_inicio ? 
+                updatedContrato.data_inicio.split('T')[0] : '';
+            contratoForm.data_fim = updatedContrato.data_fim ? 
+                updatedContrato.data_fim.split('T')[0] : '';
+            
             contratoForm.anexo = null;
             setTimeout(() => (flashMessage.value = null), 5000);
         },
@@ -670,9 +780,11 @@ const salvarCessao = () => {
                                             v-model="contratoForm.cpf_cnpj"
                                             type="text"
                                             v-imask="cpfCnpjMask"
+                                            @input="limitarCpfCnpj"
                                             placeholder="CPF ou CNPJ"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                             required
+                                            maxlength="18"
                                         />
                                         <p v-if="contratoForm.errors.cpf_cnpj" class="text-red-500 text-xs mt-1">{{ contratoForm.errors.cpf_cnpj }}</p>
                                     </div>
@@ -683,8 +795,10 @@ const salvarCessao = () => {
                                             v-model="contratoForm.telefone"
                                             type="text"
                                             v-imask="telefoneMask"
-                                            placeholder="(11) 987654321"
+                                            @input="limitarTelefone"
+                                            placeholder="(11) 98765-4321"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            maxlength="15"
                                         />
                                         <p v-if="contratoForm.errors.telefone" class="text-red-500 text-xs mt-1">{{ contratoForm.errors.telefone }}</p>
                                     </div>
@@ -1285,27 +1399,127 @@ const salvarCessao = () => {
                         <!-- Mídias -->
                         <div v-if="activeTab === 'midias'" class="grid grid-cols-1 gap-6">
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Mídias da Unidade</h3>
-                                <div v-if="midiasReais && midiasReais.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div v-for="midia in midiasReais" :key="midia.id" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">{{ midia.midia_tipo?.nome || 'Tipo Desconhecido' }}:</dt>
-                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">{{ (midia.tamanho / 1024).toFixed(2) }} KB</dt>
-                                        <dd class="mt-1">
-                                            <div v-if="isImage(midia)" class="relative">
-                                                <img :src="midia.url" @click="openModal(midia)" class="w-full h-32 object-cover rounded cursor-pointer" alt="Imagem da mídia" />
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-6 flex items-center">
+                                    <i class="fas fa-images text-blue-500 mr-2"></i>
+                                    Galeria de Fotos da Unidade
+                                    <span v-if="midiasReais?.length" class="ml-2 text-sm font-normal text-gray-600">
+                                        ({{ midiasReais.length }} {{ midiasReais.length === 1 ? 'foto' : 'fotos' }})
+                                    </span>
+                                </h3>
+                                
+                                <div v-if="midiasReais && midiasReais.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    <div 
+                                        v-for="midia in midiasReais" 
+                                        :key="midia.id" 
+                                        class="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
+                                    >
+                                        <!-- Container da imagem -->
+                                        <div class="relative aspect-square bg-gray-100">
+                                            <!-- Se for imagem -->
+                                            <div v-if="isImage(midia)" class="relative h-full">
+                                                <img 
+                                                    :src="midia.url" 
+                                                    @click="openModal(midia)" 
+                                                    class="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-300"
+                                                    :alt="`Foto - ${formatarNomeTipoMidia(midia.midia_tipo?.nome || midia.midiaTipo?.nome)}`"
+                                                    @error="$event.target.src = '/images/placeholder-image.jpg'"
+                                                    loading="lazy"
+                                                />
+                                                
+                                                <!-- Overlay com ações - aparece no hover -->
+                                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                    <div class="flex space-x-3">
+                                                        <button 
+                                                            @click="openModal(midia)"
+                                                            class="flex items-center px-4 py-2 bg-white text-gray-800 rounded-lg shadow-lg hover:bg-gray-100 transition-colors"
+                                                        >
+                                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                            Ampliar
+                                                        </button>
+                                                        <a 
+                                                            :href="midia.download_url || midia.url" 
+                                                            class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+                                                            download
+                                                        >
+                                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                            </svg>
+                                                            Baixar
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Badge do tipo (canto superior) -->
+                                                <div class="absolute top-3 left-3 bg-black bg-opacity-70 text-white text-xs px-3 py-1 rounded-full font-medium">
+                                                    {{ formatarNomeTipoMidia(midia.midia_tipo?.nome || midia.midiaTipo?.nome) }}
+                                                </div>
+
+                                                <!-- Badge do tamanho (canto superior direito) -->
+                                                <div v-if="midia.tamanho_formatado" class="absolute top-3 right-3 bg-blue-600 bg-opacity-90 text-white text-xs px-2 py-1 rounded-full">
+                                                    {{ midia.tamanho_formatado }}
+                                                </div>
                                             </div>
-                                            <div v-else class="text-blue-500 hover:underline">
-                                                <a :href="midia.url" target="_blank">{{ midia.url.split('/').pop() || 'Ver arquivo' }}</a>
+                                            
+                                            <!-- Se não for imagem -->
+                                            <div v-else class="flex flex-col items-center justify-center h-full p-6 text-center">
+                                                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-3">
+                                                    <i class="fas fa-file text-gray-500 text-2xl"></i>
+                                                </div>
+                                                <p class="text-sm text-gray-600 mb-4 font-medium">Arquivo</p>
+                                                <div class="flex space-x-2">
+                                                    <a 
+                                                        :href="midia.url" 
+                                                        target="_blank" 
+                                                        class="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 transition-colors"
+                                                    >
+                                                        <i class="fas fa-eye mr-1"></i>
+                                                        Ver
+                                                    </a>
+                                                    <a 
+                                                        :href="midia.download_url || midia.url" 
+                                                        download
+                                                        class="px-3 py-2 bg-green-600 text-white rounded-lg text-xs hover:bg-green-700 transition-colors"
+                                                    >
+                                                        <i class="fas fa-download mr-1"></i>
+                                                        Baixar
+                                                    </a>
+                                                </div>
                                             </div>
-                                        </dd>
+                                        </div>
+
+                                        <!-- Informações do arquivo -->
+                                        <div class="p-4">
+                                            <h4 class="font-semibold text-gray-900 text-sm mb-1 truncate">
+                                                {{ formatarNomeTipoMidia(midia.midia_tipo?.nome || midia.midiaTipo?.nome || 'Arquivo') }}
+                                            </h4>
+                                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                                <span v-if="midia.tamanho_formatado">{{ midia.tamanho_formatado }}</span>
+                                                <span v-if="midia.created_at" class="text-xs">
+                                                    {{ new Date(midia.created_at).toLocaleDateString('pt-BR') }}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div v-else class="bg-white p-6 rounded-md shadow-sm text-center">
-                                    <i class="fas fa-image text-gray-400 text-4xl mb-4"></i>
-                                    <p class="text-gray-600">Nenhuma mídia cadastrada para esta unidade.</p>
+                                
+                                <!-- Estado vazio -->
+                                <div v-else class="bg-white p-12 rounded-xl shadow-sm text-center">
+                                    <div class="max-w-sm mx-auto">
+                                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <i class="fas fa-photo-video text-gray-400 text-3xl"></i>
+                                        </div>
+                                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Nenhuma mídia encontrada</h4>
+                                        <p class="text-gray-600 text-sm leading-relaxed">
+                                            Não há fotos ou arquivos cadastrados para esta unidade ainda.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                             
+                            <!-- Seção de ambientes não possuídos (mantida como estava) -->
                             <div v-if="ambientesNaoPossui && ambientesNaoPossui.length > 0" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4 flex items-center">
                                     <i class="fas fa-ban text-orange-500 mr-2"></i>
@@ -1361,10 +1575,16 @@ const salvarCessao = () => {
                             </div>
 
                             <!-- Caso não haja nenhuma mídia nem ambientes "não possui" -->
-                            <div v-if="(!midiasReais || midiasReais.length === 0) && (!ambientesNaoPossui || ambientesNaoPossui.length === 0)" class="bg-white p-6 rounded-md shadow-sm text-center">
-                                <i class="fas fa-photo-video text-gray-400 text-4xl mb-4"></i>
-                                <p class="text-gray-600 mb-2">Nenhuma informação de mídia disponível para esta unidade.</p>
-                                <p class="text-sm text-gray-500">Não há fotos cadastradas nem ambientes marcados como "não possui".</p>
+                            <div v-if="(!midiasReais || midiasReais.length === 0) && (!ambientesNaoPossui || ambientesNaoPossui.length === 0)" class="bg-white p-12 rounded-xl shadow-sm text-center">
+                                <div class="max-w-md mx-auto">
+                                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <i class="fas fa-photo-video text-gray-400 text-4xl"></i>
+                                    </div>
+                                    <h4 class="text-xl font-semibold text-gray-900 mb-3">Nenhuma informação de mídia disponível</h4>
+                                    <p class="text-gray-600 leading-relaxed">
+                                        Não há fotos cadastradas nem ambientes marcados como "não possui" para esta unidade.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -1510,5 +1730,34 @@ const salvarCessao = () => {
 
 .modal-enter-from, .modal-leave-to {
     opacity: 0;
+}
+
+/* imagens mantem proporção */
+.aspect-square {
+    aspect-ratio: 1 / 1;
+}
+
+/* transição de hover das imagens */
+.group:hover .group-hover\:scale-105 {
+    transform: scale(1.05);
+}
+
+/* Animações para elementos */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.group-hover\:opacity-100 {
+    transition: opacity 0.3s ease;
+}
+
+/* Estilo para os badges */
+.bg-opacity-70 {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.bg-opacity-90 {
+    background-color: rgba(37, 99, 235, 0.9);
 }
 </style>

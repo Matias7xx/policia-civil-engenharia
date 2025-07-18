@@ -34,7 +34,7 @@ const midiasReais = computed(() => {
         }
         
         // Incluir apenas mídias com URL válida e que são imagens
-        return midia.url && isImage(midia);
+        return midia.url && midia.url !== null;
     });
 });
 
@@ -136,7 +136,10 @@ const changeTab = (tabId) => {
     mobileMenuOpen.value = false;
 };
 
-const isImage = (midia) => midia.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(midia.url);
+const isImage = (midia) => {
+    // Usar o atributo is_imagem (Model)
+    return midia.is_imagem === true || midia.is_imagem === 1;
+};
 
 const openModal = (midia) => {
     selectedMedia.value = midia;
@@ -858,40 +861,125 @@ const formatarTelefones = computed(() => {
                             </div>
                         </div>
 
-                        <div v-if="activeTab === 'midias'" class="space-y-6">
-                            <!-- Galeria de Mídias -->
+                        <div v-if="activeTab === 'midias'" class="grid grid-cols-1 gap-6">
                             <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4 flex items-center">
+                                <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-6 flex items-center">
                                     <i class="fas fa-images text-blue-500 mr-2"></i>
-                                    Galeria de Fotos
+                                    Galeria de Fotos da Unidade
+                                    <span v-if="midiasReais?.length" class="ml-2 text-sm font-normal text-gray-600">
+                                        ({{ midiasReais.length }} {{ midiasReais.length === 1 ? 'foto' : 'fotos' }})
+                                    </span>
                                 </h3>
-                                <div v-if="midiasReais && midiasReais.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                
+                                <div v-if="midiasReais && midiasReais.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                     <div 
-                                        v-for="(midia, index) in midiasReais" 
-                                        :key="index" 
-                                        class="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all"
+                                        v-for="midia in midiasReais" 
+                                        :key="midia.id" 
+                                        class="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
                                     >
-                                        <div class="relative h-48 bg-gray-200">
-                                            <img 
-                                                :src="midia.url" 
-                                                alt="Mídia" 
-                                                class="w-full h-full object-cover cursor-pointer"
-                                                @click="openModal(midia)"
-                                            />
+                                        <!-- Container da imagem -->
+                                        <div class="relative aspect-square bg-gray-100">
+                                            <!-- Se for imagem -->
+                                            <div v-if="isImage(midia)" class="relative h-full">
+                                                <img 
+                                                    :src="midia.url" 
+                                                    @click="openModal(midia)" 
+                                                    class="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-300"
+                                                    :alt="`Foto - ${formatarNomeTipoMidia(midia.midia_tipo?.nome || midia.midiaTipo?.nome)}`"
+                                                    @error="$event.target.src = '/images/placeholder-image.jpg'"
+                                                    loading="lazy"
+                                                />
+                                                
+                                                <!-- Overlay com ações - aparece no hover -->
+                                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                    <div class="flex space-x-3">
+                                                        <button 
+                                                            @click="openModal(midia)"
+                                                            class="flex items-center px-4 py-2 bg-white text-gray-800 rounded-lg shadow-lg hover:bg-gray-100 transition-colors"
+                                                        >
+                                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                            Ampliar
+                                                        </button>
+                                                        <a 
+                                                            :href="midia.download_url || midia.url" 
+                                                            class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+                                                            download
+                                                        >
+                                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                            </svg>
+                                                            Baixar
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Badge do tipo (canto superior) -->
+                                                <div class="absolute top-3 left-3 bg-black bg-opacity-70 text-white text-xs px-3 py-1 rounded-full font-medium">
+                                                    {{ formatarNomeTipoMidia(midia.midia_tipo?.nome || midia.midiaTipo?.nome) }}
+                                                </div>
+
+                                                <!-- Badge do tamanho (canto superior direito) -->
+                                                <div v-if="midia.tamanho_formatado" class="absolute top-3 right-3 bg-blue-600 bg-opacity-90 text-white text-xs px-2 py-1 rounded-full">
+                                                    {{ midia.tamanho_formatado }}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Se não for imagem -->
+                                            <div v-else class="flex flex-col items-center justify-center h-full p-6 text-center">
+                                                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-3">
+                                                    <i class="fas fa-file text-gray-500 text-2xl"></i>
+                                                </div>
+                                                <p class="text-sm text-gray-600 mb-4 font-medium">Arquivo</p>
+                                                <div class="flex space-x-2">
+                                                    <a 
+                                                        :href="midia.url" 
+                                                        target="_blank" 
+                                                        class="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 transition-colors"
+                                                    >
+                                                        <i class="fas fa-eye mr-1"></i>
+                                                        Ver
+                                                    </a>
+                                                    <a 
+                                                        :href="midia.download_url || midia.url" 
+                                                        download
+                                                        class="px-3 py-2 bg-green-600 text-white rounded-lg text-xs hover:bg-green-700 transition-colors"
+                                                    >
+                                                        <i class="fas fa-download mr-1"></i>
+                                                        Baixar
+                                                    </a>
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        <!-- Informações do arquivo -->
                                         <div class="p-4">
-                                            <h4 class="font-medium text-gray-900 truncate">
+                                            <h4 class="font-semibold text-gray-900 text-sm mb-1 truncate">
                                                 {{ formatarNomeTipoMidia(midia.midia_tipo?.nome || midia.midiaTipo?.nome || 'Arquivo') }}
                                             </h4>
-                                            <p v-if="midia.tamanho" class="text-xs text-gray-500 mt-1">
-                                                {{ (midia.tamanho / 1024).toFixed(2) }} KB
-                                            </p>
+                                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                                <span v-if="midia.tamanho_formatado">{{ midia.tamanho_formatado }}</span>
+                                                <span v-if="midia.created_at" class="text-xs">
+                                                    {{ new Date(midia.created_at).toLocaleDateString('pt-BR') }}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div v-else class="bg-white p-6 rounded-md shadow-sm text-center">
-                                    <i class="fas fa-photo-video text-blue-500 text-4xl mb-4"></i>
-                                    <p class="text-gray-600">Nenhuma foto foi cadastrada para esta unidade.</p>
+                                
+                                <!-- Estado vazio -->
+                                <div v-else class="bg-white p-12 rounded-xl shadow-sm text-center">
+                                    <div class="max-w-sm mx-auto">
+                                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <i class="fas fa-photo-video text-gray-400 text-3xl"></i>
+                                        </div>
+                                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Nenhuma mídia encontrada</h4>
+                                        <p class="text-gray-600 text-sm leading-relaxed">
+                                            Não há fotos ou arquivos cadastrados para esta unidade ainda.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -951,10 +1039,16 @@ const formatarTelefones = computed(() => {
                             </div>
 
                             <!-- Caso não haja nenhuma mídia nem ambientes "não possui" -->
-                            <div v-if="(!midiasReais || midiasReais.length === 0) && (!ambientesNaoPossui || ambientesNaoPossui.length === 0)" class="bg-white p-6 rounded-md shadow-sm text-center">
-                                <i class="fas fa-photo-video text-gray-400 text-4xl mb-4"></i>
-                                <p class="text-gray-600 mb-2">Nenhuma informação de mídia disponível para esta unidade.</p>
-                                <p class="text-sm text-gray-500">Não há fotos cadastradas nem ambientes marcados como "não possui".</p>
+                            <div v-if="(!midiasReais || midiasReais.length === 0) && (!ambientesNaoPossui || ambientesNaoPossui.length === 0)" class="bg-white p-12 rounded-xl shadow-sm text-center">
+                                <div class="max-w-md mx-auto">
+                                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <i class="fas fa-photo-video text-gray-400 text-4xl"></i>
+                                    </div>
+                                    <h4 class="text-xl font-semibold text-gray-900 mb-3">Nenhuma informação de mídia disponível</h4>
+                                    <p class="text-gray-600 leading-relaxed">
+                                        Não há fotos cadastradas nem ambientes marcados como "não possui" para esta unidade.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1015,5 +1109,34 @@ const formatarTelefones = computed(() => {
 
 .modal-enter-from, .modal-leave-to {
     opacity: 0;
+}
+
+/* imagens mantem proporção */
+.aspect-square {
+    aspect-ratio: 1 / 1;
+}
+
+/* transição de hover das imagens */
+.group:hover .group-hover\:scale-105 {
+    transform: scale(1.05);
+}
+
+/* Animações para os elementos */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.group-hover\:opacity-100 {
+    transition: opacity 0.3s ease;
+}
+
+/* Estilo personalizado para os badges */
+.bg-opacity-70 {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.bg-opacity-90 {
+    background-color: rgba(37, 99, 235, 0.9);
 }
 </style>

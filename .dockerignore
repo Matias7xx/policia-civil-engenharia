@@ -8,11 +8,11 @@ vendor
 /storage/clockwork
 
 # Arquivos de ambiente (usar apenas .env que está no projeto)
-.env.backup
-.env.production
-.env.local
-.env.testing
-.env.example
+#.env.backup
+#.env.production
+#.env.local
+#.env.testing
+#.env.example
 
 # Git
 .git

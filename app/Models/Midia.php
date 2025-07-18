@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
+use App\Helpers\StorageHelper;
 
 class Midia extends Model
 {
@@ -25,7 +26,12 @@ class Midia extends Model
         'tamanho' => 'integer',
     ];
 
-    protected $appends = ['url'];
+    protected $appends = [
+        'url', 
+        'is_imagem', 
+        'tamanho_formatado',
+        'download_url'
+    ];
 
     public function midiaTipo(): BelongsTo
     {
@@ -34,20 +40,52 @@ class Midia extends Model
 
     public function unidades(): BelongsToMany
     {
-        return $this->belongsToMany(Unidade::class, 'midia_unidade')
+        return $this->belongsToMany(Unidade::class, 'midia_unidade', 'midia_id', 'unidade_id')
+                    ->withPivot('nao_possui_ambiente', 'observacoes')
                     ->withTimestamps();
     }
 
+    /**
+     * Gerar URL para visualização da mídia
+     */
     public function getUrlAttribute()
     {
-        return $this->path ? Storage::url($this->path) : null;
+        // Se for um registro de "não possui ambiente", não tem URL
+        if ($this->path === 'nao_possui_ambiente') {
+            return null;
+        }
+
+        //rota que busca no MinIO
+        return route('midias.view', $this->id);
     }
 
+    /**
+     * URL para download da mídia
+     */
+    public function getDownloadUrlAttribute()
+    {
+        if ($this->path === 'nao_possui_ambiente') {
+            return null;
+        }
+
+        return route('midias.download', $this->id);
+    }
+
+    /**
+     * Verificar se é uma imagem
+     */
     public function getIsImagemAttribute(): bool
     {
+        if ($this->path === 'nao_possui_ambiente') {
+            return false;
+        }
+
         return str_starts_with($this->mime_type, 'image/');
     }
 
+    /**
+     * Formatar tamanho do arquivo
+     */
     public function getTamanhoFormatadoAttribute(): string
     {
         $bytes = $this->tamanho;
@@ -58,5 +96,69 @@ class Midia extends Model
         } else {
             return round($bytes / 1048576, 2) . ' MB';
         }
+    }
+
+    /**
+     * Verificar se o arquivo existe no MinIO
+     */
+    public function arquivoExiste()
+    {
+        if ($this->path === 'nao_possui_ambiente') {
+            return false;
+        }
+
+        // Verificar no MinIO
+        return StorageHelper::arquivoExiste($this->path);
+    }
+
+    /**
+     * Obter conteúdo do arquivo
+     */
+    public function obterConteudo()
+    {
+        if ($this->path === 'nao_possui_ambiente') {
+            return null;
+        }
+
+        // Buscar no MinIO
+        return StorageHelper::obterArquivo($this->path);
+    }
+
+    /**
+     * Scope para filtrar apenas mídias reais (não "não possui ambiente")
+     */
+    public function scopeReais($query)
+    {
+        return $query->where('path', '!=', 'nao_possui_ambiente');
+    }
+
+    /**
+     * Scope para filtrar apenas registros de "não possui ambiente"
+     */
+    public function scopeNaoPossui($query)
+    {
+        return $query->where('path', '=', 'nao_possui_ambiente');
+    }
+
+    /**
+     * Scope para filtrar apenas imagens
+     */
+    public function scopeImagens($query)
+    {
+        return $query->where('mime_type', 'LIKE', 'image/%')
+                     ->where('path', '!=', 'nao_possui_ambiente');
+    }
+
+    /**
+     * Remover arquivo físico ao deletar o registro
+     */
+    protected static function booted()
+    {
+        static::deleting(function ($midia) {
+            if ($midia->path !== 'nao_possui_ambiente') {  
+                // Remover do MinIO
+                StorageHelper::removerArquivo($midia->path);
+            }
+        });
     }
 }
