@@ -464,7 +464,7 @@ const opcoesSegurancaVeiculos = [
 
                         <div class="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                             <div>
-                                <InputLabel for="recuo_frontal" value="Recuo Frontal (jardim) m²" class="text-sm" />
+                                <InputLabel for="recuo_frontal" value="Recuo frontal em metros" class="text-sm" />
                                 <TextInput
                                     id="recuo_frontal"
                                     v-model="form.recuo_frontal"
@@ -479,7 +479,7 @@ const opcoesSegurancaVeiculos = [
                             </div>
 
                             <div>
-                                <InputLabel for="recuo_lateral" value="Recuo Lateral (beco) m²" class="text-sm" />
+                                <InputLabel for="recuo_lateral" value="Recuo lateral em metros" class="text-sm" />
                                 <TextInput
                                 vue                                    id="recuo_lateral"
                                     v-model="form.recuo_lateral"
@@ -494,7 +494,7 @@ const opcoesSegurancaVeiculos = [
                             </div>
 
                             <div>
-                                <InputLabel for="recuo_fundos" value="Recuo Fundos (quintal) m²" class="text-sm" />
+                                <InputLabel for="recuo_fundos" value="Recuo dos fundos em metros" class="text-sm" />
                                 <TextInput
                                     id="recuo_fundos"
                                     v-model="form.recuo_fundos"

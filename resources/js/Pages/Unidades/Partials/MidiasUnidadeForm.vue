@@ -595,7 +595,7 @@ const getTabelas = computed(() => {
 <template>
     <FormSection @submitted="saveOrFinalizeMidias">
         <template #title>
-            Mídias da Unidade
+            Fotos da Unidade
         </template>
 
         <template #description>
