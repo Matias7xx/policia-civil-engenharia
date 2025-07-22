@@ -9,7 +9,9 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import SelectInput from '@/Components/SelectInput.vue';
+import { useToast } from '@/Composables/useToast';
 
+const toast = useToast();
 const emit = defineEmits(['saved']);
 
 const props = defineProps({
@@ -135,7 +137,7 @@ const saveInformacoesEstruturais = () => {
         if (firstErrorField) {
             firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        emit('saved', 'Verifique os campos obrigatórios.');
+        toast.warning('Verifique os campos obrigatórios.', { duration: 6000 });
         return;
     }
 
@@ -143,6 +145,7 @@ const saveInformacoesEstruturais = () => {
         errorBag: 'saveInformacoesEstruturais',
         preserveScroll: true,
         onSuccess: () => {
+            toast.success('Dados estruturais salvos com sucesso!');
             emit('saved'); // Emite apenas 'saved' para sucesso, sem forçar transição de aba
         },
         onError: (errors) => {

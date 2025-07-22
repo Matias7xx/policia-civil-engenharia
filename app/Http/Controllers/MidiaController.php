@@ -556,4 +556,41 @@ class MidiaController extends Controller
             abort(500, 'Erro ao baixar arquivo');
         }
     }
+
+    //Atualizar as mídias na view sem precisar de refresh
+    public function getMidias($unidade_id)
+    {
+        try {
+            $unidade = Unidade::with(['midias.midiaTipo'])->findOrFail($unidade_id);
+            
+            // Formatar as mídias para o frontend
+            $midias = $unidade->midias->map(function ($midia) {
+                return [
+                    'id' => $midia->id,
+                    'path' => $midia->path,
+                    'url' => $midia->url,
+                    'mime_type' => $midia->mime_type,
+                    'tamanho' => $midia->tamanho,
+                    'midia_tipo_id' => $midia->midia_tipo_id,
+                    'midiaTipo' => $midia->midiaTipo,
+                    'pivot' => [
+                        'nao_possui_ambiente' => $midia->pivot->nao_possui_ambiente ?? false,
+                    ],
+                    'created_at' => $midia->created_at,
+                    'updated_at' => $midia->updated_at,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'midias' => $midias
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar mídias da unidade.'
+            ], 500);
+        }
+    }
 }

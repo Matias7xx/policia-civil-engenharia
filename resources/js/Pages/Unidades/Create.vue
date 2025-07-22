@@ -7,6 +7,10 @@ import InformacoesUnidadeForm from '@/Pages/Unidades/Partials/InformacoesUnidade
 import MidiasUnidadeForm from '@/Pages/Unidades/Partials/MidiasUnidadeForm.vue';
 import { ref, watch, computed, onMounted } from 'vue';
 import { usePage, Link } from '@inertiajs/vue3';
+import { useToast } from '@/Composables/useToast';
+
+const page = usePage();
+const toast = useToast();
 
 // Inicializa o completedTabs com base nos dados existentes
 const initializeCompletedTabs = () => {
@@ -58,9 +62,7 @@ onMounted(() => {
     initializeCompletedTabs();
 });
 
-const page = usePage();
 const activeTab = ref('dados-gerais');
-const errorMessage = ref(null);
 const completedTabs = ref({
     'dados-gerais': false,
     'localizacao': false,
@@ -79,24 +81,6 @@ const props = defineProps({
     permissions: Object,
 });
 
-// Observar mensagens flash para erros ou sucessos
-watch(() => page.props.flash, (flash) => {
-    if (flash.success) {
-        errorMessage.value = flash.success;
-        setTimeout(() => { errorMessage.value = null }, 5000);
-        // Atualizar o estado de completedTabs com base nos dados mais recentes
-        initializeCompletedTabs();
-
-        if (activeTab.value === 'midias') {
-            completedTabs.value['midias'] = true;
-        }
-    } else if (flash.error) {
-        errorMessage.value = flash.error;
-        setTimeout(() => { errorMessage.value = null }, 5000);
-        // Se houver erro, garante que a aba atual não seja marcada como concluída
-        completedTabs.value[activeTab.value] = false;
-    }
-});
 
 const tabs = [
     { id: 'dados-gerais', label: 'Dados Gerais', icon: 'fa-building' },
@@ -116,21 +100,13 @@ const canAccessTab = (tabId) => {
     return canAccess;
 };
 
-// Função para mudar a aba
-const changeTab = (tabId) => {
-    if (!canAccessTab(tabId)) {
-        errorMessage.value = 'Preencha todas as abas anteriores antes de acessar esta aba.';
-        return;
-    }
-    errorMessage.value = null;
-    activeTab.value = tabId;
-};
 
 // Função para lidar com o evento 'saved' dos componentes filhos
 const handleSaved = (nextTab, tabId, error = null) => {
-    if (error || page.props.flash?.error) {
-        errorMessage.value = error || page.props.flash?.error;
-        completedTabs.value[tabId] = false; // Não marca como concluído se houver erro
+    if (error) {
+        // Toast de erro
+        toast.error('❌ Erro ao salvar: ' + error);
+        completedTabs.value[tabId] = false;
         return;
     }
 
@@ -145,26 +121,43 @@ const handleSaved = (nextTab, tabId, error = null) => {
             nextTab = tabOrder[currentIndex + 1];
         }
     }
+    
     if (nextTab && canAccessTab(nextTab)) {
+        // Toast informativo sobre próxima aba
+        setTimeout(() => {
+            toast.info(`ℹ️ Avançando para: ${tabs.find(t => t.id === nextTab)?.label}`);
+        }, 1000);
+        
         activeTab.value = nextTab;
     }
-    errorMessage.value = null;
 };
 
 // Função para lidar com o salvamento final da aba Mídias
 const handleFinalSave = (nextTab, error = null) => {
-    if (error || page.props.flash?.error) {
-        errorMessage.value = error || page.props.flash?.error;
+    if (error) {
+        toast.error('❌ Erro ao finalizar cadastro: ' + error);
         completedTabs.value['midias'] = false;
         return;
     }
+    
     if (!allTabsCompleted()) {
-        errorMessage.value = 'Todas as abas devem ser preenchidas antes de finalizar o cadastro.';
+        toast.error('❌ Todas as abas devem ser preenchidas antes de finalizar o cadastro.');
         completedTabs.value['midias'] = false;
         return;
     }
-    // Não marcamos como concluído nem exibimos mensagem de sucesso aqui
-    // Isso será feito no watch de flash quando o backend confirmar o sucesso
+    
+    // Toast de sucesso para finalização
+    toast.success('🎉 Cadastro finalizado com sucesso! Redirecionando...');
+};
+
+// Função para mudar a aba com toast
+const changeTab = (tabId) => {
+    if (!canAccessTab(tabId)) {
+        toast.warning('⚠️ Preencha todas as abas anteriores antes de acessar esta aba.');
+        return;
+    }
+    
+    activeTab.value = tabId;
 };
 
 // Verifica se todas as abas estão completas
@@ -245,24 +238,6 @@ const tabProgressClass = computed(() => (tabId) => {
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Mensagem de erro ou sucesso - com animação de fade -->
-                        <transition name="fade">
-                            <div v-if="errorMessage" class="mb-4 p-4 rounded flex items-center" 
-                                :class="errorMessage.includes('sucesso') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                                <div v-if="errorMessage.includes('sucesso')" class="mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                                <div v-else class="mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                </div>
-                                {{ errorMessage }}
-                            </div>
-                        </transition>
 
                         <!-- Tabs - design responsivo para dispositivos móveis -->
                         <div class="border-b border-gray-200 overflow-x-auto pb-2">
@@ -358,13 +333,6 @@ const tabProgressClass = computed(() => (tabId) => {
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active {
-    transition: opacity 0.5s ease;
-}
-.fade-enter-from, .fade-leave-to {
-    opacity: 0;
-}
-
 .animate-fade-in {
     animation: fadeIn 0.3s ease-in-out;
 }

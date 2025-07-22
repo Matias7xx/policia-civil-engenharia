@@ -9,6 +9,7 @@ import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { UserIcon, Bars3Icon, XMarkIcon, EnvelopeIcon } from '@heroicons/vue/24/outline';
 import Footer from '@/Components/Footer.vue';
+import Toast from '@/Components/Toast.vue';
 
 const props = defineProps({
     title: String,
@@ -17,6 +18,7 @@ const props = defineProps({
 const page = usePage();
 const showingNavigationDropdown = ref(false);
 const scrolled = ref(false);
+const toastRef = ref(null);
 
 // Monitor scroll position for navbar styling
 const handleScroll = () => {
@@ -25,6 +27,9 @@ const handleScroll = () => {
 
 onMounted(() => {
     window.addEventListener('scroll', handleScroll);
+    if (toastRef.value) {
+        window.__toastInstance = toastRef.value;
+    }
 });
 
 onBeforeUnmount(() => {
@@ -453,6 +458,8 @@ router.on('navigate', () => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
             </svg>
         </button>
+        <!-- Toast Component -->
+    <Toast ref="toastRef" />
     </div>
 </template>
 

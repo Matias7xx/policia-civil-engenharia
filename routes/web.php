@@ -53,6 +53,9 @@ Route::middleware([
 
     // Rotas de mídias
     Route::get('/midia-tipos/ativos', [MidiaTipoController::class, 'ativos'])->name('api.midia-tipos.ativos');
+
+    // Rota para buscar mídias atualizadas (para o refresh automático)
+    Route::get('/unidades/{unidade_id}/midias', [MidiaController::class, 'getMidias'])->name('unidades.midias');
     
     // Rotas para visualização de mídias (MinIO)
     Route::get('/midias/{id}/view', [MidiaController::class, 'view'])->name('midias.view');

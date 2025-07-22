@@ -9,6 +9,9 @@ import TextInput from '@/Components/TextInput.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import { ref, onMounted, watch, computed, nextTick } from 'vue';
 import { debounce } from 'lodash';
+import { useToast } from '@/Composables/useToast';
+
+const toast = useToast();
 
 const emit = defineEmits(['saved']);
 
@@ -165,6 +168,7 @@ const cleanup = () => {
 // Função de salvamento
 const saveDadosGerais = () => {
     if (!props.isEditable) {
+        toast.info('O cadastro está finalizado e não pode ser editado.');
         emit('saved', 'O cadastro está finalizado e não pode ser editado.');
         return;
     }
@@ -174,18 +178,19 @@ const saveDadosGerais = () => {
     
     requiredFields.forEach((field) => {
         if (!form[field]) {
-            errors.push(`O campo ${field} é obrigatório.`);
-            form.errors[field] = `O campo ${field} é obrigatório.`;
+            toast.error(`O campo ${field} é obrigatório.`);
         }
     });
 
     if (form.imovel_compartilhado_orgao && form.imovel_compartilhado_orgao_ids.length === 0) {
         errors.push('Selecione pelo menos um órgão.');
+        toast.error('Selecione pelo menos um órgão.');
         form.errors.imovel_compartilhado_orgao_ids = 'Selecione pelo menos um órgão.';
     }
 
     if (form.imovel_compartilhado_unidades && !form.imovel_compartilhado_unidades_texto?.trim()) {
         errors.push('Descreva quais unidades compartilham o imóvel.');
+        toast.error('Descreva quais unidades compartilham o imóvel.');
         form.errors.imovel_compartilhado_unidades_texto = 'Este campo é obrigatório quando o imóvel é compartilhado com outras unidades.';
     }
 
@@ -202,6 +207,7 @@ const saveDadosGerais = () => {
         errorBag: 'saveDadosGerais',
         preserveScroll: true,
         onSuccess: () => {
+            toast.success('Dados Gerais salvos com sucesso!');
             emit('saved');
         },
         onError: (errors) => {

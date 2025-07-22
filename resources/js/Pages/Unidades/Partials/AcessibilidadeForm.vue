@@ -8,6 +8,9 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { ref, computed } from 'vue';
+import { useToast } from '@/Composables/useToast';
+
+const toast = useToast();
 
 const emit = defineEmits(['saved']);
 const isLoading = ref(false);
@@ -37,6 +40,7 @@ const form = useForm({
 
 const saveAcessibilidade = () => {
     if (!unidadeId) {
+        toast.error('ID da unidade inválido.');
         emit('saved', 'ID da unidade inválido.');
         return;
     }
@@ -48,10 +52,12 @@ const saveAcessibilidade = () => {
         preserveScroll: true,
         onSuccess: () => {
             isLoading.value = false;
+            toast.success('Dados de acessibilidade salvos com sucesso!');
             emit('saved'); // Emite apenas 'saved' para sucesso, sem forçar transição de aba
         },
         onError: (errors) => {
             isLoading.value = false;
+            toast.error('Erro ao salvar os dados de acessibilidade.');
             emit('saved', 'Erro ao salvar os dados de acessibilidade.');
         },
     });

@@ -10,6 +10,9 @@ import axios from 'axios';
 import { debounce } from 'lodash';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useToast } from '@/Composables/useToast';
+
+const toast = useToast();
 
 const emit = defineEmits(['saved']);
 const isLoading = ref(false);
@@ -284,6 +287,7 @@ onBeforeUnmount(() => {
 
 const saveLocalizacao = () => {
     if (!props.isEditable) {
+        toast.info('O cadastro está finalizado e não pode ser editado.');
         emit('saved', null, 'O cadastro está finalizado e não pode ser editado.');
         return;
     }
@@ -320,6 +324,7 @@ const saveLocalizacao = () => {
         errorBag: 'saveLocalizacao',
         preserveScroll: true,
         onSuccess: () => {
+            toast.success('Dados de Localização salvos com sucesso!');
             emit('saved');
         },
         onError: (errors) => {

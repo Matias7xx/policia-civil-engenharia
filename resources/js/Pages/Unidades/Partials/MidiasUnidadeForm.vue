@@ -4,6 +4,9 @@ import { useForm } from '@inertiajs/vue3';
 import FormSection from '@/Components/FormSection.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import { useToast } from '@/Composables/useToast';
+
+const toast = useToast();
 
 const props = defineProps({
     unidade: Object,
@@ -21,7 +24,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['saved']);
+const emit = defineEmits(['saved', 'midiasUpdated']); // Adicionar novo emit
 
 const isMounted = ref(false);
 const isLoading = ref(true);
@@ -30,15 +33,15 @@ const previewImages = ref({});
 const midiasToRemove = ref([]);
 const midiasToReplace = ref({});
 const ambientesNaoPossui = ref({});
-const mensagemFeedback = ref('');
-const tipoFeedback = ref('');
 
-const formattedMessage = computed(() => {
-    return mensagemFeedback.value;
-});
+// Reactive para mídias atuais - permitir atualização dinâmica
+const midiasAtuais = ref([]);
 
 onMounted(async () => {
     isMounted.value = true;
+    
+    // Inicializar mídias atuais
+    midiasAtuais.value = props.midias ? [...props.midias] : [];
     
     try {
         if (props.midiaTipos && props.midiaTipos.length > 0) {
@@ -69,7 +72,7 @@ onMounted(async () => {
         
         midiaTipos.value.forEach(tipo => {
             if (tipo.isAreaInterna) {
-                const temRegistroNaoPossui = props.midias?.some(midia => {
+                const temRegistroNaoPossui = midiasAtuais.value?.some(midia => {
                     const midiaTipoId = midia.midia_tipo_id || midia.midia_tipo?.id || midia.midiaTipo?.id;
                     const isDummyRecord = midia.path === 'nao_possui_ambiente';
                     const hasPivotFlag = midia.pivot && midia.pivot.nao_possui_ambiente === true;
@@ -89,20 +92,26 @@ onMounted(async () => {
     } catch (error) {
         console.error('Erro ao carregar tipos de mídia:', error);
         isLoading.value = false;
-        mensagemFeedback.value = 'Erro ao carregar tipos de mídia. Tente recarregar a página.';
-        tipoFeedback.value = 'error';
+        toast.error('Erro ao carregar tipos de mídia. Tente recarregar a página.');
     }
 });
+
+// Watch para atualizar midiasAtuais quando props.midias muda
+watch(() => props.midias, (newMidias) => {
+    if (newMidias) {
+        midiasAtuais.value = [...newMidias];
+    }
+}, { deep: true });
 
 onUnmounted(() => {
     isMounted.value = false;
 });
 
-watch([() => props.midias, () => midiaTipos.value], () => {
-    if (props.midias && midiaTipos.value.length > 0) {
+watch([() => midiasAtuais.value, () => midiaTipos.value], () => {
+    if (midiasAtuais.value && midiaTipos.value.length > 0) {
         midiaTipos.value.forEach(tipo => {
             if (tipo.isAreaInterna) {
-                const temRegistroNaoPossui = props.midias.some(midia => {
+                const temRegistroNaoPossui = midiasAtuais.value.some(midia => {
                     const midiaTipoId = midia.midia_tipo_id || midia.midia_tipo?.id || midia.midiaTipo?.id;
                     const isDummyRecord = midia.path === 'nao_possui_ambiente';
                     const hasPivotFlag = midia.pivot && midia.pivot.nao_possui_ambiente === true;
@@ -127,6 +136,20 @@ const form = useForm({
     midia_remover: [],
     ambientes_nao_possui: {}
 });
+
+// Função para buscar mídias atualizadas do servidor
+const refreshMidias = async () => {
+    try {
+        const response = await axios.get(`/unidades/${props.unidade.id}/midias`);
+        if (response.data && response.data.midias) {
+            midiasAtuais.value = response.data.midias;
+            // Emitir evento para o componente pai atualizar
+            emit('midiasUpdated', response.data.midias);
+        }
+    } catch (error) {
+        console.error('Erro ao buscar mídias atualizadas:', error);
+    }
+};
 
 const validateQuantityPerType = () => {
     const errors = [];
@@ -311,17 +334,16 @@ const isAreaInternaCompleta = (midiaTipoId) => {
 
 const saveOrFinalizeMidias = () => {
     if (!props.permissions?.canUpdateTeam || !props.isEditable) {
-        mensagemFeedback.value = 'O cadastro não pode ser editado.';
-        tipoFeedback.value = 'error';
-        emit('saved', mensagemFeedback.value);
+        toast.error('O cadastro não pode ser editado.');
+        emit('saved');
         return;
     }
 
     const quantityErrors = validateQuantityPerType();
     if (quantityErrors.length > 0) {
-        mensagemFeedback.value = `Erro na quantidade de fotos: ${quantityErrors.join(', ')}.`;
-        tipoFeedback.value = 'error';
-        emit('saved', mensagemFeedback.value);
+        const errorMsg = `Erro na quantidade de fotos: ${quantityErrors.join(', ')}.`;
+        toast.error(errorMsg);
+        emit('saved', errorMsg);
         return;
     }
 
@@ -395,9 +417,8 @@ const saveOrFinalizeMidias = () => {
             errorMessage += `Para área interna, é necessário incluir uma foto OU marcar "Não possui" em: ${missingAreaInternaTypes.join(', ')}.`;
         }
         
-        mensagemFeedback.value = errorMessage;
-        tipoFeedback.value = 'error';
-        emit('saved', mensagemFeedback.value);
+        toast.error(errorMessage);
+        emit('saved', errorMessage);
         return;
     }
 
@@ -413,9 +434,9 @@ const saveOrFinalizeMidias = () => {
     const hasNaoPossuiChanges = Object.values(ambientesNaoPossui.value).some(v => v);
     
     if (!hasFiles && !hasRemovals && !hasNaoPossuiChanges) {
-        mensagemFeedback.value = 'Por favor, faça pelo menos uma alteração antes de salvar.';
-        tipoFeedback.value = 'error';
-        emit('saved', mensagemFeedback.value);
+        const errorMsg = 'Por favor, faça pelo menos uma alteração antes de salvar.';
+        toast.warning(errorMsg);
+        emit('saved', errorMsg);
         return;
     }
 
@@ -442,8 +463,7 @@ const saveOrFinalizeMidias = () => {
         });
     });
 
-    mensagemFeedback.value = 'Processando alterações nas mídias...';
-    tipoFeedback.value = 'info';
+    toast.info('Processando alterações nas mídias...', { duration: 0 }); // Duration 0 = não remove automaticamente
 
     const url = props.isNew ? 
         route('midias.store') : 
@@ -454,12 +474,18 @@ const saveOrFinalizeMidias = () => {
             'Content-Type': 'multipart/form-data',
         }
     })
-    .then(response => {
+    .then(async response => {
         if (!isMounted.value) return;
+
+        //Limpar toasts existentes
+        toast.clear();
         
         if (response.status === 200 || response.status === 201) {
-            mensagemFeedback.value = response.data.message || 'Mídias salvas com sucesso!';
-            tipoFeedback.value = 'success';
+            const successMsg = response.data.message || 'Mídias salvas com sucesso!';
+            toast.success(successMsg);
+            
+            // Buscar mídias atualizadas ANTES de limpar o formulário
+            await refreshMidias();
             
             // Limpar formulário
             form.midia_files = {};
@@ -477,25 +503,39 @@ const saveOrFinalizeMidias = () => {
                 }
             });
             
-            emit('saved', mensagemFeedback.value);
+            emit('saved', successMsg);
 
             // Processar redirecionamento se fornecido pelo backend
             if (response.data.redirect) {
+                toast.info('Redirecionando...');
                 setTimeout(() => {
                     window.location.href = response.data.redirect;
                 }, 2000);
             }
         } else {
-            mensagemFeedback.value = response.data.message || 'Erro inesperado ao salvar as mídias.';
-            tipoFeedback.value = 'error';
-            emit('saved', mensagemFeedback.value);
+            const errorMsg = response.data.message || 'Erro inesperado ao salvar as mídias.';
+            toast.error(errorMsg);
+            emit('saved', errorMsg);
         }
     })
     .catch(error => {
         if (!isMounted.value) return;
-        mensagemFeedback.value = error.response?.data?.message || 'Erro ao salvar as mídias. Verifique os arquivos.';
-        tipoFeedback.value = 'error';
-        emit('saved', mensagemFeedback.value);
+        
+        //Limpar toasts existentes e mostrar erro
+        toast.clear();
+        
+        let errorMsg = 'Erro ao salvar as mídias. Verifique os arquivos.';
+        
+        //erros de validação
+        if (error.response?.status === 422 && error.response?.data?.errors) {
+            toast.validationErrors(error.response.data.errors, { showAll: false });
+            return;
+        } else if (error.response?.data?.message) {
+            errorMsg = error.response.data.message;
+        }
+        
+        toast.error(errorMsg);
+        emit('saved', errorMsg);
     });
 };
 
@@ -548,13 +588,14 @@ const formatarNomeTipoMidia = (nome) => {
     return nome.replace('foto_', '').replace(/_/g, ' ');
 };
 
+// Usar midiasAtuais.value
 const midiasPorTipo = computed(() => {
     const grouped = {};
     
-    if (props.midias && Array.isArray(props.midias)) {
+    if (midiasAtuais.value && Array.isArray(midiasAtuais.value)) {
         const addedMidiaIds = {};
         
-        props.midias.forEach(midia => {
+        midiasAtuais.value.forEach(midia => {
             if (midiasToRemove.value.includes(midia.id)) return;
             
             if (midia.path === 'nao_possui_ambiente') return;
@@ -641,15 +682,6 @@ const getTabelas = computed(() => {
 
         <template #form>
             <div class="col-span-6">
-                <div v-if="formattedMessage" 
-                     class="mb-4 p-3 rounded-md text-sm"
-                     :class="{
-                        'bg-green-100 text-green-800': tipoFeedback === 'success',
-                        'bg-red-100 text-red-800': tipoFeedback === 'error',
-                        'bg-blue-100 text-blue-800': tipoFeedback === 'info'
-                     }">
-                    {{ formattedMessage }}
-                </div>
                 
                 <div v-if="isLoading" class="flex justify-center items-center py-8">
                     <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
