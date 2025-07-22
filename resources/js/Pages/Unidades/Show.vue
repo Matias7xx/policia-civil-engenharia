@@ -722,7 +722,7 @@ const formatarTelefones = computed(() => {
                                 </div>
                             </div>
 
-                            <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                            <!-- <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Acabamentos</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
@@ -754,7 +754,7 @@ const formatarTelefones = computed(() => {
                                         <dd class="mt-1">{{ informacoes.pintura || 'Não informado' }}</dd>
                                     </div>
                                 </div>
-                            </div>
+                            </div> -->
 
                             <div v-if="informacoes" class="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Equipamentos de Segurança</h3>

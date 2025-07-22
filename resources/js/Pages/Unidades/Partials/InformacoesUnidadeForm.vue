@@ -27,7 +27,7 @@ const expandedSections = ref({
     estruturais: true,
     espacos: true,
     instalacoes: true,
-    acabamentos: true,
+    /* acabamentos: true, */
     seguranca: true
 });
 
@@ -319,7 +319,7 @@ const opcoesSegurancaVeiculos = [
                                 v-model="form.internet_provedor"
                                 type="text"
                                 class="mt-1 block w-full"
-                                placeholder="Nome do provedor"
+                                placeholder="Ex: Brisanet"
                                 :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputError :message="form.errors.internet_provedor" class="mt-1 text-xs" />
@@ -947,7 +947,7 @@ const opcoesSegurancaVeiculos = [
             </div>
 
             <!-- 5. Acabamentos -->
-            <div class="col-span-6">
+            <!-- <div class="col-span-6">
                 <div 
                     @click="methods.toggleSection('acabamentos')" 
                     class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200"
@@ -1054,15 +1054,15 @@ const opcoesSegurancaVeiculos = [
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
-            <!-- 7. Equipamentos de Segurança -->
+            <!-- 5. Equipamentos de Segurança -->
             <div class="col-span-6">
                 <div 
                     @click="methods.toggleSection('seguranca')" 
                     class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200"
                 >
-                    <InputLabel value="7. Equipamentos de Segurança" class="text-base font-semibold" />
+                    <InputLabel value="5. Equipamentos de Segurança" class="text-base font-semibold" />
                     <svg 
                         xmlns="http://www.w3.org/2000/svg" 
                         class="h-5 w-5 transition-transform duration-200" 
