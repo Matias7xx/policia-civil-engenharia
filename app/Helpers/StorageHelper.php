@@ -91,20 +91,31 @@ class StorageHelper
     /**
      * Remover arquivo do MinIO
      */
-    public static function removerArquivo($caminho)
+    public static function removerArquivo($path)
     {
-        if (self::engenharia()->exists($caminho)) {
-            return self::engenharia()->delete($caminho);
+        try {
+            if (self::engenharia()->exists($path)) {
+                self::engenharia()->delete($path);
+                return true;
+            }
+            return false;
+        } catch (\Exception $e) {
+            \Log::error('Erro ao remover arquivo do MinIO: ' . $e->getMessage());
+            return false;
         }
-        return false;
     }
     
     /**
      * Verificar se arquivo existe no MinIO
      */
-    public static function arquivoExiste($caminho)
+    public static function arquivoExiste($path)
     {
-        return self::engenharia()->exists($caminho);
+        try {
+            return self::engenharia()->exists($path);
+        } catch (\Exception $e) {
+            \Log::error('Erro ao verificar arquivo no MinIO: ' . $e->getMessage());
+            return false;
+        }
     }
     
     /**

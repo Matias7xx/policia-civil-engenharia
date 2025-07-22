@@ -48,6 +48,9 @@ class MidiaController extends Controller
             $midiasRemover = $request->midia_remover ?? [];
             $ambientesNaoPossui = $request->ambientes_nao_possui ?? [];
 
+            //Verificar quantidade de fotos por tipo (mínimo 2 e máximo 3)
+            $this->validatePhotoQuantity($unidade, $files, $midiaTipos, $midiasRemover, $midiasReplace);
+
             // Processar exclusões de mídias
             if (!empty($midiasRemover)) {
                 foreach ($midiasRemover as $midiaId) {
@@ -87,72 +90,263 @@ class MidiaController extends Controller
                     'message' => 'Alterações processadas com sucesso.',
                 ]);
             }
+
+            // Processar upload dos arquivos
             foreach ($files as $index => $file) {
-                // Verificar se este tipo de mídia deve substituir os existentes
                 $tipoId = $midiaTipos[$index];
                 $shouldReplace = isset($midiasReplace[$index]) && 
-                 $this->processMidiaReplaceValue($midiasReplace[$index]);
+                $this->processMidiaReplaceValue($midiasReplace[$index]);
                 
                 // Se for substituição, remover mídias existentes deste tipo
                 if ($shouldReplace) {
-                    $midiasExistentes = Midia::whereHas('unidades', function($query) use ($unidade) {
-                        $query->where('unidades.id', $unidade->id)
-                              ->where('midia_unidade.nao_possui_ambiente', false);
-                    })->where('midia_tipo_id', $tipoId)
-                      ->whereNotIn('id', $midiasRemover)
-                      ->get();
-                    
-                    foreach ($midiasExistentes as $midiaExistente) {
-                        // Remover arquivo do MinIO
-                        if ($midiaExistente->path !== 'nao_possui_ambiente') {
-                            StorageHelper::removerArquivo($midiaExistente->path);
-                        }
-                        
-                        // Remover relacionamento
-                        MidiaUnidade::where('midia_id', $midiaExistente->id)
-                                    ->where('unidade_id', $unidade->id)
-                                    ->delete();
-                        
-                        // Remover registro da mídia se não tem outras unidades
-                        if (!$midiaExistente->unidades()->exists()) {
-                            $midiaExistente->delete();
-                        }
+                    // Verificar se mídia desse tipo foi removida
+                    static $typesAlreadyReplaced = [];
+                    if (!in_array($tipoId, $typesAlreadyReplaced)) {
+                        $this->removeExistingMediaForType($unidade, $tipoId, $midiasRemover);
+                        $typesAlreadyReplaced[] = $tipoId;
                     }
                 }
                 
-                // Obter o nome do tipo de mídia para o arquivo
-                $midiaTipo = MidiaTipo::find($tipoId);
-                $nomeArquivo = $midiaTipo ? $midiaTipo->nome . '.' . $file->getClientOriginalExtension() : $file->getClientOriginalName();
-                
-                // Salvar o arquivo no MinIO
-                $path = StorageHelper::salvarFoto($unidade, $file, $nomeArquivo);
-                
-                $midia = Midia::create([
-                    'midia_tipo_id' => $tipoId,
-                    'path' => $path,
-                    'mime_type' => $file->getMimeType(),
-                    'tamanho' => $file->getSize(),
-                ]);
+                // Fazer upload do arquivo
+                $this->uploadMediaFile($unidade, $file, $tipoId, $index);
+            }
 
-                // Criar relacionamento na tabela midia_unidade
-                MidiaUnidade::create([
-                    'unidade_id' => $unidade->id,
-                    'midia_id' => $midia->id,
-                    'nao_possui_ambiente' => false,
+            // Verificar se é finalização (unidade em rascunho)
+            $isFinalizing = $unidade->is_draft === true;
+            
+            // Se for finalização, atualizar status da unidade
+            if ($isFinalizing) {
+                // Verificar se todas as validações foram atendidas
+                $this->validateUnidadeForFinalization($unidade);
+                
+                // Finalizar unidade
+                $unidade->update([
+                    'is_draft' => false,
+                    'status' => 'pendente_avaliacao'
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cadastro finalizado com sucesso! Redirecionando...',
+                    'redirect' => route('unidades.show', [
+                        'team' => $unidade->team_id,
+                        'unidade' => $unidade->id
+                    ])
                 ]);
             }
 
-            // Atualizar status se unidade estiver reprovada
-            if ($unidade->status === 'reprovada') {
-                $unidade->update(['status' => 'pendente_avaliacao']);
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Mídias salvas com sucesso!',
+            ]);
 
-            return response()->json(['success' => true, 'message' => 'Mídias salvas com sucesso.']);
         } catch (\Exception $e) {
+            \Log::error('Erro ao salvar mídias: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Erro interno ao salvar as mídias: ' . $e->getMessage(),
+                'message' => 'Erro interno do servidor. Tente novamente.',
             ], 500);
+        }
+    }
+
+    /**
+     * Validar se a unidade está pronta para finalização
+     */
+    private function validateUnidadeForFinalization($unidade)
+    {
+        // Verificar se todas as abas estão preenchidas
+        if (!$unidade->acessibilidade || !$unidade->informacoes) {
+            throw new \Exception('Todas as abas devem ser preenchidas antes de finalizar o cadastro.');
+        }
+
+        // Verificar se todas as mídias obrigatórias existem
+        $tiposObrigatorios = ['foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
+                              'foto_medidor_agua', 'foto_medidor_energia'];
+        
+        $tiposExistentes = $unidade->midias()
+            ->join('midia_tipos', 'midias.midia_tipo_id', '=', 'midia_tipos.id')
+            ->where('midias.path', '!=', 'nao_possui_ambiente')
+            ->pluck('midia_tipos.nome')
+            ->toArray();
+        
+        $tiposFaltantes = array_diff($tiposObrigatorios, $tiposExistentes);
+        
+        if (!empty($tiposFaltantes)) {
+            throw new \Exception('Faltam fotos obrigatórias: ' . implode(', ', $tiposFaltantes));
+        }
+
+        // Verificar quantidade mínima de fotos por tipo obrigatório
+        foreach ($tiposObrigatorios as $tipoNome) {
+            $count = $unidade->midias()
+                ->join('midia_tipos', 'midias.midia_tipo_id', '=', 'midia_tipos.id')
+                ->where('midia_tipos.nome', $tipoNome)
+                ->where('midias.path', '!=', 'nao_possui_ambiente')
+                ->count();
+            
+            if ($count < 2) {
+                throw new \Exception("O tipo '$tipoNome' deve ter no mínimo 2 fotos.");
+            }
+        }
+    }
+
+    /**
+     * Validar quantidade de fotos por tipo (2-3)
+     */
+    private function validatePhotoQuantity($unidade, $files, $midiaTipos, $midiasRemover, $midiasReplace)
+    {
+        // Agrupar arquivos por tipo
+        $filesByType = [];
+        foreach ($files as $index => $file) {
+            $tipoId = $midiaTipos[$index];
+            if (!isset($filesByType[$tipoId])) {
+                $filesByType[$tipoId] = 0;
+            }
+            $filesByType[$tipoId]++;
+        }
+
+        // Verificar cada tipo que terá fotos
+        foreach ($filesByType as $tipoId => $newCount) {
+            $midiaTipo = MidiaTipo::find($tipoId);
+            if (!$midiaTipo) continue;
+
+            // Contar fotos existentes que não serão removidas
+            $existingCount = Midia::whereHas('unidades', function($query) use ($unidade) {
+                $query->where('unidades.id', $unidade->id)
+                    ->where('midia_unidade.nao_possui_ambiente', false);
+            })->where('midia_tipo_id', $tipoId)
+            ->whereNotIn('id', $midiasRemover)
+            ->count();
+
+            // Verificar se será substituição total
+            $willReplace = false;
+            foreach ($midiasReplace as $index => $replace) {
+                if (isset($midiaTipos[$index]) && $midiaTipos[$index] == $tipoId && 
+                    $this->processMidiaReplaceValue($replace)) {
+                    $willReplace = true;
+                    break;
+                }
+            }
+
+            // Calcular total final
+            $finalCount = $willReplace ? $newCount : ($existingCount + $newCount);
+
+            // Só validar o mínimo (2) se não há fotos existentes e não é área interna opcional
+            $isRequired = in_array($midiaTipo->nome, [
+                'foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
+                'foto_medidor_agua', 'foto_medidor_energia'
+            ]);
+            
+            $isAreaInterna = !in_array($midiaTipo->nome, [
+                'foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
+                'foto_medidor_agua', 'foto_medidor_energia', 'rampa_acesso', 
+                'corrimao', 'piso_tatil', 'banheiro_adaptado', 'elevador', 
+                'sinalizacao_braile'
+            ]);
+
+            // Validar limites apenas se há fotos ou é obrigatório
+            if ($finalCount > 0) {
+                if ($finalCount > 3) {
+                    throw new \Exception("O tipo '{$midiaTipo->nome}' pode ter no máximo 3 fotos. Atual: {$finalCount}");
+                }
+                
+                // Só exigir mínimo de 2 para tipos obrigatórios ou que já têm fotos
+                if (($isRequired || $existingCount > 0) && $finalCount < 2) {
+                    throw new \Exception("O tipo '{$midiaTipo->nome}' deve ter no mínimo 2 fotos. Atual: {$finalCount}");
+                }
+            }
+        }
+
+        //Verificar se tipos obrigatórios têm pelo menos uma foto sendo enviada
+        $tiposObrigatorios = ['foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
+                              'foto_medidor_agua', 'foto_medidor_energia'];
+        
+        foreach ($tiposObrigatorios as $tipoNome) {
+            $tipoModel = MidiaTipo::where('nome', $tipoNome)->first();
+            if (!$tipoModel) continue;
+            
+            $tipoId = $tipoModel->id;
+            
+            // Se não está nos arquivos novos, verificar se tem fotos existentes suficientes
+            if (!isset($filesByType[$tipoId])) {
+                $existingCount = Midia::whereHas('unidades', function($query) use ($unidade) {
+                    $query->where('unidades.id', $unidade->id)
+                        ->where('midia_unidade.nao_possui_ambiente', false);
+                })->where('midia_tipo_id', $tipoId)
+                ->whereNotIn('id', $midiasRemover)
+                ->count();
+                                
+                if ($existingCount < 2) {
+                    throw new \Exception("O tipo '$tipoNome' deve ter no mínimo 2 fotos. Atual: {$existingCount}");
+                }
+            }
+        }
+    }
+
+    private function removeExistingMediaForType($unidade, $tipoId, $midiasRemover)
+    {
+        $midiasExistentes = Midia::whereHas('unidades', function($query) use ($unidade) {
+            $query->where('unidades.id', $unidade->id)
+                ->where('midia_unidade.nao_possui_ambiente', false);
+        })->where('midia_tipo_id', $tipoId)
+        ->whereNotIn('id', $midiasRemover)
+        ->get();
+        
+        foreach ($midiasExistentes as $midiaExistente) {
+            // Remover arquivo do MinIO
+            if ($midiaExistente->path !== 'nao_possui_ambiente') {
+                StorageHelper::removerArquivo($midiaExistente->path);
+            }
+            
+            // Remover relacionamento
+            MidiaUnidade::where('midia_id', $midiaExistente->id)
+                        ->where('unidade_id', $unidade->id)
+                        ->delete();
+            
+            // Remover registro da mídia se não tem outras unidades
+            if (!$midiaExistente->unidades()->exists()) {
+                $midiaExistente->delete();
+            }
+        }
+    }
+
+    /**
+     * Fazer upload de um arquivo de mídia
+     */
+    private function uploadMediaFile($unidade, $file, $tipoId, $index)
+    {
+        try {
+            
+            // Obter o nome do tipo de mídia para o arquivo
+            $midiaTipo = MidiaTipo::find($tipoId);
+            $timestamp = now()->format('YmdHis');
+            $randomString = \Str::random(6);
+            $extension = $file->getClientOriginalExtension();
+            
+            // Nome único: tipo_timestamp_random_index.extensao
+            $nomeArquivo = $midiaTipo ? 
+                "{$midiaTipo->nome}_{$timestamp}_{$randomString}_{$index}.{$extension}" : 
+                "midia_{$timestamp}_{$randomString}_{$index}.{$extension}";
+
+            // Fazer upload para MinIO
+            $path = StorageHelper::salvarFoto($unidade, $file, $nomeArquivo);
+
+            // Criar registro da mídia
+            $midia = Midia::create([
+                'midia_tipo_id' => $tipoId,
+                'path' => $path,
+                'mime_type' => $file->getMimeType(),
+                'tamanho' => $file->getSize(),
+            ]);
+
+            // Associar à unidade
+            $midiaUnidade = MidiaUnidade::create([
+                'unidade_id' => $unidade->id,
+                'midia_id' => $midia->id,
+                'nao_possui_ambiente' => false,
+            ]);
+            
+        } catch (\Exception $e) {
+            throw $e;
         }
     }
 
@@ -273,7 +467,9 @@ class MidiaController extends Controller
     // Método para atualização de mídias (reutiliza a lógica do store mas com adaptações para edição)
     public function update(Request $request, $unidade_id)
     {
+        // Atualizar o unidade_id no request
         $request->merge(['unidade_id' => $unidade_id]);
+        
         return $this->store($request);
     }
 
@@ -328,6 +524,36 @@ class MidiaController extends Controller
             
         } catch (\Exception $e) {
             abort(500, 'Erro ao carregar arquivo');
+        }
+    }
+
+    /**
+     * Download de arquivo
+     */
+    public function download($id)
+    {
+        try {
+            $midia = Midia::findOrFail($id);
+            
+            if ($midia->path === 'nao_possui_ambiente') {
+                abort(404, 'Arquivo não encontrado');
+            }
+
+            if (!StorageHelper::arquivoExiste($midia->path)) {
+                abort(404, 'Arquivo não encontrado no servidor');
+            }
+
+            $conteudo = StorageHelper::obterArquivo($midia->path);
+            $nomeArquivo = basename($midia->path);
+            
+            return response($conteudo, 200, [
+                'Content-Type' => $midia->mime_type,
+                'Content-Disposition' => 'attachment; filename="' . $nomeArquivo . '"',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            ]);
+            
+        } catch (\Exception $e) {
+            abort(500, 'Erro ao baixar arquivo');
         }
     }
 }

@@ -43,7 +43,6 @@ class MidiaTiposSeeder extends Seeder
             ['nome' => 'parlatório', 'descricao' => 'Foto do parlatório'],
             ['nome' => 'sala_identificação', 'descricao' => 'Foto da sala de identificação'],
             ['nome' => 'cozinha', 'descricao' => 'Foto da cozinha'],
-            ['nome' => 'copa', 'descricao' => 'Foto da copa'],
             ['nome' => 'área_de_serviço', 'descricao' => 'Foto da área de serviço'],
             ['nome' => 'dispensa', 'descricao' => 'Foto da dispensa'],
             ['nome' => 'depósito_apreensão', 'descricao' => 'Foto do depósito de apreensão'],

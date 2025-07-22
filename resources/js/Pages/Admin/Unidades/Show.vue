@@ -70,9 +70,16 @@ const ambientesNaoPossui = computed(() => {
 
 const formatarNomeTipoMidia = (nome) => {
     // Casos específicos - Área Interna
+    if (nome === 'foto_frente') return 'Frente';
+    if (nome === 'foto_lateral_1') return 'Lateral esquerda';
+    if (nome === 'foto_lateral_2') return 'Lateral direita';
+    if (nome === 'foto_fundos') return 'Fundos';
+    if (nome === 'foto_medidor_agua') return 'Nº medidor de água';
+    if (nome === 'foto_medidor_energia') return 'Nº medidor de energia';
+    
     if (nome === 'recepção') return 'Recepção';
     if (nome === 'sala_oitiva') return 'Sala de oitiva';
-    if (nome === 'sala_boletim_de_ocorrência') return 'Sala de boletim de ocorrência';
+    if (nome === 'sala_boletim_de_ocorrência') return 'Sala de BO';
     if (nome === 'gabinete_01') return 'Gabinete 01';
     if (nome === 'gabinete_02') return 'Gabinete 02';
     if (nome === 'cartório_01') return 'Cartório 01';
@@ -92,12 +99,21 @@ const formatarNomeTipoMidia = (nome) => {
     if (nome === 'xadrez_feminino_03') return 'Xadrez feminino 03';
     if (nome === 'parlatório') return 'Parlatório';
     if (nome === 'sala_identificação') return 'Sala de identificação';
-    if (nome === 'cozinha') return 'Cozinha';
-    if (nome === 'copa') return 'Copa';
     if (nome === 'área_de_serviço') return 'Área de serviço';
+    if (nome === 'cozinha') return 'Copa/Cozinha';
+    if (nome === 'garagem') return 'Garagem';
     if (nome === 'dispensa') return 'Dispensa';
     if (nome === 'depósito_apreensão') return 'Depósito de apreensão';
-    if (nome === 'garagem') return 'Garagem';
+    if (nome === 'porta_principal') return 'Porta principal';
+    if (nome === 'luminarias_emergencia') return 'Luminárias emergência';
+    if (nome === 'escada_acesso') return 'Escada de acesso';
+    if (nome === 'demarcacao_extintor') return 'Demarcação do extintor';
+    if (nome === 'rampa_acesso') return 'Rampa de acesso';
+    if (nome === 'corrimao') return 'Corrimão';
+    if (nome === 'piso_tatil') return 'Piso tátil';
+    if (nome === 'banheiro_adaptado') return 'Banheiro adaptado';
+    if (nome === 'elevador') return 'Elevador';
+    if (nome === 'sinalizacao_braile') return 'Sinalização em Braile';
     
     // Formato padrão para outros tipos
     return nome.replace('foto_', '').replace(/_/g, ' ');
