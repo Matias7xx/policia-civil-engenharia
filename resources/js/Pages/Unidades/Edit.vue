@@ -82,12 +82,29 @@ const showSuccessMessage = (message) => {
 
         <!-- Botão de voltar -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 mb-2">
-            <div class="flex justify-end">
+            <div class="flex justify-end gap-2">
+                <!-- Botão de visualização para Super Admin -->
                 <Link 
+                    v-if="$page.props.auth.user?.isSuperAdmin"
+                    :href="route('admin.unidades.show', unidade.id)" 
+                    class="inline-flex items-center px-4 py-2 bg-[#bea55a] border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-[#d4bf7a] focus:bg-[#d4bf7a] active:bg-[#a89043] focus:outline-none focus:ring-2 focus:ring-[#bea55a] focus:ring-offset-2 transition ease-in-out duration-150"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Visualização da Unidade
+                </Link>
+                
+                <!-- Botão padrão para visualização USUÁRIO COMUM -->
+                <Link 
+                v-if="!$page.props.auth.user?.isSuperAdmin"
                     :href="route('unidades.show', { team: team.id, unidade: unidade.id })" 
                     class="inline-flex items-center px-4 py-2 bg-black border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150"
                 >
-                    <i class="fas fa-eye mr-2"></i> 
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
                     Voltar para Visualização
                 </Link>
             </div>

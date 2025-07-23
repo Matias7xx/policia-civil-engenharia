@@ -145,9 +145,6 @@ const handleFinalSave = (nextTab, error = null) => {
         completedTabs.value['midias'] = false;
         return;
     }
-    
-    // Toast de sucesso para finalização
-    toast.success('🎉 Cadastro finalizado com sucesso! Redirecionando...');
 };
 
 // Função para mudar a aba com toast

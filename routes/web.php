@@ -115,6 +115,10 @@ Route::middleware([
             Route::get('/{id}/anexo', [AdminUnidadeController::class, 'anexo'])->name('anexo');
             Route::get('/{id}/termo-cessao', [AdminUnidadeController::class, 'termoCessao'])->name('termoCessao');
             Route::post('/{id}/status', [AdminUnidadeController::class, 'updateStatus'])->name('updateStatus');
+            
+            // Rotas para super admin preencher formulários das Unidades
+            Route::get('/{teamId}/create', [UnidadeController::class, 'create'])->name('create');
+            Route::get('/{team}/{unidade}/edit', [UnidadeController::class, 'edit'])->name('edit');
         });
 
         // Rotas de relatórios

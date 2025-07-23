@@ -12,20 +12,30 @@ use App\Helpers\StorageHelper;
 
 class MidiaController extends Controller
 {
-
-    protected function processMidiaReplaceValue($value) {
+    /**
+     * Processar valor de substituição de mídia
+     */
+    protected function processMidiaReplaceValue($value) 
+    {
         if ($value === '1' || $value === 'true' || $value === true || $value === 1) {
             return true;
         }
         return false;
     }
 
+    /**
+     * Armazenar/atualizar mídias
+     */
     public function store(Request $request)
     {
+        // Aumentar limites para uploads grandes
+        set_time_limit(600); // 10 minutos
+        ini_set('memory_limit', '1G');
+        
         $request->validate([
             'unidade_id' => 'required|exists:unidades,id',
-            'files' => 'nullable|array',
-            'files.*' => 'required|file|mimes:jpg,jpeg,png|max:10240',
+            'files' => 'nullable|array|max:25', // 25 arquivos por lote (parte dos 129)
+            'files.*' => 'required|file|mimes:jpg,jpeg,png|max:10240', // 10MB cada (10×129=1.3GB total)
             'midia_tipos' => 'nullable|array',
             'midia_tipos.*' => 'required|exists:midia_tipos,id',
             'midia_replace' => 'array',
@@ -34,57 +44,78 @@ class MidiaController extends Controller
             'midia_remover.*' => 'exists:midias,id',
             'ambientes_nao_possui' => 'nullable|array',
             'ambientes_nao_possui.*' => 'nullable',
+            //Flag para indicar se é upload em lotes
+            'is_batch_upload' => 'nullable|in:0,1,true,false',
+            'total_files_in_batch' => 'nullable|integer',
         ], [
+            'files.max' => 'Máximo de 25 arquivos por lote.',
             'files.*.mimes' => 'Os arquivos devem ser do tipo JPG ou PNG.',
             'files.*.max' => 'Os arquivos não podem exceder 10MB.',
             'files.*required' => 'Preencha todos os campos marcados com "*"'
         ]);
 
         try {
+            DB::beginTransaction();
+            
             $unidade = Unidade::findOrFail($request->unidade_id);
             $files = $request->file('files') ?? [];
             $midiaTipos = $request->midia_tipos ?? [];
             $midiasReplace = $request->midia_replace ?? [];
             $midiasRemover = $request->midia_remover ?? [];
             $ambientesNaoPossui = $request->ambientes_nao_possui ?? [];
+            
+            // Detectar se é upload em lotes
+            $isBatchUpload = in_array($request->get('is_batch_upload'), ['1', 1, 'true', true], true);
 
-            //Verificar quantidade de fotos por tipo (mínimo 2 e máximo 3)
-            $this->validatePhotoQuantity($unidade, $files, $midiaTipos, $midiasRemover, $midiasReplace);
+            // Log para debugging
+            \Log::info('Upload de mídias iniciado', [
+                'unidade_id' => $unidade->id,
+                'files_count' => count($files),
+                'is_batch_upload' => $isBatchUpload,
+                'memory_usage' => memory_get_usage(true),
+                'time_start' => now()
+            ]);
 
-            // Processar exclusões de mídias
+            // Validação adaptada para lotes
+            if (!$isBatchUpload) {
+                // Upload normal: validar quantidade completa
+                $this->validatePhotoQuantity($unidade, $files, $midiaTipos, $midiasRemover, $midiasReplace);
+            } else {
+                // Upload em lotes: validar apenas limites máximos e tipos obrigatórios
+                $this->validatePhotoQuantityForBatch($unidade, $files, $midiaTipos, $midiasRemover, $midiasReplace);
+            }
+
+            // Processar exclusões de mídias (apenas no primeiro lote)
             if (!empty($midiasRemover)) {
-                foreach ($midiasRemover as $midiaId) {
-                    $midia = Midia::find($midiaId);
-                    if ($midia) {
-                        $pertenceUnidade = MidiaUnidade::where('unidade_id', $unidade->id)
-                            ->where('midia_id', $midia->id)
-                            ->exists();
-                        
-                        if ($pertenceUnidade) {
-                            // Remover arquivo do MinIO
-                            if ($midia->path !== 'nao_possui_ambiente') {
-                                StorageHelper::removerArquivo($midia->path);
-                            }
-                            
-                            // Remover relacionamento
-                            MidiaUnidade::where('midia_id', $midia->id)
-                                        ->where('unidade_id', $unidade->id)
-                                        ->delete();
-                            
-                            // Remover registro da mídia se não tem outras unidades
-                            if (!$midia->unidades()->exists()) {
-                                $midia->delete();
-                            }
-                        }
-                    }
-                }
+                $this->processRemoveMedias($unidade, $midiasRemover);
             }
 
             // Processar dados de "não possui ambiente"
             $this->processarAmbientesNaoPossui($unidade, $ambientesNaoPossui);
 
-            // Se não há arquivos para processar, apenas retornar sucesso
+            // Se não há arquivos para processar, verificar se é finalização
             if (empty($files)) {
+                // Se é finalização de rascunho, fazer validação e finalizar
+                if ($unidade->is_draft === true && !$isBatchUpload) {
+                    $this->validateUnidadeForFinalization($unidade);
+                    
+                    $unidade->update([
+                        'is_draft' => false,
+                        'status' => 'pendente_avaliacao'
+                    ]);
+                    
+                    DB::commit();
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Cadastro finalizado com sucesso! Redirecionando...',
+                        'redirect' => route('unidades.show', [
+                            'team' => $unidade->team_id,
+                            'unidade' => $unidade->id
+                        ])
+                    ]);
+                }
+                
+                DB::commit();
                 return response()->json([
                     'success' => true,
                     'message' => 'Alterações processadas com sucesso.',
@@ -92,34 +123,60 @@ class MidiaController extends Controller
             }
 
             // Processar upload dos arquivos
+            $uploadedCount = 0;
+            $processedTypes = [];
+            
             foreach ($files as $index => $file) {
-                $tipoId = $midiaTipos[$index];
-                $shouldReplace = isset($midiasReplace[$index]) && 
-                $this->processMidiaReplaceValue($midiasReplace[$index]);
-                
-                // Se for substituição, remover mídias existentes deste tipo
-                if ($shouldReplace) {
-                    // Verificar se mídia desse tipo foi removida
-                    static $typesAlreadyReplaced = [];
-                    if (!in_array($tipoId, $typesAlreadyReplaced)) {
+                try {
+                    $tipoId = $midiaTipos[$index];
+                    $shouldReplace = isset($midiasReplace[$index]) && 
+                        $this->processMidiaReplaceValue($midiasReplace[$index]);
+                    
+                    // Se for substituição, remover mídias existentes deste tipo (apenas uma vez por tipo)
+                    if ($shouldReplace && !in_array($tipoId, $processedTypes)) {
                         $this->removeExistingMediaForType($unidade, $tipoId, $midiasRemover);
-                        $typesAlreadyReplaced[] = $tipoId;
+                        $processedTypes[] = $tipoId;
                     }
+                    
+                    // Fazer upload do arquivo
+                    $this->uploadMediaFile($unidade, $file, $tipoId, $index);
+                    $uploadedCount++;
+                    
+                    // Log de progresso a cada 10 arquivos
+                    if ($uploadedCount % 10 === 0) {
+                        \Log::info("Upload progresso: {$uploadedCount}/" . count($files) . " arquivos processados");
+                    }
+                    
+                    // Limpeza de memória a cada 20 arquivos
+                    if ($uploadedCount % 20 === 0) {
+                        if (function_exists('gc_collect_cycles')) {
+                            gc_collect_cycles();
+                        }
+                    }
+                    
+                } catch (\Exception $e) {
+                    \Log::error("Erro no upload do arquivo {$index}: " . $e->getMessage());
+                    throw $e;
                 }
-                
-                // Fazer upload do arquivo
-                $this->uploadMediaFile($unidade, $file, $tipoId, $index);
             }
 
-            // Verificar se é finalização (unidade em rascunho)
-            $isFinalizing = $unidade->is_draft === true;
+            DB::commit();
+
+            // Log final
+            \Log::info('Upload de mídias concluído', [
+                'unidade_id' => $unidade->id,
+                'uploaded_count' => $uploadedCount,
+                'memory_usage_final' => memory_get_usage(true),
+                'memory_peak' => memory_get_peak_usage(true),
+                'time_end' => now()
+            ]);
+
+            // Verificar se é finalização (unidade em rascunho) - APENAS para uploads normais ou último lote
+            $isFinalizing = $unidade->is_draft === true && !$isBatchUpload;
             
-            // Se for finalização, atualizar status da unidade
             if ($isFinalizing) {
-                // Verificar se todas as validações foram atendidas
                 $this->validateUnidadeForFinalization($unidade);
                 
-                // Finalizar unidade
                 $unidade->update([
                     'is_draft' => false,
                     'status' => 'pendente_avaliacao'
@@ -137,56 +194,92 @@ class MidiaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mídias salvas com sucesso!',
+                'message' => $isBatchUpload 
+                    ? "Lote de {$uploadedCount} mídia(s) salva(s) com sucesso!"
+                    : "Mídias salvas com sucesso!",
+                'uploaded_count' => $uploadedCount,
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Erro ao salvar mídias: ' . $e->getMessage());
+            DB::rollBack();
+            
+            \Log::error('Erro ao salvar mídias: ' . $e->getMessage(), [
+                'unidade_id' => $request->unidade_id,
+                'files_count' => count($request->file('files') ?? []),
+                'memory_usage' => memory_get_usage(true),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Erro interno do servidor. Tente novamente.',
+                'message' => 'Erro interno do servidor: ' . $e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Validar se a unidade está pronta para finalização
+     * Validar quantidade de fotos para upload em lotes
      */
-    private function validateUnidadeForFinalization($unidade)
+    private function validatePhotoQuantityForBatch($unidade, $files, $midiaTipos, $midiasRemover, $midiasReplace)
     {
-        // Verificar se todas as abas estão preenchidas
-        if (!$unidade->acessibilidade || !$unidade->informacoes) {
-            throw new \Exception('Todas as abas devem ser preenchidas antes de finalizar o cadastro.');
+        \Log::info('Validação para lote iniciada', [
+            'files_count' => count($files),
+            'midia_tipos' => $midiaTipos,
+            'unidade_id' => $unidade->id
+        ]);
+
+        // Agrupar arquivos por tipo (apenas do lote atual)
+        $filesByType = [];
+        foreach ($files as $index => $file) {
+            $tipoId = $midiaTipos[$index];
+            if (!isset($filesByType[$tipoId])) {
+                $filesByType[$tipoId] = 0;
+            }
+            $filesByType[$tipoId]++;
         }
 
-        // Verificar se todas as mídias obrigatórias existem
-        $tiposObrigatorios = ['foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
-                              'foto_medidor_agua', 'foto_medidor_energia'];
-        
-        $tiposExistentes = $unidade->midias()
-            ->join('midia_tipos', 'midias.midia_tipo_id', '=', 'midia_tipos.id')
-            ->where('midias.path', '!=', 'nao_possui_ambiente')
-            ->pluck('midia_tipos.nome')
-            ->toArray();
-        
-        $tiposFaltantes = array_diff($tiposObrigatorios, $tiposExistentes);
-        
-        if (!empty($tiposFaltantes)) {
-            throw new \Exception('Faltam fotos obrigatórias: ' . implode(', ', $tiposFaltantes));
-        }
+        // Verificar apenas limites máximos para cada tipo no lote atual
+        foreach ($filesByType as $tipoId => $newCount) {
+            $midiaTipo = MidiaTipo::find($tipoId);
+            if (!$midiaTipo) continue;
 
-        // Verificar quantidade mínima de fotos por tipo obrigatório
-        foreach ($tiposObrigatorios as $tipoNome) {
-            $count = $unidade->midias()
-                ->join('midia_tipos', 'midias.midia_tipo_id', '=', 'midia_tipos.id')
-                ->where('midia_tipos.nome', $tipoNome)
-                ->where('midias.path', '!=', 'nao_possui_ambiente')
-                ->count();
-            
-            if ($count < 2) {
-                throw new \Exception("O tipo '$tipoNome' deve ter no mínimo 2 fotos.");
+            // Contar fotos existentes que não serão removidas
+            $existingCount = Midia::whereHas('unidades', function($query) use ($unidade) {
+                $query->where('unidades.id', $unidade->id)
+                    ->where('midia_unidade.nao_possui_ambiente', false);
+            })->where('midia_tipo_id', $tipoId)
+            ->whereNotIn('id', $midiasRemover)
+            ->count();
+
+            // Verificar se será substituição total
+            $willReplace = false;
+            foreach ($midiasReplace as $index => $replace) {
+                if (isset($midiaTipos[$index]) && $midiaTipos[$index] == $tipoId && 
+                    $this->processMidiaReplaceValue($replace)) {
+                    $willReplace = true;
+                    break;
+                }
+            }
+
+            // Calcular total após este lote
+            $finalCount = $willReplace ? $newCount : ($existingCount + $newCount);
+
+            \Log::info("Validação lote - tipo {$midiaTipo->nome}", [
+                'tipo_id' => $tipoId,
+                'existing_count' => $existingCount,
+                'new_count' => $newCount,
+                'will_replace' => $willReplace,
+                'final_count' => $finalCount
+            ]);
+
+            // APENAS validar limite máximo (3 fotos)
+            if ($finalCount > 3) {
+                throw new \Exception("O tipo '{$midiaTipo->nome}' pode ter no máximo 3 fotos. Após este lote ficará com: {$finalCount}");
             }
         }
+
+        // NÃO validar tipos obrigatórios em lotes - será validado apenas na finalização
+        \Log::info('Validação de lote concluída - tipos obrigatórios não verificados (será feito na finalização)');
     }
 
     /**
@@ -194,6 +287,13 @@ class MidiaController extends Controller
      */
     private function validatePhotoQuantity($unidade, $files, $midiaTipos, $midiasRemover, $midiasReplace)
     {
+        // Log para debug
+        \Log::info('Validando quantidade de fotos (upload normal)', [
+            'files_count' => count($files),
+            'midia_tipos' => $midiaTipos,
+            'unidade_id' => $unidade->id
+        ]);
+
         // Agrupar arquivos por tipo
         $filesByType = [];
         foreach ($files as $index => $file) {
@@ -203,6 +303,9 @@ class MidiaController extends Controller
             }
             $filesByType[$tipoId]++;
         }
+
+        // Log dos arquivos agrupados por tipo
+        \Log::info('Arquivos agrupados por tipo', ['filesByType' => $filesByType]);
 
         // Verificar cada tipo que terá fotos
         foreach ($filesByType as $tipoId => $newCount) {
@@ -230,7 +333,16 @@ class MidiaController extends Controller
             // Calcular total final
             $finalCount = $willReplace ? $newCount : ($existingCount + $newCount);
 
-            // Só validar o mínimo (2) se não há fotos existentes e não é área interna opcional
+            // Log detalhado por tipo
+            \Log::info("Validação do tipo {$midiaTipo->nome}", [
+                'tipo_id' => $tipoId,
+                'existing_count' => $existingCount,
+                'new_count' => $newCount,
+                'will_replace' => $willReplace,
+                'final_count' => $finalCount
+            ]);
+
+            // Identificar categoria do tipo
             $isRequired = in_array($midiaTipo->nome, [
                 'foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
                 'foto_medidor_agua', 'foto_medidor_energia'
@@ -256,25 +368,44 @@ class MidiaController extends Controller
             }
         }
 
-        //Verificar se tipos obrigatórios têm pelo menos uma foto sendo enviada
-        $tiposObrigatorios = ['foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
-                              'foto_medidor_agua', 'foto_medidor_energia'];
+        // Verificar se tipos obrigatórios têm pelo menos fotos suficientes (para upload normal)
+        $tiposObrigatorios = [
+            'foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
+            'foto_medidor_agua', 'foto_medidor_energia'
+        ];
+        
+        \Log::info('Verificando tipos obrigatórios', ['tipos' => $tiposObrigatorios]);
         
         foreach ($tiposObrigatorios as $tipoNome) {
             $tipoModel = MidiaTipo::where('nome', $tipoNome)->first();
-            if (!$tipoModel) continue;
+            if (!$tipoModel) {
+                \Log::warning("Tipo obrigatório não encontrado: {$tipoNome}");
+                continue;
+            }
             
             $tipoId = $tipoModel->id;
             
-            // Se não está nos arquivos novos, verificar se tem fotos existentes suficientes
-            if (!isset($filesByType[$tipoId])) {
+            // Verificar se o tipo tem arquivos novos sendo enviados
+            $hasNewFiles = isset($filesByType[$tipoId]) && $filesByType[$tipoId] > 0;
+            
+            \Log::info("Verificando tipo obrigatório: {$tipoNome}", [
+                'tipo_id' => $tipoId,
+                'has_new_files' => $hasNewFiles,
+                'new_files_count' => $filesByType[$tipoId] ?? 0
+            ]);
+            
+            // Se não tem arquivos novos, verificar se tem existentes suficientes
+            if (!$hasNewFiles) {
                 $existingCount = Midia::whereHas('unidades', function($query) use ($unidade) {
                     $query->where('unidades.id', $unidade->id)
                         ->where('midia_unidade.nao_possui_ambiente', false);
                 })->where('midia_tipo_id', $tipoId)
                 ->whereNotIn('id', $midiasRemover)
                 ->count();
+                
+                \Log::info("Tipo {$tipoNome} - fotos existentes: {$existingCount}");
                                 
+                // Só dar erro se não tem arquivos novos E não tem existentes suficientes
                 if ($existingCount < 2) {
                     throw new \Exception("O tipo '$tipoNome' deve ter no mínimo 2 fotos. Atual: {$existingCount}");
                 }
@@ -282,6 +413,85 @@ class MidiaController extends Controller
         }
     }
 
+    /**
+     * Validar se a unidade está pronta para finalização
+     */
+    private function validateUnidadeForFinalization($unidade)
+    {
+        // Verificar se todas as abas estão preenchidas
+        if (!$unidade->acessibilidade || !$unidade->informacoes) {
+            throw new \Exception('Todas as abas devem ser preenchidas antes de finalizar o cadastro.');
+        }
+
+        // Verificar se todas as mídias obrigatórias existem
+        $tiposObrigatorios = [
+            'foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
+            'foto_medidor_agua', 'foto_medidor_energia'
+        ];
+        
+        $tiposExistentes = $unidade->midias()
+            ->join('midia_tipos', 'midias.midia_tipo_id', '=', 'midia_tipos.id')
+            ->where('midias.path', '!=', 'nao_possui_ambiente')
+            ->pluck('midia_tipos.nome')
+            ->toArray();
+        
+        $tiposFaltantes = array_diff($tiposObrigatorios, $tiposExistentes);
+        
+        if (!empty($tiposFaltantes)) {
+            throw new \Exception('Faltam fotos obrigatórias: ' . implode(', ', $tiposFaltantes));
+        }
+
+        // Verificar quantidade mínima de fotos por tipo obrigatório
+        foreach ($tiposObrigatorios as $tipoNome) {
+            $count = $unidade->midias()
+                ->join('midia_tipos', 'midias.midia_tipo_id', '=', 'midia_tipos.id')
+                ->where('midia_tipos.nome', $tipoNome)
+                ->where('midias.path', '!=', 'nao_possui_ambiente')
+                ->count();
+            
+            \Log::info("Validação final - Tipo {$tipoNome}: {$count} fotos encontradas");
+            
+            if ($count < 2) {
+                throw new \Exception("O tipo '$tipoNome' deve ter no mínimo 2 fotos. Atual: {$count}");
+            }
+        }
+    }
+
+    /**
+     * Processar remoção de mídias
+     */
+    private function processRemoveMedias($unidade, $midiasRemover)
+    {
+        foreach ($midiasRemover as $midiaId) {
+            $midia = Midia::find($midiaId);
+            if ($midia) {
+                $pertenceUnidade = MidiaUnidade::where('unidade_id', $unidade->id)
+                    ->where('midia_id', $midia->id)
+                    ->exists();
+                
+                if ($pertenceUnidade) {
+                    // Remover arquivo do MinIO
+                    if ($midia->path !== 'nao_possui_ambiente') {
+                        StorageHelper::removerArquivo($midia->path);
+                    }
+                    
+                    // Remover relacionamento
+                    MidiaUnidade::where('midia_id', $midia->id)
+                                ->where('unidade_id', $unidade->id)
+                                ->delete();
+                    
+                    // Remover registro da mídia se não tem outras unidades
+                    if (!$midia->unidades()->exists()) {
+                        $midia->delete();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Remover mídias existentes de um tipo específico (para substituição)
+     */
     private function removeExistingMediaForType($unidade, $tipoId, $midiasRemover)
     {
         $midiasExistentes = Midia::whereHas('unidades', function($query) use ($unidade) {
@@ -315,11 +525,10 @@ class MidiaController extends Controller
     private function uploadMediaFile($unidade, $file, $tipoId, $index)
     {
         try {
-            
             // Obter o nome do tipo de mídia para o arquivo
             $midiaTipo = MidiaTipo::find($tipoId);
             $timestamp = now()->format('YmdHis');
-            $randomString = \Str::random(6);
+            $randomString = \Str::random(8);
             $extension = $file->getClientOriginalExtension();
             
             // Nome único: tipo_timestamp_random_index.extensao
@@ -339,13 +548,19 @@ class MidiaController extends Controller
             ]);
 
             // Associar à unidade
-            $midiaUnidade = MidiaUnidade::create([
+            MidiaUnidade::create([
                 'unidade_id' => $unidade->id,
                 'midia_id' => $midia->id,
                 'nao_possui_ambiente' => false,
             ]);
             
         } catch (\Exception $e) {
+            \Log::error("Erro no upload do arquivo: " . $e->getMessage(), [
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+                'tipo_id' => $tipoId,
+                'unidade_id' => $unidade->id
+            ]);
             throw $e;
         }
     }
@@ -464,7 +679,9 @@ class MidiaController extends Controller
         }
     }
 
-    // Método para atualização de mídias (reutiliza a lógica do store mas com adaptações para edição)
+    /**
+     * Método para atualização de mídias
+     */
     public function update(Request $request, $unidade_id)
     {
         // Atualizar o unidade_id no request
@@ -473,7 +690,9 @@ class MidiaController extends Controller
         return $this->store($request);
     }
 
-    // Método para excluir uma mídia específica
+    /**
+     * Excluir uma mídia específica
+     */
     public function destroy($id)
     {
         try {
@@ -557,7 +776,9 @@ class MidiaController extends Controller
         }
     }
 
-    //Atualizar as mídias na view sem precisar de refresh
+    /**
+     * Buscar mídias de uma unidade (para atualização via AJAX)
+     */
     public function getMidias($unidade_id)
     {
         try {

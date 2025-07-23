@@ -200,191 +200,200 @@ class FortifyServiceProvider extends ServiceProvider
     /**
      * Configura explicitamente o time e a role do usuário
      */
-    private function setupTeamAndRole($user, $data)
-    {
-        try {
-            // Determinar lotação
-            $lotacao = "Sem Lotação";
-            
-            if (isset($data['lotacao_principal']) && 
-                is_array($data['lotacao_principal']) && 
-                !empty($data['lotacao_principal']['unidade_lotacao'])) {
-                $lotacao = trim($data['lotacao_principal']['unidade_lotacao']);
-            } elseif (!empty($data['unidade_lotacao'])) {
-                $lotacao = trim($data['unidade_lotacao']);
-            }
-            
-            // Normalizar o nome da lotação
-            $lotacao = ucwords(mb_strtolower($lotacao));
-            
-            Log::info('Lotação determinada: ' . $lotacao);
-            
-            // Verificar se é o Super Admin
-            $isSuperAdmin = $user->matricula === '0000001';
-            
-            // Criar team para o Super Admin
-            if ($isSuperAdmin) {
-                // Verificar se o team DITI já existe
-                $team = Team::where('name', 'DITI')->first();
-                
-                if (!$team) {
-                    // Criar o team DITI
-                    $team = new Team();
-                    $team->name = 'DITI';
-                    $team->user_id = $user->id;
-                    $team->personal_team = true;
-                    $team->save();
-                    
-                    Log::info('Team DITI criado para Super Admin', [
-                        'team_id' => $team->id
-                    ]);
-                } else {
-                    // Garantir que o Super Admin é o dono
-                    $team->user_id = $user->id;
-                    $team->save();
-                    
-                    Log::info('Team DITI existente atualizado', [
-                        'team_id' => $team->id
-                    ]);
-                }
-                
-                // Verificar se o Super Admin já está no team
-                $teamUser = DB::table('team_user')
-                    ->where('team_id', $team->id)
-                    ->where('user_id', $user->id)
-                    ->first();
-                
-                if (!$teamUser) {
-                    // Adicionar o Super Admin ao team com role superadmin
-                    DB::table('team_user')->insert([
-                        'team_id' => $team->id,
-                        'user_id' => $user->id,
-                        'role' => 'superadmin',
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-                    
-                    Log::info('Super Admin adicionado ao team DITI', [
-                        'team_id' => $team->id,
-                        'user_id' => $user->id,
-                        'role' => 'superadmin'
-                    ]);
-                } else if ($teamUser->role !== 'superadmin') {
-                    // Atualizar a role para superadmin
-                    DB::table('team_user')
-                        ->where('team_id', $team->id)
-                        ->where('user_id', $user->id)
-                        ->update(['role' => 'superadmin']);
-                    
-                    Log::info('Role do Super Admin atualizada', [
-                        'team_id' => $team->id,
-                        'user_id' => $user->id,
-                        'role' => 'superadmin'
-                    ]);
-                }
-                
-                // Definir o team como atual do Super Admin
-                if ($user->current_team_id !== $team->id) {
-                    $user->current_team_id = $team->id;
-                    $user->save();
-                    
-                    Log::info('Team atual do Super Admin atualizado', [
-                        'team_id' => $team->id,
-                        'user_id' => $user->id
-                    ]);
-                }
-            } else {
-                // Para usuários normais
-                
-                // Encontrar o Super Admin
-                $superAdmin = User::where('matricula', '0000001')->first();
-                
-                if (!$superAdmin) {
-                    // Usar o usuário atual como dono do time
-                    $superAdmin = $user;
-                    Log::warning('Super Admin não encontrado, usando usuário atual como dono do time', [
-                        'user_id' => $user->id
-                    ]);
-                }
-                
-                // Verificar se o team da lotação já existe
-                $team = Team::where('name', $lotacao)->first();
-                
-                if (!$team) {
-                    // Criar o team
-                    $team = new Team();
-                    $team->name = $lotacao;
-                    $team->user_id = $superAdmin->id;
-                    $team->personal_team = false;
-                    $team->save();
-                    
-                    Log::info('Team criado para lotação', [
-                        'team_id' => $team->id,
-                        'lotacao' => $lotacao,
-                        'owner_id' => $superAdmin->id
-                    ]);
-                } else if ($team->user_id !== $superAdmin->id) {
-                    // Garantir que o Super Admin é o dono
-                    $team->user_id = $superAdmin->id;
-                    $team->save();
-                    
-                    Log::info('Proprietário do team atualizado', [
-                        'team_id' => $team->id,
-                        'owner_id' => $superAdmin->id
-                    ]);
-                }
-                
-                // Verificar se o usuário já está no team
-                $teamUser = DB::table('team_user')
-                    ->where('team_id', $team->id)
-                    ->where('user_id', $user->id)
-                    ->first();
-                
-                if (!$teamUser) {
-                    // Adicionar o usuário ao team com role admin
-                    DB::table('team_user')->insert([
-                        'team_id' => $team->id,
-                        'user_id' => $user->id,
-                        'role' => 'admin',
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-                    
-                    Log::info('Usuário adicionado ao team', [
-                        'team_id' => $team->id,
-                        'user_id' => $user->id,
-                        'role' => 'admin'
-                    ]);
-                } else if ($teamUser->role !== 'admin') {
-                    // Atualizar a role para admin
-                    DB::table('team_user')
-                        ->where('team_id', $team->id)
-                        ->where('user_id', $user->id)
-                        ->update(['role' => 'admin']);
-                    
-                    Log::info('Role do usuário atualizada', [
-                        'team_id' => $team->id,
-                        'user_id' => $user->id,
-                        'role' => 'admin'
-                    ]);
-                }
-                
-                // Definir o team como atual do usuário
-                if (!$user->current_team_id) {
-                    $user->current_team_id = $team->id;
-                    $user->save();
-                    
-                    Log::info('Team atual do usuário definido', [
-                        'team_id' => $team->id,
-                        'user_id' => $user->id
-                    ]);
-                }
-            }
-        } catch (\Exception $e) {
-            Log::error('Erro ao configurar team e role: ' . $e->getMessage(), [
+    /**
+ * Configura explicitamente o time e a role do usuário
+ */
+private function setupTeamAndRole($user, $data)
+{
+    try {
+        // Determinar lotação
+        $lotacao = "Sem Lotação";
+        
+        if (isset($data['lotacao_principal']) && 
+            is_array($data['lotacao_principal']) && 
+            !empty($data['lotacao_principal']['unidade_lotacao'])) {
+            $lotacao = trim($data['lotacao_principal']['unidade_lotacao']);
+        } elseif (!empty($data['unidade_lotacao'])) {
+            $lotacao = trim($data['unidade_lotacao']);
+        }
+        
+        Log::info('Lotação da API: ' . $lotacao);
+        
+        // Verificar se é Super Admin
+        if ($user->matricula === '0000001') {
+            // Lógica especial para Super Admin
+            $this->setupSuperAdminTeam($user);
+            return;
+        }
+        
+        // Buscar ou criar team de forma inteligente
+        $team = $this->findOrCreateTeam($lotacao, $user);
+        
+        if (!$team) {
+            Log::error('Erro: Team não foi criado ou encontrado');
+            return;
+        }
+        
+        // Verificar se o usuário já está no team
+        $teamUser = DB::table('team_user')
+            ->where('team_id', $team->id)
+            ->where('user_id', $user->id)
+            ->first();
+        
+        if (!$teamUser) {
+            // Adicionar o usuário ao team
+            DB::table('team_user')->insert([
+                'team_id' => $team->id,
                 'user_id' => $user->id,
-                'trace' => $e->getTraceAsString()
+                'role' => 'admin',
+                'created_at' => now(),
+                'updated_at' => now()
             ]);
+            
+            Log::info('Usuário adicionado ao team', [
+                'team_id' => $team->id,
+                'team_name' => $team->name,
+                'user_id' => $user->id,
+                'role' => 'admin'
+            ]);
+        } else if ($teamUser->role !== 'admin') {
+            // Atualizar a role para admin
+            DB::table('team_user')
+                ->where('team_id', $team->id)
+                ->where('user_id', $user->id)
+                ->update(['role' => 'admin']);
+            
+            Log::info('Role do usuário atualizada para admin');
+        }
+        
+        // Definir o team como atual do usuário
+        $user->current_team_id = $team->id;
+        $user->save();
+        
+        Log::info('Team atual do usuário definido', [
+            'team_id' => $team->id,
+            'team_name' => $team->name,
+            'user_id' => $user->id
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Erro ao configurar team e role: ' . $e->getMessage(), [
+            'user_id' => $user->id,
+            'trace' => $e->getTraceAsString()
+        ]);
+    }
+}
+
+    /**
+ * Função para normalizar strings (remover acentos)
+ */
+private function normalizeString($string)
+{
+    $string = trim($string);
+    $string = mb_strtolower($string, 'UTF-8');
+    
+    $replacements = [
+        'á' => 'a', 'à' => 'a', 'ã' => 'a', 'â' => 'a', 'ä' => 'a',
+        'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+        'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i',
+        'ó' => 'o', 'ò' => 'o', 'õ' => 'o', 'ô' => 'o', 'ö' => 'o',
+        'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u',
+        'ç' => 'c', 'ñ' => 'n',
+        'ª' => 'a', 'º' => 'o'
+    ];
+    
+    return strtr($string, $replacements);
+}
+
+/**
+ * Busca team de forma inteligente (com ou sem acentos)
+ */
+private function findOrCreateTeam($lotacao, $user)
+{
+    Log::info('Buscando team para lotação: ' . $lotacao);
+    
+    // Primeiro: busca exata
+    $team = Team::where('name', $lotacao)->first();
+    
+    if ($team) {
+        Log::info('Team encontrado com nome exato: ' . $lotacao);
+        return $team;
+    }
+    
+    // Segunda tentativa: busca por similaridade (sem acentos)
+    $lotacaoNormalizada = $this->normalizeString($lotacao);
+    
+    $teams = Team::all();
+    foreach ($teams as $candidateTeam) {
+        $nomeNormalizado = $this->normalizeString($candidateTeam->name);
+        if ($nomeNormalizado === $lotacaoNormalizada) {
+            Log::info("Team encontrado com busca normalizada: {$candidateTeam->name} para lotação: {$lotacao}");
+            return $candidateTeam;
         }
     }
+    
+    // Se não encontrou, criar novo com o nome original da API
+    $superAdmin = User::where('matricula', '0000001')->first();
+    
+    if (!$superAdmin) {
+        $superAdmin = $user;
+        Log::warning('Super Admin não encontrado, usando usuário atual como dono do time');
+    }
+    
+    $team = Team::create([
+        'name' => $lotacao, // Nome original da API (com acentos)
+        'user_id' => $superAdmin->id,
+        'personal_team' => false,
+    ]);
+    
+    Log::info("Team criado com nome da API: {$lotacao}, ID: {$team->id}");
+    
+    return $team;
+}
+
+private function setupSuperAdminTeam($user)
+{
+    try {
+        // Verificar se o team DITI já existe
+        $team = Team::where('name', 'DITI')->first();
+        
+        if (!$team) {
+            $team = Team::create([
+                'name' => 'DITI',
+                'user_id' => $user->id,
+                'personal_team' => true,
+            ]);
+            
+            Log::info('Team DITI criado para Super Admin');
+        }
+        
+        // Verificar se o Super Admin já está no team
+        $teamUser = DB::table('team_user')
+            ->where('team_id', $team->id)
+            ->where('user_id', $user->id)
+            ->first();
+        
+        if (!$teamUser) {
+            DB::table('team_user')->insert([
+                'team_id' => $team->id,
+                'user_id' => $user->id,
+                'role' => 'superadmin',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+            
+            Log::info('Super Admin adicionado ao team DITI');
+        }
+        
+        // Definir o team como atual
+        $user->current_team_id = $team->id;
+        $user->save();
+        
+        Log::info('Team DITI definido como atual para Super Admin');
+        
+    } catch (\Exception $e) {
+        Log::error('Erro ao configurar Super Admin: ' . $e->getMessage());
+    }
+}
+
 }

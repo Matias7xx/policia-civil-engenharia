@@ -22,142 +22,155 @@ class UnidadeController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-{
-    // Verificar se o usuário é SuperAdmin
-    if (!Auth::user()->isSuperAdmin) {
-        abort(403, 'Ação não autorizada.');
-    }
-
-    // Subconsulta para identificar os IDs das avaliações mais recentes para cada unidade
-    $ultimasAvaliacoesQuery = DB::table('avaliacoes_unidade as a1')
-        ->select('a1.id')
-        ->whereRaw('a1.id = (SELECT MAX(a2.id) FROM avaliacoes_unidade as a2 WHERE a2.unidade_id = a1.unidade_id)');
-
-    // Iniciar a consulta base, filtrando apenas unidades com is_draft = false
-    // e adicionando um LEFT JOIN para as avaliações mais recentes
-    $unidadesQuery = Unidade::select('unidades.*')
-        ->leftJoin('avaliacoes_unidade', function ($join) use ($ultimasAvaliacoesQuery) {
-            $join->on('unidades.id', '=', 'avaliacoes_unidade.unidade_id')
-                 ->whereIn('avaliacoes_unidade.id', $ultimasAvaliacoesQuery);
-        })
-        ->with(['team:id,name'])
-        ->where('unidades.is_draft', false);
-
-    // Aplicar filtro de busca textual
-    if ($request->has('search') && $request->search) {
-        $searchTerms = array_filter(explode(' ', trim($request->search)));
-        $unidadesQuery->where(function ($query) use ($searchTerms) {
-            foreach ($searchTerms as $term) {
-                $query->where(function ($subQuery) use ($term) {
-                    $subQuery->whereRaw('LOWER(unidades.nome) LIKE ?', ['%' . strtolower($term) . '%'])
-                             ->orWhereRaw('LOWER(unidades.cidade) LIKE ?', ['%' . strtolower($term) . '%'])
-                             ->orWhereRaw('LOWER(unidades.srpc) LIKE ?', ['%' . strtolower($term) . '%'])
-                             ->orWhereRaw('LOWER(unidades.dspc) LIKE ?', ['%' . strtolower($term) . '%']);
-                });
-            }
-        });
-    }
-
-    // Aplicar filtro por status
-    if ($request->has('status') && $request->status !== 'todos') {
-        $unidadesQuery->where('unidades.status', $request->status);
-    }
-
-    if ($request->has('nota') && $request->nota !== 'todas') {
-        $notaFiltro = (string)$request->nota;
-        
-        // Definir os intervalos de notas por classificação de letra
-        $intervalos = [
-            '10.0' => [9.5, 10.0],  // A+ (9.5-10.0)
-            '9.0' => [9.0, 9.4],    // A (9.0-9.4)
-            '8.0' => [8.0, 8.9],    // B (8.0-8.9)
-            '7.0' => [7.0, 7.9],    // C (7.0-7.9)
-            '6.0' => [6.0, 6.9],    // D (6.0-6.9)
-            '5.0' => [5.0, 5.9],    // E (5.0-5.9)
-            '4.0' => [4.0, 4.9],    // F (4.0-4.9)
-            '3.0' => [3.0, 3.9],    // G (3.0-3.9)
-            '2.0' => [2.0, 2.9],    // H (2.0-2.9)
-            '1.0' => [1.0, 1.9],    // I (1.0-1.9)
-            '0.0' => [0.0, 0.9],    // J (0.0-0.9)
-        ];
-        
-        // Verificar se a nota de filtro existe nos intervalos definidos
-        if (isset($intervalos[$notaFiltro])) {
-            list($min, $max) = $intervalos[$notaFiltro];
-            $unidadesQuery->whereBetween('avaliacoes_unidade.nota_geral', [$min, $max]);
+    {
+        if (!Auth::user()->isSuperAdmin) {
+            abort(403, 'Ação não autorizada.');
         }
+
+        $unidadesQuery = Unidade::with(['team']);
+
+        // Aplicar filtros de busca
+        if ($request->has('search') && $request->search) {
+            $searchTerms = array_filter(explode(' ', trim($request->search)));
+            $unidadesQuery->where(function ($query) use ($searchTerms) {
+                foreach ($searchTerms as $term) {
+                    $query->where(function ($subQuery) use ($term) {
+                        $subQuery->whereRaw('LOWER(nome) LIKE ?', ['%' . strtolower($term) . '%'])
+                            ->orWhereRaw('LOWER(cidade) LIKE ?', ['%' . strtolower($term) . '%'])
+                            ->orWhereRaw('LOWER(srpc) LIKE ?', ['%' . strtolower($term) . '%'])
+                            ->orWhereRaw('LOWER(dspc) LIKE ?', ['%' . strtolower($term) . '%']);
+                    });
+                }
+            });
+        }
+
+        // Aplicar filtros de status
+        if ($request->has('status') && $request->status !== 'todos') {
+            if ($request->status === '') {
+                // Filtrar por "Sem Cadastro" (is_draft = true)
+                $unidadesQuery->where('is_draft', true);
+            } else {
+                $unidadesQuery->where('status', $request->status);
+            }
+        }
+
+        // Aplicar filtros de nota
+        if ($request->has('nota') && $request->nota !== 'todas') {
+            $notaMin = (float) $request->nota;
+            if ($notaMin == 10.0) {
+                $unidadesQuery->whereBetween('nota_geral', [9.5, 10.0]);
+            } elseif ($notaMin == 9.0) {
+                $unidadesQuery->whereBetween('nota_geral', [9.0, 9.4]);
+            } elseif ($notaMin == 0.0) {
+                $unidadesQuery->whereBetween('nota_geral', [0.0, 0.9]);
+            } else {
+                $unidadesQuery->whereBetween('nota_geral', [$notaMin, $notaMin + 0.9]);
+            }
+        }
+
+        // Adicionar informações sobre unidades em rascunho (is_draft = true)
+        $unidadesDraftQuery = Unidade::with(['team'])
+            ->where('is_draft', true);
+
+        // Aplicar mesmos filtros de busca para rascunhos se necessário
+        if ($request->has('search') && $request->search && $request->status === '') {
+            $searchTerms = array_filter(explode(' ', trim($request->search)));
+            $unidadesDraftQuery->where(function ($query) use ($searchTerms) {
+                foreach ($searchTerms as $term) {
+                    $query->where(function ($subQuery) use ($term) {
+                        $subQuery->whereRaw('LOWER(nome) LIKE ?', ['%' . strtolower($term) . '%'])
+                            ->orWhereRaw('LOWER(cidade) LIKE ?', ['%' . strtolower($term) . '%'])
+                            ->orWhereRaw('LOWER(srpc) LIKE ?', ['%' . strtolower($term) . '%'])
+                            ->orWhereRaw('LOWER(dspc) LIKE ?', ['%' . strtolower($term) . '%']);
+                    });
+                }
+            });
+        }
+
+        // Combinar resultados se filtro de status for "Sem Cadastro"
+        if ($request->status === '') {
+            $unidades = $unidadesDraftQuery->orderBy('nome')
+                ->paginate(10)
+                ->through(function ($unidade) {
+                    return [
+                        'id' => $unidade->id,
+                        'nome' => $unidade->nome ?? 'N/A',
+                        'cidade' => $unidade->cidade ?? 'N/A',
+                        'srpc' => $unidade->srpc ?? 'N/A',
+                        'dspc' => $unidade->dspc ?? 'N/A',
+                        'status' => null, // Rascunho não tem status
+                        'status_formatado' => 'Sem Cadastro',
+                        'nota_geral' => null,
+                        'is_draft' => $unidade->is_draft,
+                        'created_at' => $unidade->created_at->format('d/m/Y'),
+                        'team' => $unidade->team ? [
+                            'id' => $unidade->team->id,
+                            'name' => $unidade->team->name,
+                        ] : null,
+                    ];
+                });
+        } else {
+            $unidades = $unidadesQuery->orderBy('nome')
+                ->paginate(10)
+                ->through(function ($unidade) {
+                    return [
+                        'id' => $unidade->id,
+                        'nome' => $unidade->nome ?? 'N/A',
+                        'cidade' => $unidade->cidade ?? 'N/A',
+                        'srpc' => $unidade->srpc ?? 'N/A',
+                        'dspc' => $unidade->dspc ?? 'N/A',
+                        'status' => $unidade->status,
+                        'status_formatado' => $unidade->status_formatado,
+                        'nota_geral' => $unidade->nota_geral,
+                        'is_draft' => $unidade->is_draft,
+                        'created_at' => $unidade->created_at->format('d/m/Y'),
+                        'team' => $unidade->team ? [
+                            'id' => $unidade->team->id,
+                            'name' => $unidade->team->name,
+                        ] : null,
+                    ];
+                });
+        }
+
+        // Preservar os parâmetros de consulta na paginação
+        $unidades->appends($request->all());
+
+        // Opções para os filtros
+        $statusOptions = [
+            ['key' => 'todos', 'name' => 'Todos'],
+            ['key' => 'pendente_avaliacao', 'name' => 'Pendente de Avaliação'],
+            ['key' => 'aprovada', 'name' => 'Aprovado'],
+            ['key' => 'reprovada', 'name' => 'Reprovado'],
+            ['key' => 'em_revisao', 'name' => 'Em Revisão'],
+            ['key' => '', 'name' => 'Sem Cadastro']
+        ];
+
+        $notaOptions = [
+            ['key' => 'todas', 'name' => 'Todas'],
+            ['key' => '10.0', 'name' => '9.5~10.0 (A+)'],
+            ['key' => '9.0', 'name' => '9.0~9.4 (A)'],
+            ['key' => '8.0', 'name' => '8.0~8.9 (B)'],
+            ['key' => '7.0', 'name' => '7.0~7.9 (C)'],
+            ['key' => '6.0', 'name' => '6.0~6.9 (D)'],
+            ['key' => '5.0', 'name' => '5.0~5.9 (E)'],
+            ['key' => '4.0', 'name' => '4.0~4.9 (F)'],
+            ['key' => '3.0', 'name' => '3.0~3.9 (G)'],
+            ['key' => '2.0', 'name' => '2.0~2.9 (H)'],
+            ['key' => '1.0', 'name' => '1.0~1.9 (I)'],
+            ['key' => '0.0', 'name' => '0.0~0.9 (J)'],
+        ];
+
+        return Inertia::render('Admin/Unidades/Index', [
+            'unidades' => $unidades,
+            'filters' => [
+                'search' => $request->search ?? '',
+                'status' => $request->status ?? 'todos',
+                'nota' => $request->nota ?? 'todas',
+            ],
+            'statusOptions' => $statusOptions,
+            'notaOptions' => $notaOptions,
+        ]);
     }
-
-    // Selecionar colunas adicionais da última avaliação
-    $unidadesQuery->addSelect([
-        'avaliacoes_unidade.nota_geral',
-        'avaliacoes_unidade.nota_estrutura',
-        'avaliacoes_unidade.nota_acessibilidade',
-        'avaliacoes_unidade.created_at as avaliacao_data'
-    ]);
-
-    // Paginar resultados (10 por página)
-    $unidades = $unidadesQuery->orderBy('unidades.status')
-        ->orderBy('unidades.created_at', 'desc')
-        ->paginate(10)
-        ->through(function ($unidade) {
-            return [
-                'id' => $unidade->id,
-                'nome' => $unidade->nome,
-                'codigo' => $unidade->codigo,
-                'cidade' => $unidade->cidade ?? 'N/A',
-                'srpc' => $unidade->srpc ?? 'N/A',
-                'dspc' => $unidade->dspc ?? 'N/A',
-                'status' => $unidade->status,
-                'status_formatado' => $unidade->status_formatado,
-                'nota_geral' => $unidade->nota_geral,
-                'created_at' => $unidade->created_at->format('d/m/Y'),
-                'team' => $unidade->team ? [
-                    'id' => $unidade->team->id,
-                    'name' => $unidade->team->name,
-                ] : null,
-            ];
-        });
-
-    // Preservar os parâmetros de consulta na paginação
-    $unidades->appends($request->all());
-
-    // Opções para os filtros
-    $statusOptions = [
-        ['key' => 'todos', 'name' => 'Todos'],
-        ['key' => 'pendente_avaliacao', 'name' => 'Pendente de Avaliação'],
-        ['key' => 'aprovada', 'name' => 'Aprovado'],
-        ['key' => 'reprovada', 'name' => 'Reprovado'],
-        ['key' => 'em_revisao', 'name' => 'Em Revisão'],
-        ['key' => '', 'name' => 'Sem Cadastro']
-    ];
-
-    $notaOptions = [
-        ['key' => 'todas', 'name' => 'Todas'],
-        ['key' => '10.0', 'name' => '9.5~10.0 (A+)'], /* 9.5-10.0 (A+) - Excelente */
-        ['key' => '9.0', 'name' => '9.0~9.4 (A)'], /* 9.0-9.4 (A) - Excelente */
-        ['key' => '8.0', 'name' => '8.0~8.9 (B)'],
-        ['key' => '7.0', 'name' => '7.0~7.9 (C)'],
-        ['key' => '6.0', 'name' => '6.0~6.9 (D)'], /* 6.0-6.9 (D) - Satisfatório */
-        ['key' => '5.0', 'name' => '5.0~5.9 (E)'],
-        ['key' => '4.0', 'name' => '4.0~4.9 (F)'],
-        ['key' => '3.0', 'name' => '3.0~3.9 (G)'],
-        ['key' => '2.0', 'name' => '2.0~2.9 (H)'],
-        ['key' => '1.0', 'name' => '1.0~1.9 (I)'], /* 1.0-1.9 (I) - Péssimo */
-        ['key' => '0.0', 'name' => '0.0~0.9 (J)'], /* 0.0-0.9 (J) - Crítico */
-    ];
-
-    return Inertia::render('Admin/Unidades/Index', [
-        'unidades' => $unidades,
-        'filters' => [
-            'search' => $request->search ?? '',
-            'status' => $request->status ?? 'todos',
-            'nota' => $request->nota ?? 'todas',
-        ],
-        'statusOptions' => $statusOptions,
-        'notaOptions' => $notaOptions,
-    ]);
-}
 
     /**
      * Display the specified resource.

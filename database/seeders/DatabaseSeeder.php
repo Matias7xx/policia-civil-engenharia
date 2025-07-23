@@ -23,7 +23,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MidiaTiposSeeder::class,
             UserSeeder::class,
-            OrgaosSeeder::class
+            OrgaosSeeder::class,
+            UnidadeSeeder::class,
         ]);
     }
 }

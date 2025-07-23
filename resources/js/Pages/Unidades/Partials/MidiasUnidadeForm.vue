@@ -8,6 +8,10 @@ import { useToast } from '@/Composables/useToast';
 
 const toast = useToast();
 
+const BATCH_SIZE = 10; // 10 arquivos (fotos) por lote
+const MAX_BATCH_SIZE_MB = 150; // 150MB por lote
+const MAX_TOTAL_FILES = 129; // Máximo teórico de fotos (43 campos × 3)
+
 const props = defineProps({
     unidade: Object,
     midias: Array,
@@ -24,7 +28,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['saved', 'midiasUpdated']); // Adicionar novo emit
+const emit = defineEmits(['saved', 'midiasUpdated']);
 
 const isMounted = ref(false);
 const isLoading = ref(true);
@@ -34,8 +38,22 @@ const midiasToRemove = ref([]);
 const midiasToReplace = ref({});
 const ambientesNaoPossui = ref({});
 
-// Reactive para mídias atuais - permitir atualização dinâmica
+// Reactive para mídias - permitir atualização dinâmica
 const midiasAtuais = ref([]);
+
+// Estados para feedback visual
+const isUploading = ref(false);
+const uploadProgress = ref({
+    currentBatch: 0,
+    totalBatches: 0,
+    currentFile: 0,
+    totalFiles: 0,
+    currentBatchProgress: 0,
+    overallProgress: 0,
+    currentFileName: '',
+    estimatedTimeLeft: '',
+    startTime: null
+});
 
 onMounted(async () => {
     isMounted.value = true;
@@ -151,6 +169,271 @@ const refreshMidias = async () => {
     }
 };
 
+// Funções para upload em lotes
+const calculateBatchSize = (files) => {
+    // Primeiro, agrupar por tipo para manter fotos do mesmo tipo juntas
+    const filesByType = {};
+    files.forEach(file => {
+        if (!filesByType[file.midiaTipoId]) {
+            filesByType[file.midiaTipoId] = [];
+        }
+        filesByType[file.midiaTipoId].push(file);
+    });
+    
+    const batches = [];
+    let currentBatch = [];
+    let currentSizeMB = 0;
+    
+    // Processar cada tipo completo por vez
+    Object.values(filesByType).forEach(typeFiles => {
+        typeFiles.forEach(file => {
+            const fileSizeMB = file.file.size / (1024 * 1024);
+            
+            // Se exceder limites do lote, criar novo lote
+            if (currentBatch.length >= BATCH_SIZE || 
+                (currentSizeMB + fileSizeMB) > MAX_BATCH_SIZE_MB) {
+                if (currentBatch.length > 0) {
+                    batches.push(currentBatch);
+                    currentBatch = [];
+                    currentSizeMB = 0;
+                }
+            }
+            
+            currentBatch.push(file);
+            currentSizeMB += fileSizeMB;
+        });
+    });
+    
+    // Adicionar último lote se não estiver vazio
+    if (currentBatch.length > 0) {
+        batches.push(currentBatch);
+    }
+    
+    return batches;
+};
+
+const uploadInBatches = async (allFiles) => {
+    const batches = calculateBatchSize(allFiles);
+    let uploadedCount = 0;
+    
+    // Inicializar estado de upload
+    isUploading.value = true;
+    uploadProgress.value = {
+        currentBatch: 0,
+        totalBatches: batches.length,
+        currentFile: 0,
+        totalFiles: allFiles.length,
+        currentBatchProgress: 0,
+        overallProgress: 0,
+        currentFileName: '',
+        estimatedTimeLeft: 'Calculando...',
+        startTime: Date.now()
+    };
+    
+    toast.info(`Iniciando upload de ${allFiles.length} imagens em ${batches.length} lote(s)...`, { duration: 2000 });
+    
+    try {
+        for (let i = 0; i < batches.length; i++) {
+            const batch = batches[i];
+            const batchFormData = new FormData();
+            
+            // Atualizar progresso do lote
+            uploadProgress.value.currentBatch = i + 1;
+            uploadProgress.value.currentBatchProgress = 0;
+            
+            // Dados base sempre presentes
+            batchFormData.append('unidade_id', form.unidade_id);
+            
+            // NOVO: Sinalizar que é upload em lotes
+            batchFormData.append('is_batch_upload', '1');
+            batchFormData.append('total_files_in_batch', allFiles.length.toString());
+            
+            // Adicionar dados de "não possui ambiente" sempre
+            Object.entries(ambientesNaoPossui.value).forEach(([tipoId, naoPossui]) => {
+                batchFormData.append(`ambientes_nao_possui[${tipoId}]`, naoPossui ? "1" : "0");
+            });
+            
+            // Adicionar remoções apenas no primeiro lote
+            if (i === 0 && midiasToRemove.value.length > 0) {
+                midiasToRemove.value.forEach((id, index) => {
+                    batchFormData.append(`midia_remover[${index}]`, id);
+                });
+            }
+            
+            // Adicionar arquivos do lote atual
+            let fileIndex = 0;
+            batch.forEach(fileData => {
+                batchFormData.append(`files[${fileIndex}]`, fileData.file);
+                batchFormData.append(`midia_tipos[${fileIndex}]`, fileData.midiaTipoId);
+                
+                if (midiasToReplace.value[fileData.midiaTipoId]) {
+                    batchFormData.append(`midia_replace[${fileIndex}]`, "1");
+                }
+                
+                fileIndex++;
+            });
+            
+            // Enviar lote com timeout aumentado
+            const response = await axios.post(
+                props.isNew ? route('midias.store') : route('midias.update', props.unidade.id),
+                batchFormData,
+                {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    timeout: 300000, // 5 minutos de timeout
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        uploadProgress.value.currentBatchProgress = percentCompleted;
+                        
+                        // Calcular progresso geral
+                        const batchesCompleted = i;
+                        const currentBatchContribution = (percentCompleted / 100) * (batch.length / allFiles.length);
+                        const completedBatchesContribution = (uploadedCount / allFiles.length);
+                        uploadProgress.value.overallProgress = Math.round((completedBatchesContribution + currentBatchContribution) * 100);
+                        
+                        // Calcular tempo estimado
+                        const elapsed = Date.now() - uploadProgress.value.startTime;
+                        const rate = uploadProgress.value.overallProgress / elapsed;
+                        const remaining = (100 - uploadProgress.value.overallProgress) / rate;
+                        
+                        if (remaining > 0 && isFinite(remaining)) {
+                            const minutes = Math.floor(remaining / 60000);
+                            const seconds = Math.floor((remaining % 60000) / 1000);
+                            uploadProgress.value.estimatedTimeLeft = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                        }
+                        
+                        console.log(`Lote ${i + 1}/${batches.length}: ${percentCompleted}% | Geral: ${uploadProgress.value.overallProgress}%`);
+                    }
+                }
+            );
+            
+            if (response.status === 200 || response.status === 201) {
+                uploadedCount += batch.length;
+                uploadProgress.value.currentFile = uploadedCount;
+                
+                // Aguardar um pouco entre lotes
+                if (i < batches.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            } else {
+                throw new Error(`Erro no lote ${i + 1}: ${response.data?.message || 'Erro desconhecido'}`);
+            }
+        }
+        
+        // ÚLTIMO LOTE: Verificar se precisa finalizar (apenas se é rascunho)
+        if (props.unidade?.is_draft === true) {
+            console.log('Finalizando cadastro após upload em lotes...');
+            await finalizarCadastro();
+            return;
+        }
+        
+        // Finalizar upload
+        isUploading.value = false;
+        uploadProgress.value.overallProgress = 100;
+        
+        toast.success(`Sucesso! Todas as ${allFiles.length} imagens foram enviadas.`);
+        
+        // Atualizar mídias e limpar formulário
+        await refreshMidias();
+        clearForm();
+        emit('saved', `${uploadedCount} imagens enviadas com sucesso!`);
+        
+    } catch (error) {
+        isUploading.value = false;
+        
+        console.error('Erro no upload em lotes:', error);
+        
+        let errorMsg = 'Erro ao enviar imagens.';
+        
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            errorMsg = 'Timeout: O envio demorou muito. Tente com menos imagens ou verifique sua conexão.';
+        } else if (error.response?.status === 413) {
+            errorMsg = 'Erro 413: Arquivos muito grandes. Tente reduzir o tamanho das imagens ou envie menos por vez.';
+        } else if (error.response?.status === 422) {
+            // Erros de validação
+            const errors = error.response.data.errors;
+            if (errors) {
+                toast.validationErrors(errors, { showAll: false });
+                return;
+            }
+            errorMsg = error.response.data.message || 'Erro de validação.';
+        } else if (error.response?.data?.message) {
+            errorMsg = error.response.data.message;
+        }
+        
+        toast.error(errorMsg);
+        emit('saved', errorMsg);
+    }
+};
+
+// Finalizar cadastro após upload em lotes
+const finalizarCadastro = async () => {
+    try {
+        // Fazer uma requisição de finalização simples
+        const response = await axios.post(
+            route('midias.update', props.unidade.id),
+            {
+                unidade_id: form.unidade_id,
+                is_batch_upload: '0', // Sinalizar que é finalização
+                _method: 'PUT' // Garantir que seja tratado como update
+            },
+            {
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                timeout: 30000 // 30 segundos para finalização
+            }
+        );
+        
+        if (response.data.redirect) {
+            toast.clear();
+            isUploading.value = false;
+            toast.success('Cadastro finalizado com sucesso! Redirecionando...');
+            
+            // Aguardar um pouco antes de redirecionar
+            setTimeout(() => {
+                window.location.href = response.data.redirect;
+            }, 1500);
+            return;
+        }
+        
+        isUploading.value = false;
+        toast.success('Upload e finalização concluídos com sucesso!');
+        await refreshMidias();
+        clearForm();
+        emit('saved', 'Cadastro finalizado com sucesso!');
+        
+    } catch (error) {
+        isUploading.value = false;
+        console.error('Erro na finalização:', error);
+        
+        let errorMsg = 'Erro ao finalizar cadastro.';
+        if (error.response?.data?.message) {
+            errorMsg = error.response.data.message;
+        }
+        
+        toast.error(errorMsg);
+        emit('saved', errorMsg);
+    }
+};
+
+const clearForm = () => {
+    form.midia_files = {};
+    form.midia_tipos = {};
+    form.midia_replace = {};
+    form.midia_remover = [];
+    midiasToRemove.value = [];
+    midiasToReplace.value = {};
+    previewImages.value = {};
+    
+    midiaTipos.value.forEach(tipo => {
+        const input = document.getElementById(`file-${tipo.id}`);
+        if (input) {
+            input.value = '';
+        }
+    });
+};
+
 const validateQuantityPerType = () => {
     const errors = [];
     
@@ -173,7 +456,6 @@ const validateQuantityPerType = () => {
         }
         
         //Só validar se realmente há fotos (novas ou existentes)
-        // Não exigir mínimo para tipos que não têm fotos nenhuma
         if (finalCount > 0) {
             if (finalCount < 2) {
                 errors.push(`${formatarNomeTipoMidia(tipo.nome)}: mínimo de 2 fotos (atual: ${finalCount})`);
@@ -400,36 +682,49 @@ const saveOrFinalizeMidias = () => {
             }
         });
     
-    if (missingRequiredTypes.length > 0 || missingAcessibilidadeTypes.length > 0 || missingAreaInternaTypes.length > 0) {
-        let errorMessage = '';
+    // Preparar lista de todos os arquivos
+    const allFiles = [];
+    Object.entries(form.midia_files).forEach(([midiaTipoId, files]) => {
+        if (!files || files.length === 0) return;
         
-        if (missingRequiredTypes.length > 0) {
-            errorMessage += `É obrigatório incluir fotos para: ${missingRequiredTypes.join(', ')}.`;
-        }
-        
-        if (missingAcessibilidadeTypes.length > 0) {
-            if (errorMessage) errorMessage += ' ';
-            errorMessage += `É obrigatório incluir fotos dos recursos de acessibilidade: ${missingAcessibilidadeTypes.join(', ')}.`;
-        }
-        
-        if (missingAreaInternaTypes.length > 0) {
-            if (errorMessage) errorMessage += ' ';
-            errorMessage += `Para área interna, é necessário incluir uma foto OU marcar "Não possui" em: ${missingAreaInternaTypes.join(', ')}.`;
-        }
-        
-        toast.error(errorMessage);
-        emit('saved', errorMessage);
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('unidade_id', form.unidade_id);
-
-    Object.entries(ambientesNaoPossui.value).forEach(([tipoId, naoPossui]) => {
-        formData.append(`ambientes_nao_possui[${tipoId}]`, naoPossui ? "1" : "0");
+        files.forEach(file => {
+            allFiles.push({
+                file: file,
+                midiaTipoId: parseInt(midiaTipoId)
+            });
+        });
     });
 
-    const hasFiles = Object.keys(form.midia_files).length > 0;
+    const willUseBatches = allFiles.length > 8;
+    const isFinalizing = props.unidade?.is_draft === true;
+    
+    // Validação relaxada para uploads em lotes
+    // Só exigir fotos obrigatórias se for finalização ou upload pequeno
+    if (!willUseBatches || isFinalizing) {
+        if (missingRequiredTypes.length > 0 || missingAcessibilidadeTypes.length > 0 || missingAreaInternaTypes.length > 0) {
+            let errorMessage = '';
+            
+            if (missingRequiredTypes.length > 0) {
+                errorMessage += `É obrigatório incluir fotos para: ${missingRequiredTypes.join(', ')}.`;
+            }
+            
+            if (missingAcessibilidadeTypes.length > 0) {
+                if (errorMessage) errorMessage += ' ';
+                errorMessage += `É obrigatório incluir fotos dos recursos de acessibilidade: ${missingAcessibilidadeTypes.join(', ')}.`;
+            }
+            
+            if (missingAreaInternaTypes.length > 0) {
+                if (errorMessage) errorMessage += ' ';
+                errorMessage += `Para área interna, é necessário incluir uma foto OU marcar "Não possui" em: ${missingAreaInternaTypes.join(', ')}.`;
+            }
+            
+            toast.error(errorMessage);
+            emit('saved', errorMessage);
+            return;
+        }
+    }
+
+    const hasFiles = allFiles.length > 0;
     const hasRemovals = midiasToRemove.value.length > 0;
     const hasNaoPossuiChanges = Object.values(ambientesNaoPossui.value).some(v => v);
     
@@ -440,13 +735,62 @@ const saveOrFinalizeMidias = () => {
         return;
     }
 
+    // Verificar se há muitos arquivos
+    if (allFiles.length > MAX_TOTAL_FILES) {
+        toast.warning(`Você selecionou ${allFiles.length} imagens. O sistema suporta até ${MAX_TOTAL_FILES} fotos (43 campos × 3 fotos cada).\n\nSe necessário, você pode enviar em etapas: primeiro Área Externa, depois Área Interna, depois Acessibilidade.`);
+        return;
+    }
+
+    // Calcular tamanho total estimado
+    const totalSizeMB = allFiles.reduce((sum, file) => sum + (file.file.size / (1024 * 1024)), 0);
+    const maxTotalSizeMB = MAX_TOTAL_FILES * 10; // 10MB por foto × 129 = 1.3GB
+    
+    if (totalSizeMB > maxTotalSizeMB) {
+        toast.warning(`O tamanho total das imagens (${Math.round(totalSizeMB)}MB) excede o limite recomendado de ${maxTotalSizeMB}MB.\n\nTente comprimir as imagens ou enviar em etapas menores.`);
+        return;
+    }
+
+    // Decisão: usar upload em lotes ou processo normal
+    if (willUseBatches) {
+        // Upload em lotes para 9+ arquivos
+        uploadInBatches(allFiles);
+        return;
+    }
+
+    // Para 8 ou menos arquivos, usar o processo normal otimizado
+    const formData = new FormData();
+    formData.append('unidade_id', form.unidade_id);
+    
+    // Sinalizar que NÃO é upload em lotes
+    formData.append('is_batch_upload', '0');
+
+    // Inicializar upload para processo normal
+    isUploading.value = true;
+    uploadProgress.value = {
+        currentBatch: 1,
+        totalBatches: 1,
+        currentFile: 0,
+        totalFiles: allFiles.length,
+        currentBatchProgress: 0,
+        overallProgress: 0,
+        currentFileName: '',
+        estimatedTimeLeft: 'Calculando...',
+        startTime: Date.now()
+    };
+
+    // Dados de "não possui ambiente"
+    Object.entries(ambientesNaoPossui.value).forEach(([tipoId, naoPossui]) => {
+        formData.append(`ambientes_nao_possui[${tipoId}]`, naoPossui ? "1" : "0");
+    });
+
+    // Remoções
     if (midiasToRemove.value.length > 0) {
         midiasToRemove.value.forEach((id, index) => {
             formData.append(`midia_remover[${index}]`, id);
         });
     }
 
-    // Adicionar arquivos
+    // Arquivos
     let fileIndex = 0;
     Object.entries(form.midia_files).forEach(([midiaTipoId, files]) => {
         if (!files || files.length === 0) return;
@@ -463,55 +807,55 @@ const saveOrFinalizeMidias = () => {
         });
     });
 
-    toast.info('Processando alterações nas mídias...', { duration: 0 }); // Duration 0 = não remove automaticamente
-
     const url = props.isNew ? 
         route('midias.store') : 
         route('midias.update', props.unidade.id );
 
     axios.post(url, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000, // 2 minutos para uploads menores
+        onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            uploadProgress.value.currentBatchProgress = percentCompleted;
+            uploadProgress.value.overallProgress = percentCompleted;
+            
+            // Calcular tempo estimado
+            const elapsed = Date.now() - uploadProgress.value.startTime;
+            const rate = percentCompleted / elapsed;
+            const remaining = (100 - percentCompleted) / rate;
+            
+            if (remaining > 0 && isFinite(remaining)) {
+                const minutes = Math.floor(remaining / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                uploadProgress.value.estimatedTimeLeft = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+            }
         }
     })
     .then(async response => {
         if (!isMounted.value) return;
 
-        //Limpar toasts existentes
-        toast.clear();
+        isUploading.value = false;
         
         if (response.status === 200 || response.status === 201) {
             const successMsg = response.data.message || 'Mídias salvas com sucesso!';
-            toast.success(successMsg);
             
-            // Buscar mídias atualizadas ANTES de limpar o formulário
-            await refreshMidias();
-            
-            // Limpar formulário
-            form.midia_files = {};
-            form.midia_tipos = {};
-            form.midia_replace = {};
-            form.midia_remover = [];
-            midiasToRemove.value = [];
-            midiasToReplace.value = {};
-            previewImages.value = {};
-            
-            midiaTipos.value.forEach(tipo => {
-                const input = document.getElementById(`file-${tipo.id}`);
-                if (input) {
-                    input.value = '';
-                }
-            });
-            
-            emit('saved', successMsg);
-
-            // Processar redirecionamento se fornecido pelo backend
+            // Verificar se há redirecionamento (finalização)
             if (response.data.redirect) {
-                toast.info('Redirecionando...');
+                toast.success('Cadastro finalizado com sucesso! Redirecionando...');
+                
+                // Aguardar um pouco antes de redirecionar
                 setTimeout(() => {
                     window.location.href = response.data.redirect;
-                }, 2000);
+                }, 1500);
+                return;
             }
+            
+            toast.success(successMsg);
+            
+            await refreshMidias();
+            clearForm();
+            emit('saved', successMsg);
+
         } else {
             const errorMsg = response.data.message || 'Erro inesperado ao salvar as mídias.';
             toast.error(errorMsg);
@@ -521,12 +865,10 @@ const saveOrFinalizeMidias = () => {
     .catch(error => {
         if (!isMounted.value) return;
         
-        //Limpar toasts existentes e mostrar erro
-        toast.clear();
+        isUploading.value = false;
         
-        let errorMsg = 'Erro ao salvar as mídias. Verifique os arquivos.';
+        let errorMsg = 'Erro ao salvar as mídias.';
         
-        //erros de validação
         if (error.response?.status === 422 && error.response?.data?.errors) {
             toast.validationErrors(error.response.data.errors, { showAll: false });
             return;
@@ -628,9 +970,25 @@ const midiasPorTipo = computed(() => {
 });
 
 const getFileSize = (size) => {
-    if (size < 1024) return `${size} bytes`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    if (!size || size === 0) return '0 bytes';
+    
+    const units = ['bytes', 'KB', 'MB', 'GB'];
+    let unitIndex = 0;
+    let fileSize = size;
+    
+    while (fileSize >= 1024 && unitIndex < units.length - 1) {
+        fileSize /= 1024;
+        unitIndex++;
+    }
+    
+    // Para bytes, não mostrar decimais
+    if (unitIndex === 0) {
+        return `${Math.round(fileSize)} ${units[unitIndex]}`;
+    }
+    
+    // Para KB, MB, GB - mostrar 1 decimal apenas se necessário
+    const rounded = Math.round(fileSize * 10) / 10;
+    return `${rounded % 1 === 0 ? Math.round(rounded) : rounded.toFixed(1)} ${units[unitIndex]}`;
 };
 
 const getTabelas = computed(() => {
@@ -662,6 +1020,7 @@ const getTabelas = computed(() => {
 });
 </script>
 
+
 <template>
     <FormSection @submitted="saveOrFinalizeMidias">
         <template #title>
@@ -670,7 +1029,7 @@ const getTabelas = computed(() => {
 
         <template #description>
             <p class="mt-2 text-sm text-gray-600">
-                Formatos aceitos: JPG, PNG (máx. 10MB) - <strong class="text-blue-600">No mínimo 2 e no máximo 3 fotos por tipo</strong>
+                Formatos aceitos: JPG, PNG (máx. 10MB por foto) - <strong class="text-blue-600">No mínimo 2 e no máximo 3 fotos por tipo</strong>
             </p>
             <p class="mt-2 text-sm text-blue-600">
                 <strong>Para Área Interna:</strong> Inclua fotos OU marque "Não possui" se a unidade não tem esse ambiente.
@@ -923,17 +1282,162 @@ const getTabelas = computed(() => {
         <template #actions>
             <div class="flex items-center justify-between">
                 <PrimaryButton 
-                    :class="{ 'opacity-25': form.processing }" 
-                    :disabled="form.processing || !permissions?.canUpdateTeam || !isEditable"
+                    :class="{ 'opacity-25': form.processing || isUploading }" 
+                    :disabled="form.processing || isUploading || !permissions?.canUpdateTeam || !isEditable"
                     color="gold"
                 >
-                    <svg v-if="form.processing" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <!-- Ícone de loading -->
+                    <svg v-if="form.processing || isUploading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    {{ form.processing ? 'Salvando...' : (props.unidade?.is_draft === true ? 'Salvar e Finalizar' : 'Atualizar Fotos') }}
+                    
+                    <!-- Texto do botão -->
+                    <span v-if="isUploading">
+                        Enviando... {{ uploadProgress.overallProgress }}%
+                    </span>
+                    <span v-else-if="form.processing">
+                        Salvando...
+                    </span>
+                    <span v-else>
+                        {{ props.unidade?.is_draft === true ? 'Salvar e Finalizar' : 'Atualizar Fotos' }}
+                    </span>
                 </PrimaryButton>
             </div>
         </template>
+
+        <template #footer>
+            <p class="text-xs text-gray-500 mt-2">
+                * Campos obrigatórios para Área Externa e Acessibilidade
+            </p>
+        </template>
     </FormSection>
+    <!-- Modal de Progresso de Upload -->
+<div v-if="isUploading" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Overlay -->
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+        <!-- Centralizar modal -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <!-- Modal -->
+        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div>
+                <!-- Ícone de upload -->
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                    <svg class="h-6 w-6 text-blue-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                </div>
+
+                <!-- Título -->
+                <div class="text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-2" id="modal-title">
+                        Enviando Imagens
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Por favor, aguarde enquanto suas imagens são processadas...
+                    </p>
+                </div>
+
+                <!-- Progresso Geral -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                        <span>Progresso Geral</span>
+                        <span>{{ uploadProgress.overallProgress }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div 
+                            class="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out"
+                            :style="{ width: uploadProgress.overallProgress + '%' }"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- Progresso do Lote Atual -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                        <span>Lote {{ uploadProgress.currentBatch }} de {{ uploadProgress.totalBatches }}</span>
+                        <span>{{ uploadProgress.currentBatchProgress }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                            class="bg-green-500 h-2 rounded-full transition-all duration-300 ease-out"
+                            :style="{ width: uploadProgress.currentBatchProgress + '%' }"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- Estatísticas -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <!-- Arquivos -->
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-gray-900">{{ uploadProgress.currentFile }}</div>
+                        <div class="text-xs text-gray-600">de {{ uploadProgress.totalFiles }} arquivos</div>
+                    </div>
+                    
+                    <!-- Tempo Estimado -->
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-gray-900">{{ uploadProgress.estimatedTimeLeft }}</div>
+                        <div class="text-xs text-gray-600">tempo restante</div>
+                    </div>
+                </div>
+
+                <!-- Mensagem de Status -->
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">
+                        <span v-if="uploadProgress.totalBatches > 1">
+                            Processando lote {{ uploadProgress.currentBatch }} de {{ uploadProgress.totalBatches }}...
+                        </span>
+                        <span v-else>
+                            Processando suas imagens...
+                        </span>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Não feche esta janela durante o upload
+                    </p>
+                </div>
+
+                <!-- Barra de animação -->
+                <div class="mt-4">
+                    <div class="flex justify-center">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                            <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                            <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </template>
+
+<style scoped>
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    animation-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+    transform: translate3d(0,0,0);
+  }
+
+  40%, 43% {
+    animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+    transform: translate3d(0, -6px, 0);
+  }
+
+  70% {
+    animation-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
+    transform: translate3d(0, -3px, 0);
+  }
+
+  90% {
+    transform: translate3d(0,-1px,0);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 2s infinite;
+}
+</style>
