@@ -56,6 +56,10 @@ Route::middleware([
 
     // Rota para buscar mídias atualizadas (para o refresh automático)
     Route::get('/unidades/{unidade_id}/midias', [MidiaController::class, 'getMidias'])->name('unidades.midias');
+
+    // API para buscar unidades QUE COMPARTILHAM O MESMO PRÉDIO
+    Route::get('/api/unidades/ativas', [UnidadeController::class, 'getUnidadesAtivas'])
+    ->name('api.unidades.ativas');
     
     // Rotas para visualização de mídias (MinIO)
     Route::get('/midias/{id}/view', [MidiaController::class, 'view'])->name('midias.view');

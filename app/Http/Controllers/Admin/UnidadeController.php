@@ -176,61 +176,75 @@ class UnidadeController extends Controller
      * Display the specified resource.
      */
     public function show(Request $request, $id)
-    {
-        $user = $request->user();
-        if (!RoleHelper::isSuperAdmin($user)) {
-            abort(403, 'Acesso não autorizado');
-        }
+{
+    $user = $request->user();
+    if (!RoleHelper::isSuperAdmin($user)) {
+        abort(403, 'Acesso não autorizado');
+    }
 
-        $unidade = Unidade::with([
-            'team.owner',
-            'avaliacoes.avaliador',
-            'acessibilidade',
-            'informacoes',
-            'midias.midiaTipo',
-            'contratoLocacao',
-            'orgaosCompartilhados',
-        ])->findOrFail($id);
+    $unidade = Unidade::with([
+        'team.owner',
+        'avaliacoes.avaliador',
+        'acessibilidade',
+        'informacoes',
+        'midias.midiaTipo',
+        'contratoLocacao',
+        'orgaosCompartilhados',
+        'unidadesCompartilhadas',
+    ])->findOrFail($id);
 
-        $orgaos = Orgao::all()->map(function ($orgao) {
+    $orgaos = Orgao::all()->map(function ($orgao) {
+        return [
+            'id' => $orgao->id,
+            'nome' => $orgao->nome,
+        ];
+    });
+
+    //(lista de unidades disponíveis)
+    $unidades = Unidade::select('id', 'nome')
+        ->where('id', '!=', $unidade->id) // Excluir a própria unidade
+        ->orderBy('nome')
+        ->get()
+        ->map(function ($unidade) {
             return [
-                'id' => $orgao->id,
-                'nome' => $orgao->nome,
+                'id' => $unidade->id,
+                'nome' => $unidade->nome,
             ];
         });
 
-        // Converte explicitamente para array, forçando a inclusão da relação orgaosCompartilhados
-        $unidadeData = $unidade->toArray();
-        $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray();
+    $unidadeData = $unidade->toArray();
+    $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray();
+    $unidadeData['unidadesCompartilhadas'] = $unidade->unidadesCompartilhadas->toArray(); // ← ADICIONE ESTA LINHA
 
-        return Inertia::render('Admin/Unidades/Show', [
-            'team' => $unidade->team,
-            'unidade' => $unidadeData,
-            'acessibilidade' => $unidade->acessibilidade,
-            'informacoes' => $unidade->informacoes,
-            'midias' => $unidade->midias,
-            'orgaos' => $orgaos,
-            'permissions' => [
-                'canEdit' => RoleHelper::isSuperAdmin($user),
-            ],
-            'avaliacoes' => $unidade->avaliacoes->map(function ($avaliacao) {
-                return [
-                    'id' => $avaliacao->id,
-                    'status' => $avaliacao->status,
-                    'nota_geral' => $avaliacao->nota_geral,
-                    'nota_estrutura' => $avaliacao->nota_estrutura,
-                    'nota_acessibilidade' => $avaliacao->nota_acessibilidade,
-                    'nota_conservacao' => $avaliacao->nota_conservacao,
-                    'observacoes' => $avaliacao->observacoes,
-                    'avaliador' => $avaliacao->avaliador ? [
-                        'name' => $avaliacao->avaliador->name,
-                    ] : null,
-                    'created_at' => $avaliacao->created_at,
-                ];
-            }),
-            'isSuperAdmin' => RoleHelper::isSuperAdmin($user),
-        ]);
-    }
+    return Inertia::render('Admin/Unidades/Show', [
+        'team' => $unidade->team,
+        'unidade' => $unidadeData,
+        'acessibilidade' => $unidade->acessibilidade,
+        'informacoes' => $unidade->informacoes,
+        'midias' => $unidade->midias,
+        'orgaos' => $orgaos,
+        'unidades' => $unidades,
+        'permissions' => [
+            'canEdit' => RoleHelper::isSuperAdmin($user),
+        ],
+        'avaliacoes' => $unidade->avaliacoes->map(function ($avaliacao) {
+            return [
+                'id' => $avaliacao->id,
+                'status' => $avaliacao->status,
+                'nota_geral' => $avaliacao->nota_geral,
+                'nota_estrutura' => $avaliacao->nota_estrutura,
+                'nota_acessibilidade' => $avaliacao->nota_acessibilidade,
+                'nota_conservacao' => $avaliacao->nota_conservacao,
+                'observacoes' => $avaliacao->observacoes,
+                'avaliador' => $avaliacao->avaliador ? [
+                    'name' => $avaliacao->avaliador->name,
+                ] : null,
+                'created_at' => $avaliacao->created_at,
+            ];
+        }),
+        'isSuperAdmin' => RoleHelper::isSuperAdmin($user),
+    ]);
+}
 
     public function updateContrato(Request $request, $id)
     {

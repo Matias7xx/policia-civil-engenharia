@@ -20,6 +20,7 @@ const props = defineProps({
     informacoes: Object,
     midias: Array,
     orgaos: Array,
+    unidades: Array,
     permissions: Object,
 });
 
@@ -168,6 +169,7 @@ const showSuccessMessage = (message) => {
                                     :team="team"
                                     :unidade="unidade"
                                     :orgaos="orgaos"
+                                    :unidades="unidades"
                                     :permissions="permissions"
                                     :is-new="false"
                                     :is-editable="true"

@@ -368,20 +368,24 @@ const uploadInBatches = async (allFiles) => {
 // Finalizar cadastro após upload em lotes
 const finalizarCadastro = async () => {
     try {
-        // Fazer uma requisição de finalização simples
+        // FormData
+        const formData = new FormData();
+        formData.append('unidade_id', form.unidade_id);
+        formData.append('is_batch_upload', '0');
+        
+        // Adicionar dados de "não possui ambiente" sempre
+        Object.entries(ambientesNaoPossui.value).forEach(([tipoId, naoPossui]) => {
+            formData.append(`ambientes_nao_possui[${tipoId}]`, naoPossui ? "1" : "0");
+        });
+        
         const response = await axios.post(
-            route('midias.update', props.unidade.id),
-            {
-                unidade_id: form.unidade_id,
-                is_batch_upload: '0', // Sinalizar que é finalização
-                _method: 'PUT' // Garantir que seja tratado como update
-            },
+            route('midias.store'),
+            formData,
             {
                 headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Content-Type': 'multipart/form-data'
                 },
-                timeout: 30000 // 30 segundos para finalização
+                timeout: 30000
             }
         );
         
@@ -390,7 +394,6 @@ const finalizarCadastro = async () => {
             isUploading.value = false;
             toast.success('Cadastro finalizado com sucesso! Redirecionando...');
             
-            // Aguardar um pouco antes de redirecionar
             setTimeout(() => {
                 window.location.href = response.data.redirect;
             }, 1500);
@@ -1313,7 +1316,7 @@ const getTabelas = computed(() => {
         </template>
     </FormSection>
     <!-- Modal de Progresso de Upload -->
-<div v-if="isUploading" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+<div v-if="isUploading" class="fixed inset-0 z-[9999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <!-- Overlay -->
         <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>

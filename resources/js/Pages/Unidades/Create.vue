@@ -78,6 +78,7 @@ const props = defineProps({
     informacoes: Object,
     midias: Array,
     orgaos: Array,
+    unidades: Array,
     permissions: Object,
 });
 
@@ -102,18 +103,18 @@ const canAccessTab = (tabId) => {
 
 
 // Função para lidar com o evento 'saved' dos componentes filhos
-const handleSaved = (nextTab, tabId, error = null) => {
-    if (error) {
+const handleSaved = (error, nextTab, tabId) => {
+    /* if (error) {
         // Toast de erro
-        toast.error('❌ Erro ao salvar: ' + error);
+        toast.error('❌ : ' + error);
         completedTabs.value[tabId] = false;
         return;
-    }
+    } */
 
     // Se não houver erro, atualizamos o estado de completedTabs
     initializeCompletedTabs();
 
-    // Definir próxima aba com base na aba atual
+    // Definir próxima aba com base na aba atual se nextTab não foi fornecido
     if (!nextTab && tabId) {
         const tabOrder = ['dados-gerais', 'localizacao', 'acessibilidade', 'informacoes', 'midias'];
         const currentIndex = tabOrder.indexOf(tabId);
@@ -134,11 +135,11 @@ const handleSaved = (nextTab, tabId, error = null) => {
 
 // Função para lidar com o salvamento final da aba Mídias
 const handleFinalSave = (nextTab, error = null) => {
-    if (error) {
+    /* if (error) {
         toast.error('❌ Erro ao finalizar cadastro: ' + error);
         completedTabs.value['midias'] = false;
         return;
-    }
+    } */
     
     if (!allTabsCompleted()) {
         toast.error('❌ Todas as abas devem ser preenchidas antes de finalizar o cadastro.');
@@ -263,16 +264,16 @@ const tabProgressClass = computed(() => (tabId) => {
                         </div>
 
                         <!-- Conteúdo das abas -->
-                        <div class="mt-6 transition-all duration-300">
-                            <div v-if="activeTab === 'dados-gerais'" class="animate-fade-in">
+                        <div v-if="activeTab === 'dados-gerais'" class="animate-fade-in">
                                 <UnidadeDetailsForm
                                     :team="team"
                                     :unidade="unidade"
                                     :orgaos="orgaos"
+                                    :unidades="unidades"
                                     :permissions="permissions"
                                     :is-new="!unidade?.id"
                                     :is-editable="unidade?.is_draft ?? true"
-                                    @saved="(nextTab, error) => handleSaved(nextTab, 'dados-gerais', error)"
+                                    @saved="(error, nextTab) => handleSaved(error, nextTab, 'dados-gerais')"
                                 />
                             </div>
 
@@ -283,7 +284,7 @@ const tabProgressClass = computed(() => (tabId) => {
                                     :permissions="permissions"
                                     :is-new="!unidade?.id"
                                     :is-editable="unidade?.is_draft ?? true"
-                                    @saved="(nextTab, error) => handleSaved(nextTab, 'localizacao', error)"
+                                    @saved="(error, nextTab) => handleSaved(error, nextTab, 'localizacao')"
                                 />
                             </div>
 
@@ -291,11 +292,11 @@ const tabProgressClass = computed(() => (tabId) => {
                                 <AcessibilidadeForm
                                     :team="team"
                                     :unidade="unidade"
-                                    :acessibilidade="acessibilidade"
+                                    :acessibilidades="acessibilidade"
                                     :permissions="permissions"
                                     :is-new="!unidade?.id"
                                     :is-editable="unidade?.is_draft ?? true"
-                                    @saved="(nextTab, error) => handleSaved(nextTab, 'acessibilidade', error)"
+                                    @saved="(error, nextTab) => handleSaved(error, nextTab, 'acessibilidade')"
                                 />
                             </div>
 
@@ -307,7 +308,7 @@ const tabProgressClass = computed(() => (tabId) => {
                                     :permissions="permissions"
                                     :is-new="!unidade?.id"
                                     :is-editable="unidade?.is_draft ?? true"
-                                    @saved="(nextTab, error) => handleSaved(nextTab, 'informacoes', error)"
+                                    @saved="(error, nextTab) => handleSaved(error, nextTab, 'informacoes')"
                                 />
                             </div>
 
@@ -318,9 +319,8 @@ const tabProgressClass = computed(() => (tabId) => {
                                     :acessibilidade="acessibilidade"
                                     :permissions="permissions"
                                     :is-editable="unidade?.is_draft ?? true"
-                                    @saved="handleFinalSave"
+                                    @saved="(error, nextTab) => handleFinalSave(nextTab, error)"
                                 />
-                            </div>
                         </div>
                     </div>
                 </div>

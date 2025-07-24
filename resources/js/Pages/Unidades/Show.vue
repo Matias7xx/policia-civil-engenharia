@@ -10,6 +10,7 @@ const props = defineProps({
     informacoes: Object,
     midias: Array,
     orgaos: Array,
+    unidades: Array,
     permissions: Object,
     userPermissions: Object,
 });
@@ -116,7 +117,6 @@ const formatarNomeTipoMidia = (nome) => {
     return nome.replace('foto_', '').replace(/_/g, ' ');
 };
 
-const orgaosCompartilhados = computed(() => props.unidade?.orgaosCompartilhados || []);
 const page = usePage();
 const activeTab = ref('dados-gerais');
 const flashMessage = ref(null);
@@ -379,15 +379,34 @@ const formatarTelefones = computed(() => {
                             <!-- Seção de Compartilhamento com Unidades -->
                             <div v-if="unidade?.imovel_compartilhado_unidades" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Compartilhamento com Unidades Policiais</h3>
-                                <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                
+                                <!-- Unidades selecionadas via dropdown -->
+                                <div v-if="unidade.unidadesCompartilhadas && unidade.unidadesCompartilhadas.length > 0" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow mb-4">
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Unidades Policiais que compartilham o imóvel:</dt>
+                                    <dd class="mt-1 flex flex-wrap gap-2">
+                                        <span 
+                                            v-for="unidade_comp in unidade.unidadesCompartilhadas" 
+                                            :key="unidade_comp.id"
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                                        >
+                                            {{ unidade_comp.nome || 'Sem nome' }}
+                                        </span>
+                                    </dd>
+                                </div>
+                                
+                                <!-- Descrição manual das unidades -->
+                                <div v-if="unidade.imovel_compartilhado_unidades_texto?.trim()" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Descrição das unidades que compartilham o imóvel:</dt>
+                                    <dd class="mt-1 text-gray-900">
+                                        {{ unidade.imovel_compartilhado_unidades_texto }}
+                                    </dd>
+                                </div>
+                                
+                                <!-- Caso não tenha nenhuma informação -->
+                                <div v-if="(!unidade.unidadesCompartilhadas || unidade.unidadesCompartilhadas.length === 0) && !unidade.imovel_compartilhado_unidades_texto?.trim()" class="bg-white p-3 rounded-md shadow-sm">
                                     <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Unidades que compartilham o imóvel:</dt>
-                                    <dd class="mt-1">
-                                        <span v-if="!unidade.imovel_compartilhado_unidades_texto?.trim()" class="text-gray-600">
-                                            Não informado
-                                        </span>
-                                        <span v-else class="text-gray-900">
-                                            {{ unidade.imovel_compartilhado_unidades_texto }}
-                                        </span>
+                                    <dd class="mt-1 text-gray-600">
+                                        Não informado
                                     </dd>
                                 </div>
                             </div>
@@ -405,7 +424,7 @@ const formatarTelefones = computed(() => {
                                             v-else
                                             v-for="orgao in unidade.orgaosCompartilhados" 
                                             :key="orgao.id"
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
                                         >
                                             {{ orgao.nome || 'Sem nome' }}
                                         </span>

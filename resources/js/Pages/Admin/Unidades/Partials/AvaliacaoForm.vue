@@ -6,7 +6,10 @@ import FormSection from '@/Components/FormSection.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import { ArrowPathIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline';
+import { ArrowPathIcon, ClipboardDocumentListIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import { useToast } from '@/Composables/useToast';
+
+const toast = useToast();
 
 const props = defineProps({
     unidade: {
@@ -26,6 +29,10 @@ const props = defineProps({
         default: true
     }
 });
+
+// Estado para controlar se uma avaliação foi salva recentemente
+const recentlySaved = ref(false);
+const showNewEvaluationPrompt = ref(false);
 
 // Valores reativos para os controles deslizantes
 const notaGeral = ref(props.avaliacao?.nota_geral || 5.0);
@@ -57,6 +64,13 @@ const submitAvaliacao = () => {
         form.post(route('admin.unidades.avaliar', unidadeId), {
             errorBag: 'avaliacaoUnidade',
             preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Avaliação salva com sucesso.');
+                handleSuccessfulSave();
+            },
+            onError: () => {
+                toast.error('Erro ao salvar avaliação.');
+            },
         });
     } else {
         // Verificar se avaliacao.id existe
@@ -68,8 +82,26 @@ const submitAvaliacao = () => {
         form.put(route('admin.avaliacoes.update', avaliacaoId), {
             errorBag: 'avaliacaoUnidade',
             preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Avaliação atualizada com sucesso.');
+                handleSuccessfulSave();
+            },
+            onError: () => {
+                toast.error('Erro ao atualizar avaliação.');
+            },
         });
     }
+};
+
+// Função para tratar o sucesso no salvamento
+const handleSuccessfulSave = () => {
+    recentlySaved.value = true;
+    showNewEvaluationPrompt.value = true;
+    
+    // Esconder a mensagem após 5 segundos
+    setTimeout(() => {
+        showNewEvaluationPrompt.value = false;
+    }, 5000);
 };
 
 // Redefinir formulário para valores iniciais
@@ -79,6 +111,26 @@ const resetForm = () => {
     notaAcessibilidade.value = props.avaliacao?.nota_acessibilidade || 5.0;
     form.observacoes = props.avaliacao?.observacoes || '';
     form.status = props.avaliacao?.status || 'pendente_avaliacao';
+    
+    // Resetar estados de controle
+    recentlySaved.value = false;
+    showNewEvaluationPrompt.value = false;
+};
+
+// iniciar uma nova avaliação
+const startNewEvaluation = () => {
+    // Limpar valores para uma nova avaliação
+    notaGeral.value = 5.0;
+    notaEstrutura.value = 5.0;
+    notaAcessibilidade.value = 5.0;
+    form.observacoes = '';
+    form.status = 'pendente_avaliacao';
+    
+    // Resetar estados
+    recentlySaved.value = false;
+    showNewEvaluationPrompt.value = false;
+    
+    toast.info('Formulário preparado para nova avaliação.');
 };
 
 // Funções auxiliares para notas
@@ -142,11 +194,33 @@ const getNoteTooltip = (nota) => {
     <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
       <h3 class="text-xl font-semibold text-gray-900 flex items-center">
          <ClipboardDocumentListIcon class="w-5 h-5 mr-2 text-gray-600" />
-        Nova Avaliação
+        {{ recentlySaved && props.isNew ? 'Avaliação Realizada' : 'Nova Avaliação' }}
       </h3>
     </div>
 
     <div class="w-full mx-auto">
+
+        <!-- Alerta de sucesso após salvamento -->
+        <div v-if="showNewEvaluationPrompt" class="bg-green-50 border border-green-200 p-4 rounded-lg mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-green-700 font-medium">
+                        {{ props.isNew ? 'Avaliação salva com sucesso!' : 'Avaliação atualizada com sucesso!' }}
+                    </p>
+                </div>
+                <button 
+                    v-if="props.isNew"
+                    @click="startNewEvaluation"
+                    class="inline-flex items-center px-3 py-1 border border-green-300 rounded-md text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+                >
+                    <PlusIcon class="w-4 h-4 mr-1" />
+                    Nova Avaliação
+                </button>
+            </div>
+        </div>
 
         <div v-if="unidade.status !== 'aprovada'" class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg space-y-6">
             <p class="text-yellow-700 text-center">
@@ -177,6 +251,7 @@ const getNoteTooltip = (nota) => {
                                 max="10"
                                 step="0.1"
                                 class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                :disabled="recentlySaved && props.isNew"
                             />
                             <div class="flex justify-between text-xs text-gray-600 mt-1">
                                 <span>1</span>
@@ -208,6 +283,7 @@ const getNoteTooltip = (nota) => {
                                 max="10"
                                 step="0.1"
                                 class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                :disabled="recentlySaved && props.isNew"
                             />
                             <div class="flex justify-between text-xs text-gray-600 mt-1">
                                 <span>1</span>
@@ -239,6 +315,7 @@ const getNoteTooltip = (nota) => {
                                 max="10"
                                 step="0.1"
                                 class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                :disabled="recentlySaved && props.isNew"
                             />
                             <div class="flex justify-between text-xs text-gray-600 mt-1">
                                 <span>1</span>
@@ -272,6 +349,7 @@ const getNoteTooltip = (nota) => {
                         class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                         rows="4"
                         placeholder="Insira suas observações, recomendações e justificativas para a avaliação"
+                        :disabled="recentlySaved && props.isNew"
                     ></textarea>
                     <p class="text-xs text-gray-500 mt-1">
                         Descreva os pontos fortes e fracos, bem como recomendações específicas para melhoria.
@@ -286,16 +364,28 @@ const getNoteTooltip = (nota) => {
                     type="button" 
                     class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition me-3"
                     @click="resetForm"
+                    :disabled="form.processing"
                 >
                     <ArrowPathIcon class="h-4 w-4 mr-1" />
                     Redefinir
                 </button>
-                
-                <ActionMessage :on="form.recentlySuccessful" class="me-3">
-                    Avaliação salva com sucesso.
-                </ActionMessage>
 
-                <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing" color="gold">
+                <!-- Botão Nova Avaliação (aparece após salvar) -->
+                <button 
+                    v-if="recentlySaved && props.isNew"
+                    type="button"
+                    class="inline-flex items-center px-3 py-2 border border-green-300 rounded-md font-semibold text-xs text-green-700 uppercase tracking-widest shadow-sm bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition me-3"
+                    @click="startNewEvaluation"
+                >
+                    <PlusIcon class="h-4 w-4 mr-1" />
+                    Nova Avaliação
+                </button>
+
+                <PrimaryButton 
+                    :class="{ 'opacity-25': form.processing || (recentlySaved && props.isNew) }" 
+                    :disabled="form.processing || (recentlySaved && props.isNew)" 
+                    color="gold"
+                >
                     {{ props.isNew ? 'Salvar Avaliação' : 'Atualizar Avaliação' }}
                 </PrimaryButton>
             </div>
@@ -394,5 +484,17 @@ input[type=range]:focus::-ms-fill-lower {
 }
 input[type=range]:focus::-ms-fill-upper {
   background: #E5E7EB;
+}
+
+/* Estilo para campos desabilitados */
+input[type=range]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f9fafb;
 }
 </style>

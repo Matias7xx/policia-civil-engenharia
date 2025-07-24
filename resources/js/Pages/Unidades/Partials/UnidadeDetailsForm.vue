@@ -12,33 +12,45 @@ import { debounce } from 'lodash';
 import { useToast } from '@/Composables/useToast';
 
 const toast = useToast();
-
 const emit = defineEmits(['saved']);
 
 const props = defineProps({
     team: Object,
     unidade: Object,
     orgaos: Array,
+    unidades: Array, 
     permissions: Object,
     isNew: Boolean,
     isEditable: Boolean,
 });
 
-// Inicializar os IDs dos órgãos compartilhados
-const getInitialOrgaoIds = () => {
-    if (!props.unidade?.orgaosCompartilhados?.length) {
-        return [];
+const persistentState = ref({
+    imovel_compartilhado_orgao: props.unidade?.imovel_compartilhado_orgao || false,
+    imovel_compartilhado_orgao_ids: [],
+    imovel_compartilhado_unidades: props.unidade?.imovel_compartilhado_unidades || false,
+    imovel_compartilhado_unidades_ids: [],
+    imovel_compartilhado_unidades_texto: props.unidade?.imovel_compartilhado_unidades_texto || '',
+});
+
+// Inicializar IDs dos órgãos compartilhados
+const initializeOrgaoIds = () => {
+    if (props.unidade?.orgaosCompartilhados?.length) {
+        persistentState.value.imovel_compartilhado_orgao_ids = props.unidade.orgaosCompartilhados.map(orgao => Number(orgao.id));
     }
-    
-    const ids = props.unidade.orgaosCompartilhados.map(orgao => {
-        const id = Number(orgao.id);
-        return id;
-    });
-    return ids;
 };
 
-const initialOrgaoIds = getInitialOrgaoIds();
+// Inicializar IDs das unidades compartilhadas
+const initializeUnidadeIds = () => {
+    if (props.unidade?.unidadesCompartilhadas?.length) {
+        persistentState.value.imovel_compartilhado_unidades_ids = props.unidade.unidadesCompartilhadas.map(unidade => Number(unidade.id));
+    }
+};
 
+// Inicializar estados
+initializeOrgaoIds();
+initializeUnidadeIds();
+
+// Form do Inertia (apenas para submit)
 const form = useForm({
     team_id: props.team?.id || '',
     nome: props.unidade?.nome || props.team?.name || '',
@@ -50,35 +62,48 @@ const form = useForm({
     telefone_1: props.unidade?.telefone_1 || '',
     telefone_2: props.unidade?.telefone_2 || '',
     tipo_judicial: props.unidade?.tipo_judicial || '',
-    imovel_compartilhado_unidades: props.unidade?.imovel_compartilhado_unidades || false, // Checkbox
-    imovel_compartilhado_unidades_texto: props.unidade?.imovel_compartilhado_unidades_texto || '', // Texto
-    imovel_compartilhado_orgao: props.unidade?.imovel_compartilhado_orgao || false,
-    imovel_compartilhado_orgao_ids: [...initialOrgaoIds], // Spread para criar nova referência
     observacoes: props.unidade?.observacoes || '',
     numero_medidor_agua: props.unidade?.numero_medidor_agua || '',
     numero_medidor_energia: props.unidade?.numero_medidor_energia || '',
+    imovel_compartilhado_unidades: false,
+    imovel_compartilhado_unidades_texto: '',
+    imovel_compartilhado_orgao: false,
+    imovel_compartilhado_orgao_ids: [],
+    imovel_compartilhado_unidades_ids: [],
 });
 
-// Estados para o componente de órgãos
+// Estados para dropdowns
 const showOrgaoDropdown = ref(false);
 const orgaoSearchTerm = ref('');
 const dropdownRef = ref(null);
+const showUnidadeDropdown = ref(false);
+const unidadeSearchTerm = ref('');
+const unidadeDropdownRef = ref(null);
 
-// Computed para órgãos filtrados
 const filteredOrgaos = computed(() => {
     if (!orgaoSearchTerm.value) return props.orgaos || [];
-    
     return (props.orgaos || []).filter(orgao =>
         orgao.nome.toLowerCase().includes(orgaoSearchTerm.value.toLowerCase())
     );
 });
 
-// Computed para órgãos selecionados
-const selectedOrgaos = computed(() => {
-    const selected = (props.orgaos || []).filter(orgao => 
-        form.imovel_compartilhado_orgao_ids.includes(Number(orgao.id))
+const filteredUnidades = computed(() => {
+    if (!unidadeSearchTerm.value) return props.unidades || [];
+    return (props.unidades || []).filter(unidade =>
+        unidade.nome.toLowerCase().includes(unidadeSearchTerm.value.toLowerCase())
     );
-    return selected;
+});
+
+const selectedOrgaos = computed(() => {
+    return (props.orgaos || []).filter(orgao => 
+        persistentState.value.imovel_compartilhado_orgao_ids.includes(Number(orgao.id))
+    );
+});
+
+const selectedUnidades = computed(() => {
+    return (props.unidades || []).filter(unidade => 
+        persistentState.value.imovel_compartilhado_unidades_ids.includes(Number(unidade.id))
+    );
 });
 
 const debouncedUpdate = debounce((field, value) => {
@@ -92,7 +117,7 @@ const methods = {
     
     toggleOrgao: (orgaoId) => {
         const numericId = Number(orgaoId);
-        const currentIds = [...form.imovel_compartilhado_orgao_ids];
+        const currentIds = [...persistentState.value.imovel_compartilhado_orgao_ids];
         const index = currentIds.indexOf(numericId);
         
         if (index > -1) {
@@ -101,26 +126,70 @@ const methods = {
             currentIds.push(numericId);
         }
         
-        form.imovel_compartilhado_orgao_ids = currentIds;
+        persistentState.value.imovel_compartilhado_orgao_ids = currentIds;
     },
     
     removeOrgao: (orgaoId) => {
         const numericId = Number(orgaoId);
-        form.imovel_compartilhado_orgao_ids = form.imovel_compartilhado_orgao_ids.filter(id => id !== numericId);
+        persistentState.value.imovel_compartilhado_orgao_ids = 
+            persistentState.value.imovel_compartilhado_orgao_ids.filter(id => id !== numericId);
     },
     
     isOrgaoSelected: (orgaoId) => {
-        return form.imovel_compartilhado_orgao_ids.includes(Number(orgaoId));
+        return persistentState.value.imovel_compartilhado_orgao_ids.includes(Number(orgaoId));
+    },
+
+    toggleUnidade: (unidadeId) => {
+        const numericId = Number(unidadeId);
+        const currentIds = [...persistentState.value.imovel_compartilhado_unidades_ids];
+        const index = currentIds.indexOf(numericId);
+        
+        if (index > -1) {
+            currentIds.splice(index, 1);
+        } else {
+            currentIds.push(numericId);
+        }
+        
+        persistentState.value.imovel_compartilhado_unidades_ids = currentIds;
+    },
+    
+    removeUnidade: (unidadeId) => {
+        const numericId = Number(unidadeId);
+        persistentState.value.imovel_compartilhado_unidades_ids = 
+            persistentState.value.imovel_compartilhado_unidades_ids.filter(id => id !== numericId);
+    },
+    
+    isUnidadeSelected: (unidadeId) => {
+        return persistentState.value.imovel_compartilhado_unidades_ids.includes(Number(unidadeId));
     }
 };
 
-// Watch para monitorar mudanças em props.unidade
+// Watch para monitorar mudanças nas props
 watch(() => props.unidade, (newUnidade) => {
-    const newIds = getInitialOrgaoIds();
-    form.imovel_compartilhado_orgao_ids = [...newIds];
+    if (newUnidade) {
+        initializeOrgaoIds();
+        initializeUnidadeIds();
+        persistentState.value.imovel_compartilhado_orgao = newUnidade.imovel_compartilhado_orgao || false;
+        persistentState.value.imovel_compartilhado_unidades = newUnidade.imovel_compartilhado_unidades || false;
+        persistentState.value.imovel_compartilhado_unidades_texto = newUnidade.imovel_compartilhado_unidades_texto || '';
+    }
 }, { deep: true });
 
-// Watchers existentes
+// Watchers para limpar seleções quando checkboxes são desmarcados
+watch(() => persistentState.value.imovel_compartilhado_unidades, (newValue) => {
+    if (!newValue) {
+        persistentState.value.imovel_compartilhado_unidades_texto = '';
+        persistentState.value.imovel_compartilhado_unidades_ids = [];
+    }
+});
+
+watch(() => persistentState.value.imovel_compartilhado_orgao, (newValue) => {
+    if (!newValue) {
+        persistentState.value.imovel_compartilhado_orgao_ids = [];
+    }
+});
+
+// Watcher para campos tipo_judicial
 watch(() => form.tipo_judicial, (newValue) => {
     if (newValue !== 'locado') {
         form.nome_proprietario = '';
@@ -137,22 +206,12 @@ watch(() => form.tipo_judicial, (newValue) => {
     }
 });
 
-watch(() => form.imovel_compartilhado_unidades, (newValue) => {
-    if (!newValue) {
-        form.imovel_compartilhado_unidades_texto = '';
-    }
-});
-
-watch(() => form.imovel_compartilhado_orgao, (newValue) => {
-    if (!newValue) {
-        form.imovel_compartilhado_orgao_ids = [];
-    }
-});
-
-// Fechar dropdown quando clicar fora
 const handleClickOutside = (event) => {
     if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
         showOrgaoDropdown.value = false;
+    }
+    if (unidadeDropdownRef.value && !unidadeDropdownRef.value.contains(event.target)) {
+        showUnidadeDropdown.value = false;
     }
 };
 
@@ -160,42 +219,46 @@ onMounted(() => {
     document.addEventListener('click', handleClickOutside);
 });
 
-// Cleanup
-const cleanup = () => {
-    document.removeEventListener('click', handleClickOutside);
-};
 
-// Função de salvamento
 const saveDadosGerais = () => {
     if (!props.isEditable) {
         toast.info('O cadastro está finalizado e não pode ser editado.');
-        emit('saved', 'O cadastro está finalizado e não pode ser editado.');
+        emit('saved', 'O cadastro está finalizado e não pode ser editado.', null);
         return;
     }
 
+    // SINCRONIZAR ESTADO PERSISTENTE COM FORM ANTES DA VALIDAÇÃO (PARA OS SELECTS)
+    form.imovel_compartilhado_orgao = persistentState.value.imovel_compartilhado_orgao;
+    form.imovel_compartilhado_orgao_ids = [...persistentState.value.imovel_compartilhado_orgao_ids];
+    form.imovel_compartilhado_unidades = persistentState.value.imovel_compartilhado_unidades;
+    form.imovel_compartilhado_unidades_ids = [...persistentState.value.imovel_compartilhado_unidades_ids];
+    form.imovel_compartilhado_unidades_texto = persistentState.value.imovel_compartilhado_unidades_texto;
+
+    // Validação
     const requiredFields = ['nome', 'tipo_estrutural', 'tipo_judicial'];
     const errors = [];
     
     requiredFields.forEach((field) => {
         if (!form[field]) {
             toast.error(`O campo ${field} é obrigatório.`);
+            errors.push(`O campo ${field} é obrigatório.`);
         }
     });
 
-    if (form.imovel_compartilhado_orgao && form.imovel_compartilhado_orgao_ids.length === 0) {
+    if (persistentState.value.imovel_compartilhado_orgao && persistentState.value.imovel_compartilhado_orgao_ids.length === 0) {
         errors.push('Selecione pelo menos um órgão.');
         toast.error('Selecione pelo menos um órgão.');
-        form.errors.imovel_compartilhado_orgao_ids = 'Selecione pelo menos um órgão.';
     }
 
-    if (form.imovel_compartilhado_unidades && !form.imovel_compartilhado_unidades_texto?.trim()) {
-        errors.push('Descreva quais unidades compartilham o imóvel.');
-        toast.error('Descreva quais unidades compartilham o imóvel.');
-        form.errors.imovel_compartilhado_unidades_texto = 'Este campo é obrigatório quando o imóvel é compartilhado com outras unidades.';
+    if (persistentState.value.imovel_compartilhado_unidades && 
+        !persistentState.value.imovel_compartilhado_unidades_texto?.trim() && 
+        persistentState.value.imovel_compartilhado_unidades_ids.length === 0) {
+        errors.push('Selecione unidades ou descreva quais unidades compartilham o imóvel.');
+        toast.error('Selecione unidades ou descreva quais unidades compartilham o imóvel.');
     }
 
     if (errors.length > 0) {
-        emit('saved', errors.join(' '));
+        emit('saved', errors.join(' '), null);
         return;
     }
 
@@ -203,16 +266,18 @@ const saveDadosGerais = () => {
     form.telefone_1 = form.telefone_1 ? form.telefone_1.replace(/[^0-9]/g, '') : '';
     form.telefone_2 = form.telefone_2 ? form.telefone_2.replace(/[^0-9]/g, '') : '';
 
+    // Submit
     form.post(route('unidades.saveDadosGerais'), {
         errorBag: 'saveDadosGerais',
         preserveScroll: true,
         onSuccess: () => {
             toast.success('Dados Gerais salvos com sucesso!');
-            emit('saved');
+            emit('saved', null, 'localizacao');
         },
         onError: (errors) => {
-            emit('saved', 'Erro ao salvar os dados. Verifique os campos.');
-        },
+            toast.error('Erro ao salvar os dados. Verifique os campos.');
+            emit('saved', 'Erro ao salvar os dados. Verifique os campos.', null);
+        }
     });
 };
 </script>
@@ -392,26 +457,116 @@ const saveDadosGerais = () => {
                         <div class="flex items-center mt-2">
                             <Checkbox 
                                 id="imovel_compartilhado_unidades" 
-                                v-model:checked="form.imovel_compartilhado_unidades" 
+                                v-model:checked="persistentState.imovel_compartilhado_unidades" 
                                 :disabled="!isEditable || !permissions?.canUpdateTeam" 
                             />
                             <InputLabel for="imovel_compartilhado_unidades" value="Imóvel compartilhado com outra(s) Unidades Policiais?" class="ml-2" />
                         </div>
                         <InputError :message="form.errors.imovel_compartilhado_unidades" class="mt-1" />
                     </div>
-                    
-                    <!-- Campo de texto para descrever as unidades -->
-                    <div v-if="form.imovel_compartilhado_unidades" class="md:col-span-3">
-                        <InputLabel for="imovel_compartilhado_unidades_texto" value="Descreva quais unidades compartilham o imóvel *" class="text-sm font-medium text-gray-700" />
-                        <TextInput
-                            id="imovel_compartilhado_unidades_texto"
-                            v-model="form.imovel_compartilhado_unidades_texto"
-                            type="text"
-                            class="mt-1 block w-full"
-                            :disabled="!isEditable || !permissions?.canUpdateTeam"
-                            placeholder="Ex: Delegacia de Homicídios, 7ª Delegacia Distrital, etc."
-                        />
-                        <InputError :message="form.errors.imovel_compartilhado_unidades_texto" class="mt-1" />
+
+                    <!-- Seletor de unidades -->
+                    <div v-if="persistentState.imovel_compartilhado_unidades" class="md:col-span-3">
+                        <InputLabel for="imovel_compartilhado_unidades_ids" value="Unidades Compartilhadas" class="text-sm font-medium text-gray-700 mb-2" />
+                        
+                        <!-- Unidades selecionadas (tags) -->
+                        <div v-if="selectedUnidades.length > 0" class="mb-3">
+                            <div class="flex flex-wrap gap-2">
+                                <span 
+                                    v-for="unidade in selectedUnidades" 
+                                    :key="unidade.id"
+                                    class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                                >
+                                    {{ unidade.nome }}
+                                    <button 
+                                        v-if="isEditable && permissions?.canUpdateTeam"
+                                        type="button"
+                                        @click="methods.removeUnidade(unidade.id)"
+                                        class="ml-2 text-blue-600 hover:text-blue-800"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Dropdown personalizado para unidades -->
+                        <div class="relative" ref="unidadeDropdownRef">
+                            <button
+                                type="button"
+                                @click="showUnidadeDropdown = !showUnidadeDropdown"
+                                :disabled="!isEditable || !permissions?.canUpdateTeam"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-left flex items-center justify-between disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                                <span class="text-gray-700">
+                                    {{ selectedUnidades.length === 0 ? 'Selecione as unidades...' : `${selectedUnidades.length} unidade(s) selecionada(s)` }}
+                                </span>
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            
+                            <!-- Dropdown menu -->
+                            <div 
+                                v-show="showUnidadeDropdown"
+                                class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
+                            >
+                                <!-- Campo de busca -->
+                                <div class="p-2">
+                                    <input
+                                        v-model="unidadeSearchTerm"
+                                        type="text"
+                                        placeholder="Buscar unidade..."
+                                        class="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                    />
+                                </div>
+                                
+                                <!-- Lista de unidades -->
+                                <div class="max-h-48 overflow-y-auto">
+                                    <div
+                                        v-for="unidade in filteredUnidades"
+                                        :key="unidade.id"
+                                        @click="methods.toggleUnidade(unidade.id)"
+                                        class="px-3 py-2 cursor-pointer hover:bg-gray-100 flex items-center space-x-2"
+                                        :class="{ 'bg-blue-50': methods.isUnidadeSelected(unidade.id) }"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            :checked="methods.isUnidadeSelected(unidade.id)"
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                            readonly
+                                        />
+                                        <span class="text-sm text-gray-900">{{ unidade.nome }}</span>
+                                    </div>
+                                    
+                                    <!-- Mensagem quando não há resultados -->
+                                    <div v-if="filteredUnidades.length === 0" class="px-3 py-2 text-sm text-gray-500">
+                                        Nenhuma unidade encontrada
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <InputError :message="form.errors.imovel_compartilhado_unidades_ids" class="mt-1" />
+                        
+                        <!-- Campo de texto para descrever as unidades -->
+                        <div class="mt-4">
+                            <InputLabel for="imovel_compartilhado_unidades_texto" value="Ou descreva quais unidades compartilham o imóvel" class="text-sm font-medium text-gray-700" />
+                            <TextInput
+                                id="imovel_compartilhado_unidades_texto"
+                                v-model="persistentState.imovel_compartilhado_unidades_texto"
+                                type="text"
+                                class="mt-1 block w-full"
+                                :disabled="!isEditable || !permissions?.canUpdateTeam"
+                                placeholder="Ex: Delegacia de Homicídios, 7ª Delegacia Distrital, etc."
+                            />
+                            <InputError :message="form.errors.imovel_compartilhado_unidades_texto" class="mt-1" />
+                            <p class="mt-1 text-xs text-gray-500">
+                                Você pode selecionar unidades acima ou descrever manualmente neste campo
+                            </p>
+                        </div>
                     </div>
                     
                     <!-- Checkbox para imóvel compartilhado com órgãos -->
@@ -419,7 +574,7 @@ const saveDadosGerais = () => {
                         <div class="flex items-center mt-2">
                             <Checkbox 
                                 id="imovel_compartilhado_orgao" 
-                                v-model:checked="form.imovel_compartilhado_orgao" 
+                                v-model:checked="persistentState.imovel_compartilhado_orgao" 
                                 :disabled="!isEditable || !permissions?.canUpdateTeam" 
                             />
                             <InputLabel for="imovel_compartilhado_orgao" value="Imóvel compartilhado com outro(s) órgão(s)" class="ml-2" />
@@ -427,8 +582,8 @@ const saveDadosGerais = () => {
                         <InputError :message="form.errors.imovel_compartilhado_orgao" class="mt-1" />
                     </div>
                     
-                    <!-- Seletor de órgãos melhorado -->
-                    <div v-if="form.imovel_compartilhado_orgao" class="md:col-span-3">
+                    <!-- Seletor de órgãos -->
+                    <div v-if="persistentState.imovel_compartilhado_orgao" class="md:col-span-3">
                         <InputLabel for="imovel_compartilhado_orgao_ids" value="Órgãos Compartilhados *" class="text-sm font-medium text-gray-700 mb-2" />
                         
                         <!-- Órgãos selecionados (tags) -->
@@ -454,7 +609,7 @@ const saveDadosGerais = () => {
                             </div>
                         </div>
                         
-                        <!-- Dropdown personalizado -->
+                        <!-- Dropdown personalizado para órgãos -->
                         <div class="relative" ref="dropdownRef">
                             <button
                                 type="button"
@@ -496,9 +651,9 @@ const saveDadosGerais = () => {
                                     >
                                         <input
                                             type="checkbox"
-                                            v-model="form.imovel_compartilhado_orgao_ids"
+                                            :checked="methods.isOrgaoSelected(orgao.id)"
                                             class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                            :value="Number(orgao.id)"
+                                            readonly
                                         />
                                         <span class="text-sm text-gray-900">{{ orgao.nome }}</span>
                                     </div>

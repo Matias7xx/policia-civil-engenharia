@@ -41,12 +41,13 @@ class UnidadeController extends Controller
             $unidade->nome = $team->name; // Valor inicial para o formulário
             $unidade->is_draft = true; // Marcado como rascunho (mas não salvo ainda)
         } else {
-            $unidade->load('acessibilidade', 'informacoes', 'midias', 'orgaosCompartilhados');
+            $unidade->load('acessibilidade', 'informacoes', 'midias', 'orgaosCompartilhados', 'unidadesCompartilhadas');
         }
 
         // Converter para array explicitamente - necessário para persistir órgãos compartilhados na view
         $unidadeData = $unidade->toArray();
         $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray();
+        $unidadeData['unidadesCompartilhadas'] = $unidade->unidadesCompartilhadas->toArray();
 
         return Inertia::render('Unidades/Create', [
             'team' => $team,
@@ -55,6 +56,10 @@ class UnidadeController extends Controller
             'informacoes' => $unidade->informacoes,
             'midias' => $unidade->midias ?? [],
             'orgaos' => Orgao::ativo()->get(['id', 'nome']),
+            'unidades' => Unidade::select('id', 'nome')
+                ->where('team_id', '!=', $teamId)
+                ->orderBy('nome')
+                ->get(),
             'permissions' => [
                 'canUpdateTeam' => auth()->user()->hasTeamPermission($team, 'update'),
             ],
@@ -67,7 +72,8 @@ class UnidadeController extends Controller
             'acessibilidade',
             'informacoes',
             'midias.midiaTipo',
-            'orgaosCompartilhados', // Garante o carregamento
+            'orgaosCompartilhados',
+            'unidadesCompartilhadas',
         ])->findOrFail($unidade);
 
         $user = auth()->user();
@@ -76,6 +82,7 @@ class UnidadeController extends Controller
         // Converte explicitamente para array, incluindo a relação
         $unidadeData = $unidade->toArray();
         $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray(); // Força a inclusão
+        $unidadeData['unidadesCompartilhadas'] = $unidade->unidadesCompartilhadas->toArray();
 
         return Inertia::render('Unidades/Show', [
             'team' => $team,
@@ -84,6 +91,10 @@ class UnidadeController extends Controller
             'informacoes' => $unidade->informacoes ? $unidade->informacoes->toArray() : null,
             'midias' => $unidade->midias->toArray(),
             'orgaos' => Orgao::all()->toArray(),
+            'unidades' => Unidade::select('id', 'nome')
+                ->where('id', '!=', $unidade->id) // Excluir a própria unidade
+                ->orderBy('nome')
+                ->get()->toArray(),
             'permissions' => [
                 'canUpdateTeam' => $user->hasTeamPermission($unidade->team, 'update'),
                 'isAdmin' => $isAdmin,
@@ -114,6 +125,8 @@ class UnidadeController extends Controller
             'tipo_judicial' => 'required|string|in:proprio,locado,cedido',
             'imovel_compartilhado_unidades' => 'boolean',
             'imovel_compartilhado_unidades_texto' => 'nullable|string',
+            'imovel_compartilhado_unidades_ids' => 'nullable|array',
+            'imovel_compartilhado_unidades_ids.*' => 'exists:unidades,id',
             'imovel_compartilhado_orgao' => 'boolean',
             'imovel_compartilhado_orgao_ids' => 'nullable|array',
             'imovel_compartilhado_orgao_ids.*' => 'exists:orgaos,id',
@@ -128,6 +141,7 @@ class UnidadeController extends Controller
 
         $unidadeData = $validated;
         unset($unidadeData['imovel_compartilhado_orgao_ids']);
+        unset($unidadeData['imovel_compartilhado_unidades_ids']);
 
         // Limpar o texto de unidades compartilhadas se o checkbox não estiver marcado
         if (!$validated['imovel_compartilhado_unidades']) {
@@ -145,16 +159,23 @@ class UnidadeController extends Controller
             $unidadeData
         );
 
+        // Sincronizar órgãos compartilhados
         if ($validated['imovel_compartilhado_orgao'] && !empty($validated['imovel_compartilhado_orgao_ids'])) {
             $unidade->orgaosCompartilhados()->sync($validated['imovel_compartilhado_orgao_ids']);
         } else {
             $unidade->orgaosCompartilhados()->detach();
         }
 
-        // Redirecionar para a rota de criação ou edição com a unidade atualizada
-        /* $route = $unidade->is_draft ? 'unidades.create' : 'unidades.edit';
-        $params = $unidade->is_draft ? ['teamId' => $unidade->team_id] : ['teamId' => $unidade->team_id, 'unidadeId' => $unidade->id];
-        return redirect()->route($route, $params)->with('success', 'Dados gerais salvos com sucesso.'); */
+        // Sincronizar unidades compartilhadas
+        if ($validated['imovel_compartilhado_unidades'] && !empty($validated['imovel_compartilhado_unidades_ids'])) {
+            // Filtrar unidades para não incluir a própria unidade
+            $unidadesIds = array_filter($validated['imovel_compartilhado_unidades_ids'], function($id) use ($unidade) {
+                return $id != $unidade->id;
+            });
+            $unidade->unidadesCompartilhadas()->sync($unidadesIds);
+        } else {
+            $unidade->unidadesCompartilhadas()->detach();
+        }
 
         return redirect()->back()->with('success', 'Dados gerais salvos com sucesso.');
     }
@@ -365,12 +386,13 @@ class UnidadeController extends Controller
     {
         $team = Team::findOrFail($teamId);
         $unidade = Unidade::where('team_id', $teamId)
-            ->with(['acessibilidade', 'informacoes', 'midias', 'orgaosCompartilhados'])
+            ->with(['acessibilidade', 'informacoes', 'midias', 'orgaosCompartilhados', 'unidadesCompartilhadas'])
             ->findOrFail($unidadeId);
 
-            // Converter para array explicitamente - necessário para persistir órgãos compartilhados na view
+        // Converter para array explicitamente - necessário para persistir órgãos compartilhados na view
         $unidadeData = $unidade->toArray();
         $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray();
+        $unidadeData['unidadesCompartilhadas'] = $unidade->unidadesCompartilhadas->toArray();
 
         return Inertia::render('Unidades/Edit', [
             'team' => $team,
@@ -379,9 +401,27 @@ class UnidadeController extends Controller
             'informacoes' => $unidade->informacoes,
             'midias' => $unidade->midias ?? [],
             'orgaos' => Orgao::ativo()->get(['id', 'nome']),
+            'unidades' => Unidade::select('id', 'nome')
+                ->where('team_id', '!=', $teamId)
+                ->orderBy('nome')
+                ->get(),
             'permissions' => [
                 'canUpdateTeam' => auth()->user()->hasTeamPermission($team, 'update'),
             ],
         ]);
+    }
+
+    /**
+     * Retorna lista de unidades ativas para seleção
+     */
+    public function getUnidadesAtivas()
+    {
+        $unidades = Unidade::select('id', 'nome')
+            ->where('is_draft', false) // Apenas unidades finalizadas
+            ->whereIn('status', ['aprovada', 'pendente_avaliacao', 'em_revisao']) // Status válidos
+            ->orderBy('nome')
+            ->get();
+
+        return response()->json($unidades);
     }
 }

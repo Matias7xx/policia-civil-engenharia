@@ -6,6 +6,9 @@ import { ref, watch, computed } from 'vue';
 import { useForm, usePage, Link } from '@inertiajs/vue3';
 import TextInput from '@/Components/TextInput.vue';
 import { ChartBarIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline';
+import { useToast } from '@/Composables/useToast';
+
+const toast = useToast();
 
 const props = defineProps({
     team: Object,
@@ -14,6 +17,7 @@ const props = defineProps({
     informacoes: Object,
     midias: Array,
     orgaos: Array,
+    unidades: Array,
     permissions: Object,
     avaliacoes: Array,
     isSuperAdmin: Boolean,
@@ -443,6 +447,7 @@ const salvarContrato = () => {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: (page) => {
+            toast.success('Dados de contrato salvo com sucesso!');
             flashMessage.value = 'Contrato salvo com sucesso!';
             const updatedContrato = page.props.unidade.contrato_locacao || {};
             contratoForm.nome_proprietario = updatedContrato.nome_proprietario || '';
@@ -459,6 +464,7 @@ const salvarContrato = () => {
             setTimeout(() => (flashMessage.value = null), 5000);
         },
         onError: () => {
+            toast.error('Erro ao salvar os dados de contrato. Verifique os campos.');
             flashMessage.value = 'Erro ao salvar o contrato. Verifique os campos.';
             setTimeout(() => (flashMessage.value = null), 5000);
         },
@@ -471,10 +477,12 @@ const salvarCessao = () => {
         preserveState: true,
         preserveScroll: true,
         onSuccess: () => {
+            toast.success('Dados de cessão salvos com sucesso!');
             flashMessage.value = 'Dados de cessão salvos com sucesso!';
             setTimeout(() => (flashMessage.value = null), 5000);
         },
         onError: () => {
+            toast.error('Erro ao salvar os dados de cessão. Verifique os campos.');
             flashMessage.value = 'Erro ao salvar os dados de cessão. Verifique os campos.';
             setTimeout(() => (flashMessage.value = null), 5000);
         },
@@ -843,7 +851,7 @@ const salvarCessao = () => {
                                         <p v-if="contratoForm.errors.anexo" class="text-red-500 text-xs mt-1">{{ contratoForm.errors.anexo }}</p>
                                     </div>
                                     <div class="col-span-full">
-                                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                                             Salvar
                                         </button>
                                     </div>
@@ -898,25 +906,44 @@ const salvarCessao = () => {
                                         <p v-if="cessaoForm.errors.termo_cessao" class="text-red-500 text-xs mt-1">{{ cessaoForm.errors.termo_cessao }}</p>
                                     </div>
                                     <div class="col-span-full">
-                                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                                             Salvar
                                         </button>
                                     </div>
                                 </form>
                             </div>
 
-                             <!-- Seção de Compartilhamento com Unidades -->
+                            <!-- Seção de Compartilhamento com Unidades -->
                             <div v-if="unidade?.imovel_compartilhado_unidades" class="bg-gray-50 p-4 rounded-lg shadow-sm md:col-span-2">
                                 <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Compartilhamento com Unidades Policiais</h3>
-                                <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                
+                                <!-- Unidades selecionadas via dropdown -->
+                                <div v-if="unidade.unidadesCompartilhadas && unidade.unidadesCompartilhadas.length > 0" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow mb-4">
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Unidades Policiais que compartilham o imóvel:</dt>
+                                    <dd class="mt-1 flex flex-wrap gap-2">
+                                        <span 
+                                            v-for="unidade_comp in unidade.unidadesCompartilhadas" 
+                                            :key="unidade_comp.id"
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                                        >
+                                            {{ unidade_comp.nome || 'Sem nome' }}
+                                        </span>
+                                    </dd>
+                                </div>
+                                
+                                <!-- Descrição manual das unidades -->
+                                <div v-if="unidade.imovel_compartilhado_unidades_texto?.trim()" class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                    <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Descrição das unidades que compartilham o imóvel:</dt>
+                                    <dd class="mt-1 text-gray-900">
+                                        {{ unidade.imovel_compartilhado_unidades_texto }}
+                                    </dd>
+                                </div>
+                                
+                                <!-- Caso não tenha nenhuma informação -->
+                                <div v-if="(!unidade.unidadesCompartilhadas || unidade.unidadesCompartilhadas.length === 0) && !unidade.imovel_compartilhado_unidades_texto?.trim()" class="bg-white p-3 rounded-md shadow-sm">
                                     <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Unidades que compartilham o imóvel:</dt>
-                                    <dd class="mt-1">
-                                        <span v-if="!unidade.imovel_compartilhado_unidades_texto?.trim()" class="text-gray-600">
-                                            Não informado
-                                        </span>
-                                        <span v-else class="text-gray-900">
-                                            {{ unidade.imovel_compartilhado_unidades_texto }}
-                                        </span>
+                                    <dd class="mt-1 text-gray-600">
+                                        Não informado
                                     </dd>
                                 </div>
                             </div>
@@ -934,7 +961,7 @@ const salvarCessao = () => {
                                             v-else
                                             v-for="orgao in unidade.orgaosCompartilhados" 
                                             :key="orgao.id"
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
                                         >
                                             {{ orgao.nome || 'Sem nome' }}
                                         </span>

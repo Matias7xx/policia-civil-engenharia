@@ -48,7 +48,7 @@ class AvaliacaoUnidadeController extends Controller
         // Criar avaliação
         $avaliacao = AvaliacaoUnidade::create($avaliacaoData);
         
-        return redirect()->back()->with('flash.banner', 'Avaliação realizada com sucesso.');
+        return redirect()->back()->with('success', 'Avaliação realizada com sucesso.');
     }
 
     /**
@@ -77,6 +77,6 @@ class AvaliacaoUnidadeController extends Controller
             'observacoes' => $validatedData['observacoes'],
         ]);
         
-        return redirect()->back()->with('flash.banner', 'Avaliação atualizada com sucesso.');
+        return redirect()->back()->with('success', 'Avaliação atualizada com sucesso.');
     }
 }

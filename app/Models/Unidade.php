@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -80,6 +79,44 @@ class Unidade extends Model
     {
         return $this->belongsToMany(Orgao::class, 'orgao_unidade')
                     ->withTimestamps();
+    }
+
+    /**
+     * Obtém as unidades compartilhadas com esta unidade.
+     */
+    public function unidadesCompartilhadas(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Unidade::class, 
+            'unidade_unidade_compartilhada', 
+            'unidade_id', 
+            'unidade_compartilhada_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Obtém as unidades que compartilham com esta unidade (relação inversa).
+     */
+    public function unidadesQueCompartilham(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Unidade::class, 
+            'unidade_unidade_compartilhada', 
+            'unidade_compartilhada_id', 
+            'unidade_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Obtém todas as unidades relacionadas (tanto as que esta unidade compartilha 
+     * quanto as que compartilham com esta unidade).
+     */
+    public function todasUnidadesCompartilhadas()
+    {
+        $compartilhadas = $this->unidadesCompartilhadas;
+        $queCompartilham = $this->unidadesQueCompartilham;
+        
+        return $compartilhadas->merge($queCompartilham)->unique('id');
     }
 
     /**
