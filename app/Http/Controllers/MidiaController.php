@@ -34,7 +34,7 @@ class MidiaController extends Controller
         
         $request->validate([
             'unidade_id' => 'required|exists:unidades,id',
-            'files' => 'nullable|array|max:25', // 25 arquivos por lote (parte dos 129)
+            'files' => 'nullable|array|max:30', // 30 arquivos por lote (parte dos 129)
             'files.*' => 'required|file|mimes:jpg,jpeg,png|max:10240', // 10MB cada (10×129=1.3GB total)
             'midia_tipos' => 'nullable|array',
             'midia_tipos.*' => 'required|exists:midia_tipos,id',

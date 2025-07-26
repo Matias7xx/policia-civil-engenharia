@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
 
-class InformacoesUnidade extends Model
+class InformacoesUnidade extends Model implements Auditable
 {
-    use HasFactory;
+    use HasFactory, AuditableTrait;
 
     /**
      * A tabela associada ao model.
@@ -141,6 +143,64 @@ class InformacoesUnidade extends Model
         'escada_possui_corrimao' => 'string',
         'demarcacao_piso_extintor' => 'string',
     ];
+
+    // Configuração de auditoria
+    protected $auditInclude = [
+        'pavimentacao_rua',
+        'tipo_imovel',
+        'qtd_pavimentos',
+        'cercado_muros',
+        'estacionamento_interno',
+        'estacionamento_externo',
+        'qtd_recepcao',
+        'qtd_wc_publico',
+        'qtd_gabinetes',
+        'qtd_sala_oitiva',
+        'qtd_wc_servidores',
+        'qtd_alojamento_masculino',
+        'qtd_alojamento_feminino',
+        'qtd_xadrez_masculino',
+        'qtd_xadrez_feminino',
+        'area_aproximada_unidade',
+        'area_aproximada_terreno',
+        'piso',
+        'parede',
+        'cobertura',
+        'tem_espaco_veiculos_apreendidos',
+        'qtd_max_veiculos_automovel',
+    ];
+
+    protected $auditEvents = [
+        'created',
+        'updated',
+        'deleted',
+    ];
+
+    public function getAuditableType(): string
+    {
+        return static::class;
+    }
+
+    public function generateTags(): array
+    {
+        $tags = [
+            'informacoes_estruturais',
+            'unidade:' . $this->unidade_id,
+        ];
+
+        if ($this->unidade) {
+            $tags[] = 'team:' . $this->unidade->team_id;
+            if ($this->unidade->cidade) {
+                $tags[] = 'cidade:' . strtolower($this->unidade->cidade);
+            }
+        }
+
+        if ($this->tipo_imovel) {
+            $tags[] = 'tipo_imovel:' . strtolower($this->tipo_imovel);
+        }
+
+        return $tags;
+    }
 
     /**
      * Obtém a unidade associada a estas informações.

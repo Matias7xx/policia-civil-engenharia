@@ -8,9 +8,9 @@ import { useToast } from '@/Composables/useToast';
 
 const toast = useToast();
 
-const BATCH_SIZE = 10; // 10 arquivos (fotos) por lote
-const MAX_BATCH_SIZE_MB = 150; // 150MB por lote
-const MAX_TOTAL_FILES = 129; // Máximo teórico de fotos (43 campos × 3)
+const BATCH_SIZE = 25; // 25 arquivos (fotos) por lote
+const MAX_BATCH_SIZE_MB = 300; // 300MB por lote
+const MAX_TOTAL_FILES = 129; // Máximo de fotos (43 campos × 3)
 
 const props = defineProps({
     unidade: Object,
@@ -171,7 +171,7 @@ const refreshMidias = async () => {
 
 // Funções para upload em lotes
 const calculateBatchSize = (files) => {
-    // Primeiro, agrupar por tipo para manter fotos do mesmo tipo juntas
+    // Primeiro, agrupar arquivos por tipo
     const filesByType = {};
     files.forEach(file => {
         if (!filesByType[file.midiaTipoId]) {
@@ -184,30 +184,55 @@ const calculateBatchSize = (files) => {
     let currentBatch = [];
     let currentSizeMB = 0;
     
-    // Processar cada tipo completo por vez
-    Object.values(filesByType).forEach(typeFiles => {
-        typeFiles.forEach(file => {
-            const fileSizeMB = file.file.size / (1024 * 1024);
+    // Processar cada TIPO COMPLETO por vez (não arquivo individual) para evitar erro de validação
+    Object.entries(filesByType).forEach(([tipoId, typeFiles]) => {
+        // Calcular tamanho total deste tipo
+        const typeSizeMB = typeFiles.reduce((sum, file) => sum + (file.file.size / (1024 * 1024)), 0);
+        const typeCount = typeFiles.length;
+        
+        // Verificar se este tipo completo cabe no lote atual
+        const wouldExceedSize = (currentSizeMB + typeSizeMB) > MAX_BATCH_SIZE_MB;
+        const wouldExceedCount = (currentBatch.length + typeCount) > BATCH_SIZE;
+        
+        // Se não cabe no lote atual, finalizar o lote atual e começar novo
+        if ((wouldExceedSize || wouldExceedCount) && currentBatch.length > 0) {
+            batches.push(currentBatch);
+            currentBatch = [];
+            currentSizeMB = 0;
+        }
+        
+        // Verificar se o tipo sozinho é muito grande para um lote
+        if (typeSizeMB > MAX_BATCH_SIZE_MB || typeCount > BATCH_SIZE) {
+            console.warn(`Tipo ${tipoId} tem ${typeCount} arquivos (${typeSizeMB.toFixed(1)}MB) que excede limites do lote. Será processado sozinho.`);
             
-            // Se exceder limites do lote, criar novo lote
-            if (currentBatch.length >= BATCH_SIZE || 
-                (currentSizeMB + fileSizeMB) > MAX_BATCH_SIZE_MB) {
-                if (currentBatch.length > 0) {
-                    batches.push(currentBatch);
-                    currentBatch = [];
-                    currentSizeMB = 0;
-                }
+            // Se há arquivos no lote atual, finalizá-lo primeiro
+            if (currentBatch.length > 0) {
+                batches.push(currentBatch);
+                currentBatch = [];
+                currentSizeMB = 0;
             }
             
-            currentBatch.push(file);
-            currentSizeMB += fileSizeMB;
-        });
+            // Criar lote só com este tipo
+            batches.push([...typeFiles]);
+        } else {
+            // Adicionar todos os arquivos deste tipo ao lote atual
+            currentBatch.push(...typeFiles);
+            currentSizeMB += typeSizeMB;
+        }
     });
     
     // Adicionar último lote se não estiver vazio
     if (currentBatch.length > 0) {
         batches.push(currentBatch);
     }
+    
+    // Log para debug
+    console.log('Lotes criados:', batches.map((batch, index) => ({
+        lote: index + 1,
+        arquivos: batch.length,
+        tipos: [...new Set(batch.map(f => f.midiaTipoId))],
+        tamanhoMB: batch.reduce((sum, f) => sum + (f.file.size / (1024 * 1024)), 0).toFixed(1)
+    })));
     
     return batches;
 };
@@ -244,7 +269,7 @@ const uploadInBatches = async (allFiles) => {
             // Dados base sempre presentes
             batchFormData.append('unidade_id', form.unidade_id);
             
-            // NOVO: Sinalizar que é upload em lotes
+            // Sinalizar que é upload em lotes
             batchFormData.append('is_batch_upload', '1');
             batchFormData.append('total_files_in_batch', allFiles.length.toString());
             
@@ -1337,10 +1362,10 @@ const getTabelas = computed(() => {
                 <!-- Título -->
                 <div class="text-center">
                     <h3 class="text-lg leading-6 font-medium text-gray-900 mb-2" id="modal-title">
-                        Enviando Imagens
+                        Enviando Fotos
                     </h3>
                     <p class="text-sm text-gray-500 mb-4">
-                        Por favor, aguarde enquanto suas imagens são processadas...
+                        Por favor, aguarde enquanto suas fotos são processadas...
                     </p>
                 </div>
 
@@ -1361,7 +1386,7 @@ const getTabelas = computed(() => {
                 <!-- Progresso do Lote Atual -->
                 <div class="mb-4">
                     <div class="flex justify-between text-sm font-medium text-gray-700 mb-2">
-                        <span>Lote {{ uploadProgress.currentBatch }} de {{ uploadProgress.totalBatches }}</span>
+                        <span>Enviando {{ uploadProgress.currentBatch }} de {{ uploadProgress.totalBatches }}</span>
                         <span>{{ uploadProgress.currentBatchProgress }}%</span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
@@ -1394,11 +1419,11 @@ const getTabelas = computed(() => {
                             Processando lote {{ uploadProgress.currentBatch }} de {{ uploadProgress.totalBatches }}...
                         </span>
                         <span v-else>
-                            Processando suas imagens...
+                            Processando fotos da Unidade...
                         </span>
                     </p>
                     <p class="text-xs text-gray-500 mt-1">
-                        Não feche esta janela durante o upload
+                        Não feche esta janela durante o envio
                     </p>
                 </div>
 

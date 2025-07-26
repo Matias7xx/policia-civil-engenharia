@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
 
-class Unidade extends Model
+class Unidade extends Model implements Auditable
 {
-    use HasFactory;
+    use HasFactory, AuditableTrait;
 
     /**
      * A tabela associada ao model.
@@ -58,6 +60,78 @@ class Unidade extends Model
         'is_draft',
         'rejection_reason',
     ];
+
+    // Configurar quais campos devem ser auditados
+    protected $auditInclude = [
+        'nome',
+        'codigo',
+        'status',
+        'tipo_estrutural',
+        'tipo_judicial',
+        'cidade',
+        'rua',
+        'numero',
+        'bairro',
+        'cep',
+        'latitude',
+        'longitude',
+        'rejection_reason',
+        'orgao_cedente',
+        'termo_cessao',
+        'prazo_cessao',
+        'is_draft',
+        'imovel_compartilhado_orgao',
+        'observacoes',
+    ];
+
+    // Campos a serem excluídos da auditoria
+    protected $auditExclude = [
+        'created_at',
+        'updated_at',
+    ];
+
+    // Configurar eventos que devem ser auditados
+    protected $auditEvents = [
+        'created',
+        'updated',
+        'deleted',
+    ];
+
+    // Implementar método da interface Auditable
+    public function getAuditableType(): string
+    {
+        return static::class;
+    }
+
+    // Customizar tags
+    public function generateTags(): array
+    {
+        $tags = [
+            'unidade:' . $this->id,
+            'team:' . $this->team_id,
+        ];
+
+        if ($this->status) {
+            $tags[] = 'status:' . $this->status;
+        }
+
+        // Adicionar tag específica se foi finalização
+        if (!$this->is_draft) {
+            $tags[] = 'cadastro_finalizado';
+        }
+
+        // Adicionar tag se foi reprovação
+        if ($this->status === 'reprovada') {
+            $tags[] = 'reprovacao';
+        }
+
+        // Tag para cidade
+        if ($this->cidade) {
+            $tags[] = 'cidade:' . strtolower($this->cidade);
+        }
+
+        return $tags;
+    }
 
     /**
      * Os atributos que devem ser convertidos.

@@ -1,4 +1,3 @@
-<!-- resources/js/Pages/Unidades/Edit.vue -->
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import UnidadeDetailsForm from '@/Pages/Unidades/Partials/UnidadeDetailsForm.vue';

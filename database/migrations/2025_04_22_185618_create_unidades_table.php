@@ -38,9 +38,10 @@ return new class extends Migration
             $table->string('numero_medidor_agua')->nullable();
             $table->string('numero_medidor_energia')->nullable();
             $table->boolean('is_draft')->default(true); // Indica que a unidade está em rascunho (ainda não finalizada).
-            $table->string('orgao_cedente')->nullable()->after('numero_medidor_energia');
-            $table->string('termo_cessao')->nullable()->after('orgao_cedente');
-            $table->date('prazo_cessao')->nullable()->after('termo_cessao');
+            
+            $table->string('orgao_cedente')->nullable();
+            $table->string('termo_cessao')->nullable();
+            $table->date('prazo_cessao')->nullable();
             $table->timestamps();
             
             $table->foreign('team_id')->references('id')->on('teams');

@@ -7,7 +7,13 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { UserIcon, Bars3Icon, XMarkIcon, EnvelopeIcon } from '@heroicons/vue/24/outline';
+import { 
+    UserIcon, 
+    Bars3Icon, 
+    XMarkIcon, 
+    EnvelopeIcon,
+    DocumentMagnifyingGlassIcon 
+} from '@heroicons/vue/24/outline';
 import Footer from '@/Components/Footer.vue';
 import Toast from '@/Components/Toast.vue';
 
@@ -49,6 +55,12 @@ const isSuperAdmin = computed(() => {
     return user && user.isSuperAdmin === true;
 });
 
+// Verificar se é o super admin de (matrícula 0000001)
+const isSuperAdminPrincipal = computed(() => {
+    const user = page.props.auth.user;
+    return user && user.isSuperAdmin === true && user.matricula === '0000001';
+});
+
 const switchToTeam = (team) => {
     router.put(route('current-team.update'), {
         team_id: team.id,
@@ -83,6 +95,12 @@ const isUnidadeRouteActive = computed(() => {
     return route().current('unidades.show') || route().current('unidades.create');
 });
 
+// Verificar se a rota atual é de auditoria
+const isAuditoriaRouteActive = computed(() => {
+    return route().current('admin.auditoria.index') || 
+           route().current('admin.auditoria.show');
+});
+
 // Verificar se o usuário está autenticado e tem all_teams
 const hasTeams = computed(() => {
     return page.props.auth.user && 
@@ -104,7 +122,7 @@ router.on('navigate', () => {
 
         <!-- Sticky Header - changes on scroll -->
         <header :class="[
-            'sticky top-0 z-[1000] transition-all duration-300', // Aumente o z-index
+            'sticky top-0 z-[1000] transition-all duration-300',
             scrolled ? 'shadow-md' : ''
         ]">
             <!-- Barra de Contato -->
@@ -119,7 +137,7 @@ router.on('navigate', () => {
                 </div>
             </div>
             
-            <!-- Page header section (optional) -->
+            <!-- Page header section -->
             <div v-if="$slots.header" class="bg-black shadow">
                 <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                     <slot name="header" />
@@ -145,15 +163,6 @@ router.on('navigate', () => {
                                     Home
                                 </NavLink>
                                 
-                                <!-- Link para unidades -->
-                                <!-- <NavLink 
-                                    :href="unidadeRoute"
-                                    :active="isUnidadeRouteActive"
-                                    class="text-black hover:text-white font-sans transition-colors duration-150 font-medium"
-                                >
-                                    Minha Unidade
-                                </NavLink> -->
-
                                 <!-- Links apenas para SuperAdmin -->
                                 <template v-if="isSuperAdmin">
                                     <NavLink 
@@ -179,6 +188,18 @@ router.on('navigate', () => {
                                     >
                                         Órgãos
                                     </NavLink>
+
+                                    <!-- Link de Auditoria apenas para super admin -->
+                                    <NavLink 
+                                        v-if="isSuperAdminPrincipal"
+                                        :href="route('admin.auditoria.index')" 
+                                        :active="isAuditoriaRouteActive"
+                                        class="text-black hover:text-white font-sans transition-colors duration-150 font-medium flex items-center"
+                                        title="Sistema de Auditoria"
+                                    >
+                                        <DocumentMagnifyingGlassIcon class="h-5 w-5 mr-1" />
+                                        Auditoria
+                                    </NavLink>
                                 </template>
                             </div>
                         </div>
@@ -200,31 +221,8 @@ router.on('navigate', () => {
 
                                 <template #content>
                                     <div class="w-60">
-                                        <!-- Team Management -->
-                                        <!-- <div class="block px-4 py-2 text-xs text-gray-400">
-                                            Gerenciar Unidade Policial
-                                        </div> -->
-
-                                        <!-- Team Settings -->
-                                        <!-- <DropdownLink 
-                                            :href="unidadeRoute"
-                                            class="text-gray-700 hover:text-[#bea55a] hover:bg-gray-50 transition-colors duration-150"
-                                        >
-                                            Configurações da Unidade
-                                        </DropdownLink>
-
-                                        <DropdownLink 
-                                            v-if="$page.props.jetstream.canCreateTeams" 
-                                            :href="route('unidades.create')"
-                                            class="text-gray-700 hover:text-[#bea55a] hover:bg-gray-50 transition-colors duration-150"
-                                        >
-                                            Criar Nova Unidade
-                                        </DropdownLink> -->
-
                                         <!-- Team Switcher -->
                                         <template v-if="hasTeams">
-                                            <div class="border-t border-gray-200 my-1"></div>
-
                                             <div class="block px-4 py-2 text-xs text-gray-400">
                                                 Alternar Unidades
                                             </div>
@@ -296,6 +294,21 @@ router.on('navigate', () => {
                                             API Tokens
                                         </DropdownLink>
 
+                                        <!-- Auditoria no dropdown do usuário (apenas para super admin) -->
+                                        <template v-if="isSuperAdminPrincipal">
+                                            <div class="border-t border-gray-200 my-1"></div>
+                                            <div class="block px-4 py-2 text-xs text-gray-400">
+                                                Sistema
+                                            </div>
+                                            <DropdownLink 
+                                                :href="route('admin.auditoria.index')"
+                                                class="text-gray-700 hover:text-[#bea55a] hover:bg-gray-50 transition-colors duration-150 px-4 py-2 flex items-center"
+                                            >
+                                                <DocumentMagnifyingGlassIcon class="h-4 w-4 mr-2" />
+                                                Auditoria do Sistema
+                                            </DropdownLink>
+                                        </template>
+
                                         <div class="border-t border-gray-200 my-1"></div>
 
                                         <!-- Authentication -->
@@ -338,14 +351,6 @@ router.on('navigate', () => {
                             Home
                         </ResponsiveNavLink>
 
-                        <!-- <ResponsiveNavLink 
-                            :href="unidadeRoute"
-                            :active="isUnidadeRouteActive"
-                            class="text-black hover:text-white hover:bg-[#816d33] transition-colors duration-150 block px-3 py-2 rounded-md text-base font-medium"
-                        >
-                            Minha Unidade
-                        </ResponsiveNavLink> -->
-
                         <!-- Links apenas para super administradores -->
                         <template v-if="isSuperAdmin">
                             <ResponsiveNavLink 
@@ -370,6 +375,17 @@ router.on('navigate', () => {
                                 class="text-black hover:text-white hover:bg-[#816d33] transition-colors duration-150 block px-3 py-2 rounded-md text-base font-medium"
                             >
                                 Órgãos
+                            </ResponsiveNavLink>
+
+                            <!-- Auditoria no menu mobile -->
+                            <ResponsiveNavLink 
+                                v-if="isSuperAdminPrincipal"
+                                :href="route('admin.auditoria.index')" 
+                                :active="isAuditoriaRouteActive"
+                                class="text-black hover:text-white hover:bg-[#816d33] transition-colors duration-150 block px-3 py-2 rounded-md text-base font-medium flex items-center"
+                            >
+                                <DocumentMagnifyingGlassIcon class="h-5 w-5 mr-2" />
+                                Auditoria
                             </ResponsiveNavLink>
                         </template>
                         

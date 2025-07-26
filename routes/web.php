@@ -17,6 +17,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\URL;
+use App\Http\Controllers\AuditoriaController;
 
 URL::forceScheme(env('HTTP_SCHEMA'));
 URL::forceRootUrl(env('APP_URL'));
@@ -153,6 +154,15 @@ Route::middleware([
             Route::put('/{orgao}', [OrgaoController::class, 'update'])->name('update');
             Route::get('/{orgao}', [OrgaoController::class, 'show'])->name('show');
             Route::delete('/{orgao}', [OrgaoController::class, 'destroy'])->name('destroy');
+        });
+
+        // Rotas de auditoria (apenas para super admin - matrícula 0000001)
+        Route::prefix('auditoria')->name('auditoria.')->group(function () {
+            Route::get('/', [AuditoriaController::class, 'index'])
+                ->name('index');
+            
+             Route::get('/detalhes/{unidade}', [AuditoriaController::class, 'show'])
+                ->name('show');
         });
     });
 

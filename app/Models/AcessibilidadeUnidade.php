@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
 
-class AcessibilidadeUnidade extends Model
+class AcessibilidadeUnidade extends Model implements Auditable
 {
-    use HasFactory;
+    use HasFactory, AuditableTrait;
 
     /**
      * A tabela associada ao model.
@@ -46,6 +48,45 @@ class AcessibilidadeUnidade extends Model
         'elevador' => 'boolean',
         'sinalizacao_braile' => 'boolean',
     ];
+
+    // Configuração de auditoria
+    protected $auditInclude = [
+        'rampa_acesso',
+        'corrimao',
+        'piso_tatil',
+        'banheiro_adaptado',
+        'elevador',
+        'sinalizacao_braile',
+        'observacoes',
+    ];
+
+    protected $auditEvents = [
+        'created',
+        'updated',
+        'deleted',
+    ];
+
+    public function getAuditableType(): string
+    {
+        return static::class;
+    }
+
+    public function generateTags(): array
+    {
+        $tags = [
+            'acessibilidade',
+            'unidade:' . $this->unidade_id,
+        ];
+
+        if ($this->unidade) {
+            $tags[] = 'team:' . $this->unidade->team_id;
+            if ($this->unidade->cidade) {
+                $tags[] = 'cidade:' . strtolower($this->unidade->cidade);
+            }
+        }
+
+        return $tags;
+    }
 
     /**
      * Obtém a unidade associada a este registro de acessibilidade.

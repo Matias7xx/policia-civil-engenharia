@@ -8,10 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
 use App\Helpers\StorageHelper;
+use OwenIt\Auditing\Contracts\Auditable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
 
-class Midia extends Model
+class Midia extends Model implements Auditable
 {
-    use HasFactory;
+    use HasFactory, AuditableTrait;
 
     protected $table = 'midias';
 
@@ -32,6 +34,48 @@ class Midia extends Model
         'tamanho_formatado',
         'download_url'
     ];
+
+    // Configuração de auditoria
+    protected $auditInclude = [
+        'midia_tipo_id',
+        'path',
+        'mime_type',
+        'tamanho',
+    ];
+
+    protected $auditEvents = [
+        'created',
+        'updated',
+        'deleted',
+    ];
+
+    public function getAuditableType(): string
+    {
+        return static::class;
+    }
+
+    public function generateTags(): array
+    {
+        $tags = [
+            'midia',
+        ];
+
+        if ($this->midiaTipo) {
+            $tags[] = 'tipo_midia:' . strtolower($this->midiaTipo->nome);
+        }
+
+        if ($this->is_imagem) {
+            $tags[] = 'imagem';
+        }
+
+        // Adicionar tags das unidades relacionadas
+        foreach ($this->unidades as $unidade) {
+            $tags[] = 'unidade:' . $unidade->id;
+            $tags[] = 'team:' . $unidade->team_id;
+        }
+
+        return array_unique($tags);
+    }
 
     public function midiaTipo(): BelongsTo
     {

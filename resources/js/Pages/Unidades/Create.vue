@@ -292,7 +292,7 @@ const tabProgressClass = computed(() => (tabId) => {
                                 <AcessibilidadeForm
                                     :team="team"
                                     :unidade="unidade"
-                                    :acessibilidades="acessibilidade"
+                                    :acessibilidade="acessibilidade"
                                     :permissions="permissions"
                                     :is-new="!unidade?.id"
                                     :is-editable="unidade?.is_draft ?? true"
