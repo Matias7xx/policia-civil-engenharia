@@ -34,11 +34,11 @@ defineProps({
                     <SectionBorder />
                 </div>
 
-                <div v-if="$page.props.jetstream.canUpdatePassword">
+                <!-- <div v-if="$page.props.jetstream.canUpdatePassword">
                     <UpdatePasswordForm class="mt-10 sm:mt-0" />
 
                     <SectionBorder />
-                </div>
+                </div> -->
             </div>
         </div>
     </AppLayout>

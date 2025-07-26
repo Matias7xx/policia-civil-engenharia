@@ -328,6 +328,40 @@ private function findOrCreateTeam($lotacao, $user)
         $nomeNormalizado = $this->normalizeString($candidateTeam->name);
         if ($nomeNormalizado === $lotacaoNormalizada) {
             Log::info("Team encontrado com busca normalizada: {$candidateTeam->name} para lotação: {$lotacao}");
+            
+            // Atualizar o nome do team para usar os acentos da API
+            if ($candidateTeam->name !== $lotacao) {
+                $nomeAnterior = $candidateTeam->name;
+                $candidateTeam->name = $lotacao;
+                $candidateTeam->save();
+                
+                Log::info("Nome do team atualizado com acentos da API", [
+                    'team_id' => $candidateTeam->id,
+                    'nome_anterior' => $nomeAnterior,
+                    'nome_novo' => $lotacao
+                ]);
+                
+                // Atualizar nome na tabela unidades se existir
+                $unidade = \App\Models\Unidade::where('team_id', $candidateTeam->id)->first();
+                if ($unidade && $unidade->nome !== $lotacao) {
+                    $unidadeNomeAnterior = $unidade->nome;
+                    $unidade->nome = $lotacao;
+                    $unidade->save();
+                    
+                    Log::info("Nome da unidade também atualizado", [
+                        'unidade_id' => $unidade->id,
+                        'team_id' => $candidateTeam->id,
+                        'nome_anterior' => $unidadeNomeAnterior,
+                        'nome_novo' => $lotacao
+                    ]);
+                }
+            } else {
+                Log::debug("Nome já está correto, sem necessidade de atualização", [
+                    'team_id' => $candidateTeam->id,
+                    'nome' => $lotacao
+                ]);
+            }
+            
             return $candidateTeam;
         }
     }
