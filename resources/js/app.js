@@ -137,7 +137,7 @@ createInertiaApp({
 });
 
 // Service Worker para suporte offline (PWA)
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+/* if ('serviceWorker' in navigator && import.meta.env.PROD) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/service-worker.js')
             .then(registration => {
@@ -147,4 +147,4 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
                 console.error('Falha ao registrar o Service Worker', error);
             });
     });
-}
+} */
