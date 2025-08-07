@@ -42,10 +42,10 @@ chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Gera a chave da aplicação, caso não exista
-if [ ! -f "/var/www/html/.env" ] || ! grep -q "APP_KEY=" /var/www/html/.env; then
+#if [ ! -f "/var/www/html/.env" ] || ! grep -q "APP_KEY=" /var/www/html/.env; then
     echo "🔑 Gerando chave da aplicação..."
     php artisan key:generate --force
-fi
+#fi
 
 # Executa as migrações e seed apenas se o marcador não existir
 if [ ! -f "$MIGRATION_MARKER" ]; then
@@ -56,7 +56,7 @@ if [ ! -f "$MIGRATION_MARKER" ]; then
     touch "$MIGRATION_MARKER"
     echo "✅ Migrações concluídas e marcador criado"
 else
-    echo "⏩ Migrações já foram executadas anteriormente, pulando..."
+    echo "Migrações já foram executadas anteriormente, pulando..."
 fi
 
 # Cria o link simbólico para o storage, se ainda não existir
