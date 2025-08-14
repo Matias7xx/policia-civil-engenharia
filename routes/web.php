@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AcessibilidadeUnidadeController;
 use App\Http\Controllers\Admin\FormularioController;
 use App\Http\Controllers\Admin\OrgaoController;
 use App\Http\Controllers\Admin\UnidadeController as AdminUnidadeController;
@@ -8,7 +7,6 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AvaliacaoUnidadeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GeocodingController;
-use App\Http\Controllers\InformacoesUnidadeController;
 use App\Http\Controllers\MidiaController;
 use App\Http\Controllers\MidiaTipoController;
 use App\Http\Controllers\TeamController;
@@ -19,8 +17,8 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\AuditoriaController;
 
-URL::forceScheme(env('HTTP_SCHEMA'));
-URL::forceRootUrl(env('APP_URL'));
+/* URL::forceScheme(env('HTTP_SCHEMA'));
+URL::forceRootUrl(env('APP_URL')); */
 
 Route::get('/', function () {
     return Inertia::render('Auth/Login', [

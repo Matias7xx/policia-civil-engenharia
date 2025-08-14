@@ -23,6 +23,17 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        // TRUSTPROXIES - at com IP do container
+        //Inserir header na config do NGINX >  proxy_set_header X-Forwarded-Prefix /censo-imoveis;
+        $middleware->trustProxies(
+            at: ['*'],
+            headers: Request::HEADER_X_FORWARDED_FOR |
+                    Request::HEADER_X_FORWARDED_HOST |
+                    Request::HEADER_X_FORWARDED_PORT |
+                    Request::HEADER_X_FORWARDED_PROTO |
+                    Request::HEADER_X_FORWARDED_PREFIX
+        );
+
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'verify.no.unit' => \App\Http\Middleware\VerifyNoUnit::class,
@@ -31,28 +42,22 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->renderable(function (Throwable $e, Request $request) {
-            // Não personalizar erros de validação e CSRF
             if ($e instanceof ValidationException || $e instanceof TokenMismatchException) {
-                return null; // Continuar com o handler padrão
+                return null;
             }
             
-            // REMOVER a condição de ambiente para permitir testar em ambiente local!
-            
-            // Obter o código de status HTTP
-            $status = 500; // Padrão para erro de servidor
+            $status = 500;
             
             if ($e instanceof HttpException) {
                 $status = $e->getStatusCode();
             }
             
-            // Adicionar rota para a Request
             if ($request->route()) {
                 $route = $request->route()->getName() ?? 'Desconhecida';
             } else {
                 $route = 'Desconhecida';
             }
             
-            // Tratamento para erros comuns
             if (in_array($status, [403, 404, 500, 503]) && 
                 file_exists(resource_path('js/Pages/Errors/' . $status . '.vue'))) {
                 return Inertia::render('Errors/' . $status, [
@@ -62,10 +67,12 @@ return Application::configure(basePath: dirname(__DIR__))
                   ->setStatusCode($status);
             } 
             elseif ($status >= 400) {
-                // Para outros códigos de erro, use a página genérica
                 return Inertia::render('Errors/Error', [
-                    'message' => $e instanceof HttpException ? $e->getMessage() : $e->getMessage(),
-                    'status' => $status
+                    'message' => $e instanceof HttpException ? 
+                                ($e->getMessage() ?: 'Erro interno do servidor') : 
+                                'Erro interno do servidor',
+                    'status' => $status,
+                    'route' => $route
                 ])->toResponse($request)
                   ->setStatusCode($status);
             }
@@ -76,6 +83,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 ]);
             }
             
-            return null; // Continuar com o handler padrão
+            return null;
         });
     })->create();
