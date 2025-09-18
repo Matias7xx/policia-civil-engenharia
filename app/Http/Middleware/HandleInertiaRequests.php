@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use App\Models\Unidade;
+use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -51,6 +52,12 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 'unidade_id' => $unidadeId, // Compartilhar o unidade_id
             ],
+            // Compartilhar as rotas Ziggy com URL atual
+            'ziggy' => function () use ($request) {
+                return array_merge((new Ziggy)->toArray(), [
+                    'location' => $request->url(),
+                ]);
+            },
         ]);
     }
 }

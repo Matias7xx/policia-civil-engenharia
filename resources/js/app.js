@@ -3,16 +3,6 @@ import '../css/app.css';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 
-// Corrige o problema dos ícones do Leaflet no webpack/vite
-/* import { Icon } from 'leaflet';
-delete Icon.Default.prototype._getIconUrl;
-
-Icon.Default.mergeOptions({
-    iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
-    iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).href,
-    shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
-}); */
-
 // Configuração global do axios
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_APP_URL || 'http://localhost:8000';
@@ -24,13 +14,13 @@ let csrfTokenInitialized = false;
 // Inicialização do token CSRF
 const initializeCsrfToken = async () => {
     if (csrfTokenInitialized) return;
-    
+
     try {
         await axios.get('/sanctum/csrf-cookie');
         csrfTokenInitialized = true;
-        console.log('✅ CSRF token configurado com sucesso');
+        console.log('CSRF token configurado com sucesso');
     } catch (error) {
-        console.error('❌ Erro ao configurar o token CSRF:', error);
+        console.error('Erro ao configurar o token CSRF:', error);
         // Tentar novamente após 3 segundos
         setTimeout(initializeCsrfToken, 3000);
     }
@@ -46,17 +36,17 @@ axios.interceptors.request.use(config => {
         .split('; ')
         .find(row => row.startsWith('XSRF-TOKEN='))
         ?.split('=')[1];
-        
+
     if (xsrfToken) {
         const decodedXsrfToken = decodeURIComponent(xsrfToken);
         config.headers['X-XSRF-TOKEN'] = decodedXsrfToken;
     }
-    
+
     // Adicionar logs apenas em ambiente de desenvolvimento
     if (import.meta.env.DEV) {
-        console.log(`📡 ${config.method?.toUpperCase() || 'GET'} ${config.url}`);
+        console.log(`ðŸ"¡ ${config.method?.toUpperCase() || 'GET'} ${config.url}`);
     }
-    
+
     return config;
 }, error => {
     return Promise.reject(error);
@@ -67,7 +57,7 @@ axios.interceptors.response.use(
     response => response,
     error => {
         const status = error.response?.status;
-        
+
         // Tratamento específico para erros comuns
         if (status === 401) {
             console.error('Sessão expirada ou usuário não autenticado');
@@ -82,7 +72,7 @@ axios.interceptors.response.use(
         } else if (!status) {
             console.error('Erro de rede ou servidor indisponível');
         }
-        
+
         return Promise.reject(error);
     }
 );
@@ -111,22 +101,36 @@ createInertiaApp({
     },
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });
-        
+
         // Registro de plugins
         app.use(plugin);
+
+        // CONFIGURAÇÃO DO ZIGGY
+        if (props.initialPage?.props?.ziggy !== undefined) {
+            window.Ziggy = props.initialPage.props.ziggy;
+        }
+
         app.use(ZiggyVue);
-        
+
         // Registro de diretivas
         app.directive('imask', IMaskDirective);
-        
+
         // Manipulador global de erros
         app.config.errorHandler = (error, vm, info) => {
             console.error('Erro na aplicação Vue:', error, info);
         };
-        
+
+        // Debug para verificar se Ziggy está configurado
+        console.log('🔍 Verificando Ziggy:', {
+            'window.Ziggy': window.Ziggy,
+            'props.ziggy': props.initialPage?.props?.ziggy,
+            'route function': typeof window.route,
+            'props structure': props
+        });
+
         // Montagem da aplicação
         app.mount(el);
-        
+
         return app;
     },
     progress: {
