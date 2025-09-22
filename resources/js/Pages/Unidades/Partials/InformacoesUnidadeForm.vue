@@ -119,18 +119,58 @@ const methods = {
 const saveInformacoesEstruturais = () => {
     // Validação client-side
     form.errors = {}; // Limpar erros anteriores
-    
+
     // Campos obrigatórios
     const requiredFields = {
         pavimentacao_rua: 'A pavimentação da rua é obrigatória.',
     };
-    
+
     Object.entries(requiredFields).forEach(([field, message]) => {
         if (!form[field]) {
             form.errors[field] = message;
         }
     });
-    
+
+    // Normalizar campos numéricos antes da validação
+    const numericFields = [
+        'qtd_recepcao', 'qtd_wc_publico', 'qtd_gabinetes', 'qtd_sala_oitiva',
+        'qtd_wc_servidores', 'qtd_alojamento_masculino', 'qtd_wc_alojamento_masculino',
+        'qtd_alojamento_feminino', 'qtd_wc_alojamento_feminino', 'qtd_xadrez_masculino',
+        'qtd_xadrez_feminino', 'qtd_sala_identificacao', 'qtd_cozinha',
+        'qtd_area_servico', 'qtd_deposito_apreensao', 'qtd_max_veiculos_automovel'
+    ];
+
+    // Normalizar valores numéricos (converter "01" para 1, "09" para 9, etc.)
+    numericFields.forEach(field => {
+        if (form[field] && form[field] !== '') {
+            // remove zeros à esquerda automaticamente
+            const numericValue = parseInt(form[field], 10);
+            if (!isNaN(numericValue) && numericValue >= 0) {
+                form[field] = numericValue.toString();
+            } else if (form[field] !== '0' && form[field] !== 0) {
+                form.errors[field] = 'Deve ser um número válido maior ou igual a zero.';
+            }
+        }
+    });
+
+    // Campos decimais (áreas, recuos)
+    const decimalFields = [
+        'area_aproximada_unidade', 'area_aproximada_terreno', 'qtd_pavimentos',
+        'recuo_frontal', 'recuo_lateral', 'recuo_fundos',
+        'area_xadrez_masculino', 'area_xadrez_feminino'
+    ];
+
+    decimalFields.forEach(field => {
+        if (form[field] && form[field] !== '') {
+            const numericValue = parseFloat(form[field]);
+            if (!isNaN(numericValue) && numericValue >= 0) {
+                form[field] = numericValue.toString();
+            } else {
+                form.errors[field] = 'Deve ser um número válido maior ou igual a zero.';
+            }
+        }
+    });
+
     if (Object.keys(form.errors).length > 0) {
         // Rola até o primeiro erro
         const firstErrorField = document.querySelector('.text-red-600');
@@ -150,7 +190,7 @@ const saveInformacoesEstruturais = () => {
         },
         onError: (errors) => {
             emit('saved', 'Erro ao salvar as informações estruturais. Verifique os campos.');
-            
+
             // Rola até o primeiro erro
             setTimeout(() => {
                 const firstErrorField = document.querySelector('.text-red-600');
@@ -190,7 +230,7 @@ const opcoesSegurancaVeiculos = [
                 <p class="text-sm text-gray-600">
                     Preencha as informações sobre a estrutura física da unidade.
                 </p>
-                
+
                 <!-- Instruções -->
                 <div class="bg-blue-50 p-2 rounded text-sm text-blue-800 mt-2">
                     <p class="font-medium">Dica:</p>
@@ -202,24 +242,24 @@ const opcoesSegurancaVeiculos = [
         <template #form>
             <!-- 1. Características da Via e Serviços -->
             <div class="col-span-6">
-                <div 
-                    @click="methods.toggleSection('via')" 
+                <div
+                    @click="methods.toggleSection('via')"
                     class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200"
                 >
                     <InputLabel value="1. Características da Via e Serviços" class="text-base font-semibold" />
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        class="h-5 w-5 transition-transform duration-200" 
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 transition-transform duration-200"
                         :class="expandedSections.via ? 'transform rotate-180' : ''"
-                        viewBox="0 0 20 20" 
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                     >
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                 </div>
-                
-                <div 
-                    v-show="expandedSections.via" 
+
+                <div
+                    v-show="expandedSections.via"
                     class="p-4 border border-gray-200 rounded-b-lg mb-4 bg-white shadow-sm transition-all duration-300"
                 >
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -371,24 +411,24 @@ const opcoesSegurancaVeiculos = [
 
             <!-- 2. Características Estruturais -->
             <div class="col-span-6">
-                <div 
-                    @click="methods.toggleSection('estruturais')" 
+                <div
+                    @click="methods.toggleSection('estruturais')"
                     class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200"
                 >
                     <InputLabel value="2. Características Estruturais" class="text-base font-semibold" />
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        class="h-5 w-5 transition-transform duration-200" 
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 transition-transform duration-200"
                         :class="expandedSections.estruturais ? 'transform rotate-180' : ''"
-                        viewBox="0 0 20 20" 
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                     >
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                 </div>
-                
-                <div 
-                    v-show="expandedSections.estruturais" 
+
+                <div
+                    v-show="expandedSections.estruturais"
                     class="p-4 border border-gray-200 rounded-b-lg mb-4 bg-white shadow-sm transition-all duration-300"
                 >
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -438,28 +478,28 @@ const opcoesSegurancaVeiculos = [
 
                         <div class="grid grid-cols-1 sm:grid-cols-1 gap-3 items-center">
                             <div class="flex items-center">
-                                <Checkbox 
-                                    id="cercado_muros" 
-                                    v-model:checked="form.cercado_muros" 
-                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                                <Checkbox
+                                    id="cercado_muros"
+                                    v-model:checked="form.cercado_muros"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 />
                                 <InputLabel for="cercado_muros" value="Cercado por Muros" class="ml-2 text-sm" />
                             </div>
-                            
+
                             <div class="flex items-center">
-                                <Checkbox 
-                                    id="estacionamento_interno" 
-                                    v-model:checked="form.estacionamento_interno" 
-                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                                <Checkbox
+                                    id="estacionamento_interno"
+                                    v-model:checked="form.estacionamento_interno"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 />
                                 <InputLabel for="estacionamento_interno" value="Estacionamento Interno" class="ml-2 text-sm" />
                             </div>
-                            
+
                             <div class="flex items-center">
-                                <Checkbox 
-                                    id="estacionamento_externo" 
-                                    v-model:checked="form.estacionamento_externo" 
-                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                                <Checkbox
+                                    id="estacionamento_externo"
+                                    v-model:checked="form.estacionamento_externo"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 />
                                 <InputLabel for="estacionamento_externo" value="Estacionamento Externo" class="ml-2 text-sm" />
                             </div>
@@ -515,17 +555,17 @@ const opcoesSegurancaVeiculos = [
                     <!-- Seção de Veículos Apreendidos -->
                     <div class="col-span-1 sm:col-span-2 mt-6 p-4 bg-gray-50 rounded-lg border border-blue-200">
                         <h4 class="text-sm font-medium mb-4">Informações sobre Veículos Apreendidos</h4>
-                        
+
                         <div class="space-y-4">
                             <div class="flex items-center">
-                                <Checkbox 
-                                    id="tem_espaco_veiculos_apreendidos" 
-                                    v-model:checked="form.tem_espaco_veiculos_apreendidos" 
-                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                                <Checkbox
+                                    id="tem_espaco_veiculos_apreendidos"
+                                    v-model:checked="form.tem_espaco_veiculos_apreendidos"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                 />
                                 <InputLabel for="tem_espaco_veiculos_apreendidos" value="Na unidade policial tem espaço para guardar veículos apreendidos?" class="ml-2 text-sm" />
                             </div>
-                            
+
                             <!-- Campos condicionais que aparecem se tiver espaço para veículos -->
                             <div v-if="form.tem_espaco_veiculos_apreendidos" class="ml-6 space-y-4 border-l-2 border-blue-300 pl-4">
                                 <div>
@@ -558,10 +598,10 @@ const opcoesSegurancaVeiculos = [
                                 </div>
 
                                 <div class="flex items-center">
-                                    <Checkbox 
-                                        id="historico_invasao_veiculo" 
-                                        v-model:checked="form.historico_invasao_veiculo" 
-                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                                    <Checkbox
+                                        id="historico_invasao_veiculo"
+                                        v-model:checked="form.historico_invasao_veiculo"
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                     <InputLabel for="historico_invasao_veiculo" value="Há histórico de invasão nesse espaço ou veículos já foram subtraídos ou tiveram peças subtraídas?" class="ml-2 text-sm" />
                                 </div>
@@ -587,24 +627,24 @@ const opcoesSegurancaVeiculos = [
 
             <!-- 3. Quantitativos de Espaços e Instalações -->
             <div class="col-span-6">
-                <div 
-                    @click="methods.toggleSection('espacos')" 
+                <div
+                    @click="methods.toggleSection('espacos')"
                     class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200"
                 >
                     <InputLabel value="3. Quantitativos de Espaços e Instalações" class="text-base font-semibold" />
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        class="h-5 w-5 transition-transform duration-200" 
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 transition-transform duration-200"
                         :class="expandedSections.espacos ? 'transform rotate-180' : ''"
-                        viewBox="0 0 20 20" 
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                     >
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                 </div>
-                
-                <div 
-                    v-show="expandedSections.espacos" 
+
+                <div
+                    v-show="expandedSections.espacos"
                     class="p-4 border border-gray-200 rounded-b-lg mb-4 bg-white shadow-sm transition-all duration-300"
                 >
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -624,7 +664,7 @@ const opcoesSegurancaVeiculos = [
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_wc_publico" value="WCs Públicos" class="text-sm" />
                                     <TextInput
@@ -637,7 +677,7 @@ const opcoesSegurancaVeiculos = [
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_sala_oitiva" value="Salas de Oitiva" class="text-sm" />
                                     <TextInput
@@ -652,7 +692,7 @@ const opcoesSegurancaVeiculos = [
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Áreas administrativas -->
                         <div class="-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
                             <h3 class="text-sm font-medium mb-2">Áreas Administrativas</h3>
@@ -669,7 +709,7 @@ const opcoesSegurancaVeiculos = [
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_wc_servidores" value="WCs Servidores" class="text-sm" />
                                     <TextInput
@@ -682,7 +722,7 @@ const opcoesSegurancaVeiculos = [
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_sala_identificacao" value="Salas de Identificação" class="text-sm" />
                                     <TextInput
@@ -697,7 +737,7 @@ const opcoesSegurancaVeiculos = [
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Alojamentos -->
                         <div class="p-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
                             <h3 class="text-sm font-medium mb-2">Alojamentos</h3>
@@ -714,7 +754,7 @@ const opcoesSegurancaVeiculos = [
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_wc_alojamento_masculino" value="WCs Aloj. Masculino" class="text-sm" />
                                     <TextInput
@@ -727,7 +767,7 @@ const opcoesSegurancaVeiculos = [
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_alojamento_feminino" value="Alojamento Feminino" class="text-sm" />
                                     <TextInput
@@ -740,7 +780,7 @@ const opcoesSegurancaVeiculos = [
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_wc_alojamento_feminino" value="WCs Aloj. Feminino" class="text-sm" />
                                     <TextInput
@@ -755,7 +795,7 @@ const opcoesSegurancaVeiculos = [
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Outras instalações -->
                         <div class="p-3 rounded-lg col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
                             <h3 class="text-sm font-medium mb-2">Outras Instalações</h3>
@@ -815,7 +855,7 @@ const opcoesSegurancaVeiculos = [
                                     />
                                     <InputError :message="form.errors.area_xadrez_feminino" class="mt-1 text-xs" />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_cozinha" value="Cozinha" class="text-sm" />
                                     <TextInput
@@ -828,7 +868,7 @@ const opcoesSegurancaVeiculos = [
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_area_servico" value="Áreas de Serviço" class="text-sm" />
                                     <TextInput
@@ -841,7 +881,7 @@ const opcoesSegurancaVeiculos = [
                                         :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <InputLabel for="qtd_deposito_apreensao" value="Depósito Apreensão" class="text-sm" />
                                     <TextInput
@@ -862,86 +902,86 @@ const opcoesSegurancaVeiculos = [
 
             <!-- 4. Suficiência de Instalações -->
             <div class="col-span-6">
-                <div 
-                    @click="methods.toggleSection('instalacoes')" 
+                <div
+                    @click="methods.toggleSection('instalacoes')"
                     class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200"
                 >
                     <InputLabel value="4. Suficiência de Instalações" class="text-base font-semibold" />
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        class="h-5 w-5 transition-transform duration-200" 
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 transition-transform duration-200"
                         :class="expandedSections.instalacoes ? 'transform rotate-180' : ''"
-                        viewBox="0 0 20 20" 
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                     >
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                 </div>
-                
-                <div 
-                    v-show="expandedSections.instalacoes" 
+
+                <div
+                    v-show="expandedSections.instalacoes"
                     class="p-4 border border-gray-200 rounded-b-lg mb-4 bg-white shadow-sm transition-all duration-300"
                 >
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
-                            <Checkbox 
-                                id="tomadas_suficientes" 
-                                v-model:checked="form.tomadas_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                            <Checkbox
+                                id="tomadas_suficientes"
+                                v-model:checked="form.tomadas_suficientes"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputLabel for="tomadas_suficientes" value="Tomadas Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
-                            <Checkbox 
-                                id="luminarias_suficientes" 
-                                v-model:checked="form.luminarias_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                            <Checkbox
+                                id="luminarias_suficientes"
+                                v-model:checked="form.luminarias_suficientes"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputLabel for="luminarias_suficientes" value="Luminárias Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
-                            <Checkbox 
-                                id="pontos_rede_suficientes" 
-                                v-model:checked="form.pontos_rede_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                            <Checkbox
+                                id="pontos_rede_suficientes"
+                                v-model:checked="form.pontos_rede_suficientes"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputLabel for="pontos_rede_suficientes" value="Pontos de Rede Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
-                            <Checkbox 
-                                id="pontos_telefone_suficientes" 
-                                v-model:checked="form.pontos_telefone_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                            <Checkbox
+                                id="pontos_telefone_suficientes"
+                                v-model:checked="form.pontos_telefone_suficientes"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputLabel for="pontos_telefone_suficientes" value="Pontos de Telefone Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
-                            <Checkbox 
-                                id="pontos_ar_condicionado_suficientes" 
-                                v-model:checked="form.pontos_ar_condicionado_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                            <Checkbox
+                                id="pontos_ar_condicionado_suficientes"
+                                v-model:checked="form.pontos_ar_condicionado_suficientes"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputLabel for="pontos_ar_condicionado_suficientes" value="Ares-Condicionados Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
-                            <Checkbox 
-                                id="pontos_hidraulicos_suficientes" 
-                                v-model:checked="form.pontos_hidraulicos_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                            <Checkbox
+                                id="pontos_hidraulicos_suficientes"
+                                v-model:checked="form.pontos_hidraulicos_suficientes"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputLabel for="pontos_hidraulicos_suficientes" value="Pontos Hidráulicos Suficientes" class="ml-2 text-sm" />
                         </div>
 
                         <div class="flex items-center bg-white p-2 rounded-lg shadow-sm hover:bg-gray-50 transition">
-                            <Checkbox 
-                                id="pontos_sanitarios_suficientes" 
-                                v-model:checked="form.pontos_sanitarios_suficientes" 
-                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)" 
+                            <Checkbox
+                                id="pontos_sanitarios_suficientes"
+                                v-model:checked="form.pontos_sanitarios_suficientes"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
                             />
                             <InputLabel for="pontos_sanitarios_suficientes" value="Pontos Sanitários Suficientes" class="ml-2 text-sm" />
                         </div>
@@ -951,24 +991,24 @@ const opcoesSegurancaVeiculos = [
 
             <!-- 5. Acabamentos -->
             <!-- <div class="col-span-6">
-                <div 
-                    @click="methods.toggleSection('acabamentos')" 
+                <div
+                    @click="methods.toggleSection('acabamentos')"
                     class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200"
                 >
                     <InputLabel value="5. Acabamentos" class="text-base font-semibold" />
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        class="h-5 w-5 transition-transform duration-200" 
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 transition-transform duration-200"
                         :class="expandedSections.acabamentos ? 'transform rotate-180' : ''"
-                        viewBox="0 0 20 20" 
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                     >
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                 </div>
-                
-                <div 
-                    v-show="expandedSections.acabamentos" 
+
+                <div
+                    v-show="expandedSections.acabamentos"
                     class="p-4 border border-gray-200 rounded-b-lg mb-4 bg-white shadow-sm transition-all duration-300"
                 >
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -1061,24 +1101,24 @@ const opcoesSegurancaVeiculos = [
 
             <!-- 5. Equipamentos de Segurança -->
             <div class="col-span-6">
-                <div 
-                    @click="methods.toggleSection('seguranca')" 
+                <div
+                    @click="methods.toggleSection('seguranca')"
                     class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg cursor-pointer hover:bg-gray-200 transition-colors duration-200"
                 >
                     <InputLabel value="5. Equipamentos de Segurança" class="text-base font-semibold" />
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        class="h-5 w-5 transition-transform duration-200" 
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 transition-transform duration-200"
                         :class="expandedSections.seguranca ? 'transform rotate-180' : ''"
-                        viewBox="0 0 20 20" 
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                     >
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                 </div>
-                
-                <div 
-                    v-show="expandedSections.seguranca" 
+
+                <div
+                    v-show="expandedSections.seguranca"
                     class="p-4 border border-gray-200 rounded-b-lg mb-4 bg-white shadow-sm transition-all duration-300"
                 >
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -1181,7 +1221,7 @@ const opcoesSegurancaVeiculos = [
                     </div>
                 </div>
             </div>
-            
+
             <!-- Campos obrigatórios -->
             <div class="col-span-6 text-sm text-gray-500 mt-2">
                 <p>* Campos obrigatórios</p>
@@ -1200,10 +1240,10 @@ const opcoesSegurancaVeiculos = [
                         </span>
                     </ActionMessage>
                 </div>
-                
+
                 <div class="flex space-x-2">
-                    <PrimaryButton 
-                        :class="{ 'opacity-25': form.processing }" 
+                    <PrimaryButton
+                        :class="{ 'opacity-25': form.processing }"
                         :disabled="form.processing"
                         color="gold"
                     >
