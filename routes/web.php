@@ -16,14 +16,18 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\AuditoriaController;
+use Illuminate\Support\Facades\Auth;
 
 /* URL::forceScheme(env('HTTP_SCHEMA'));
 URL::forceRootUrl(env('APP_URL')); */
 
 Route::get('/', function () {
+    if (Auth::check()) {
+        return redirect('/dashboard');
+    }
+
     return Inertia::render('Auth/Login', [
         'canLogin' => Route::has('login'),
-        /* 'canRegister' => Route::has('register'), */
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
@@ -59,7 +63,7 @@ Route::middleware([
     // API para buscar unidades QUE COMPARTILHAM O MESMO PRÉDIO
     Route::get('/api/unidades/ativas', [UnidadeController::class, 'getUnidadesAtivas'])
     ->name('api.unidades.ativas');
-    
+
     // Rotas para visualização de mídias (MinIO)
     Route::get('/midias/{id}/view', [MidiaController::class, 'view'])->name('midias.view');
     Route::get('/midias/{id}/download', [MidiaController::class, 'download'])->name('midias.download');
@@ -68,7 +72,7 @@ Route::middleware([
     Route::prefix('teams')->name('teams.')->group(function () {
         /* Route::get('/', [TeamController::class, 'index'])->name('index');
         Route::get('/{team}', [TeamController::class, 'show'])->name('show'); */
-        
+
         Route::middleware('verify.no.unit')->group(function () {
             Route::get('/create', [TeamController::class, 'create'])->name('create');
         });
@@ -78,7 +82,7 @@ Route::middleware([
     Route::middleware('role:admin')->group(function () {
         // Gerenciamento de unidades
         Route::prefix('unidades')->name('unidades.')->group(function () {
-            
+
             Route::get('/create/{teamId?}', [UnidadeController::class, 'create'])
             ->middleware('check.unidade.status:') //Só entra se o status for SEM CADASTRO
             ->name('create');
@@ -118,7 +122,7 @@ Route::middleware([
             Route::get('/{id}/anexo', [AdminUnidadeController::class, 'anexo'])->name('anexo');
             Route::get('/{id}/termo-cessao', [AdminUnidadeController::class, 'termoCessao'])->name('termoCessao');
             Route::post('/{id}/status', [AdminUnidadeController::class, 'updateStatus'])->name('updateStatus');
-            
+
             // Rotas para super admin preencher formulários das Unidades
             Route::get('/{teamId}/create', [UnidadeController::class, 'create'])->name('create');
             Route::get('/{team}/{unidade}/edit', [UnidadeController::class, 'edit'])->name('edit');
@@ -158,7 +162,7 @@ Route::middleware([
         Route::prefix('auditoria')->name('auditoria.')->group(function () {
             Route::get('/', [AuditoriaController::class, 'index'])
                 ->name('index');
-            
+
              Route::get('/detalhes/{unidade}', [AuditoriaController::class, 'show'])
                 ->name('show');
         });

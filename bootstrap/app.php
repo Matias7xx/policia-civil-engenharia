@@ -9,6 +9,7 @@ use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\Auth\AuthenticationException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -41,35 +42,42 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->renderable(function (AuthenticationException $e, Request $request) {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+        return redirect()->guest('/');
+    });
+    
         $exceptions->renderable(function (Throwable $e, Request $request) {
             if ($e instanceof ValidationException || $e instanceof TokenMismatchException) {
                 return null;
             }
-            
+
             $status = 500;
-            
+
             if ($e instanceof HttpException) {
                 $status = $e->getStatusCode();
             }
-            
+
             if ($request->route()) {
                 $route = $request->route()->getName() ?? 'Desconhecida';
             } else {
                 $route = 'Desconhecida';
             }
-            
-            if (in_array($status, [403, 404, 500, 503]) && 
+
+            if (in_array($status, [403, 404, 500, 503]) &&
                 file_exists(resource_path('js/Pages/Errors/' . $status . '.vue'))) {
                 return Inertia::render('Errors/' . $status, [
                     'message' => $e instanceof HttpException ? $e->getMessage() : $e->getMessage(),
                     'status' => $status
                 ])->toResponse($request)
                   ->setStatusCode($status);
-            } 
+            }
             elseif ($status >= 400) {
                 return Inertia::render('Errors/Error', [
-                    'message' => $e instanceof HttpException ? 
-                                ($e->getMessage() ?: 'Erro interno do servidor') : 
+                    'message' => $e instanceof HttpException ?
+                                ($e->getMessage() ?: 'Erro interno do servidor') :
                                 'Erro interno do servidor',
                     'status' => $status,
                     'route' => $route
@@ -82,7 +90,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'flash.bannerStyle' => 'danger',
                 ]);
             }
-            
+
             return null;
         });
     })->create();
