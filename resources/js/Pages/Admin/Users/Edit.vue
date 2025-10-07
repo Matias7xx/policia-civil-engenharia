@@ -207,9 +207,9 @@ const updateUser = () => {
                                 required
                             >
                                 <option value="">Selecione uma unidade</option>
-                                <option 
-                                    v-for="team in teams" 
-                                    :key="team.id" 
+                                <option
+                                    v-for="team in teams"
+                                    :key="team.id"
                                     :value="team.id"
                                 >
                                     {{ team.name }}
@@ -231,9 +231,9 @@ const updateUser = () => {
                                 required
                             >
                                 <option value="">Selecione uma função</option>
-                                <option 
-                                    v-for="role in roles" 
-                                    :key="role.key" 
+                                <option
+                                    v-for="role in roles"
+                                    :key="role.key"
                                     :value="role.key"
                                 >
                                     {{ role.name }}
@@ -249,7 +249,7 @@ const updateUser = () => {
                             Usuário atualizado com sucesso.
                         </ActionMessage>
 
-                        <Link 
+                        <Link
                             :href="route('admin.users.index')"
                             class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 uppercase tracking-widest hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition ease-in-out duration-150"
                         >
@@ -259,8 +259,8 @@ const updateUser = () => {
                             Voltar
                         </Link>
 
-                        <PrimaryButton 
-                            :class="{ 'opacity-25': form.processing }" 
+                        <PrimaryButton
+                            :class="{ 'opacity-25': form.processing }"
                             :disabled="form.processing"
                             class="inline-flex items-center px-4 py-2 border border-transparent rounded-md font-semibold text-sm uppercase tracking-widest focus:outline-none focus:ring-2 transition ease-in-out duration-150"
                             color="gold"

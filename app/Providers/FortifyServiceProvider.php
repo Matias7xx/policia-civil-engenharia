@@ -37,7 +37,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(function(){
             return view('auth.login');
         });
-        
+
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
@@ -57,13 +57,13 @@ class FortifyServiceProvider extends ServiceProvider
                 // Verificar se as variáveis de ambiente da API estão configuradas
                 $apiToken = env('API_TOKEN');
                 $apiLoginUrl = env('API_LOGIN_URL');
-                
+
                 if (empty($apiToken) || empty($apiLoginUrl)) {
                     Log::warning('API não configurada, usando apenas autenticação local', [
                         'api_token_empty' => empty($apiToken),
                         'api_login_url_empty' => empty($apiLoginUrl)
                     ]);
-                    
+
                     // Fallback para banco local
                     $user = User::where('matricula', $request->matricula)->first();
                     if ($user && Hash::check($request->password, $user->password)) {
@@ -71,14 +71,14 @@ class FortifyServiceProvider extends ServiceProvider
                     }
                     return null;
                 }
-                
+
                 Log::info('Tentativa de autenticação via API', [
                     'matricula' => $request->matricula,
                     'api_url' => $apiLoginUrl,
                     'user_agent' => $request->header('User-Agent'),
                     'ip' => $request->ip()
                 ]);
-                
+
                 // Tenta autenticar via API com configurações otimizadas
                 $response = Http::timeout(20) // Timeout mais longo
                     ->connectTimeout(10) // Timeout de conexão
@@ -88,22 +88,22 @@ class FortifyServiceProvider extends ServiceProvider
                         'matricula' => $request->matricula,
                         'senha' => $request->password
                     ]);
-                
+
                 Log::info('Resposta da API recebida', [
                     'status' => $response->status(),
                     'headers' => $response->headers(),
                     'size' => strlen($response->body())
                 ]);
-                
+
                 if ($response->successful()) {
                     $data = $response->json();
-                    
+
                     // Log do retorno da API
                     Log::debug('Dados recebidos da API:', ['userData' => $data]);
-                    
+
                     // Verificar se o usuário já existe
                     $user = User::where('matricula', $data['matricula'])->first();
-                    
+
                     if (!$user) {
                         // Criar novo usuário simples
                         $user = $this->createSimpleUser($data, $request->password);
@@ -114,10 +114,10 @@ class FortifyServiceProvider extends ServiceProvider
                         $user->save();
                         Log::info('Usuário existente atualizado: ' . $user->id);
                     }
-                    
+
                     // Configurar time e role explicitamente
                     $this->setupTeamAndRole($user, $data);
-                    
+
                     return $user;
                 } else {
                     // Log da falha
@@ -127,7 +127,7 @@ class FortifyServiceProvider extends ServiceProvider
                         'api_url' => $apiLoginUrl,
                         'headers' => $response->headers()
                     ]);
-                    
+
                     // Fallback para banco local
                     $user = User::where('matricula', $request->matricula)->first();
                     if ($user && Hash::check($request->password, $user->password)) {
@@ -142,7 +142,7 @@ class FortifyServiceProvider extends ServiceProvider
                     'api_url' => $apiLoginUrl,
                     'curl_error' => $e->getCode()
                 ]);
-                
+
                 // Fallback para banco local
                 $user = User::where('matricula', $request->matricula)->first();
                 if ($user && Hash::check($request->password, $user->password)) {
@@ -156,7 +156,7 @@ class FortifyServiceProvider extends ServiceProvider
                     'api_url' => $apiLoginUrl,
                     'trace' => $e->getTraceAsString()
                 ]);
-                
+
                 // Fallback para banco local
                 $user = User::where('matricula', $request->matricula)->first();
                 if ($user && Hash::check($request->password, $user->password)) {
@@ -167,7 +167,7 @@ class FortifyServiceProvider extends ServiceProvider
             }
         });
     }
-    
+
     /**
      * Cria um usuário básico
      */
@@ -181,13 +181,13 @@ class FortifyServiceProvider extends ServiceProvider
             $user->password = Hash::make($password);
             $user->cargo = $data['cargo'] ?? null;
             $user->save();
-            
-            
+
+
             Log::info('Usuário criado com sucesso', [
                 'id' => $user->id,
                 'matricula' => $user->matricula
             ]);
-            
+
             return $user;
         } catch (\Exception $e) {
             Log::error('Erro ao criar usuário: ' . $e->getMessage(), [
@@ -196,7 +196,7 @@ class FortifyServiceProvider extends ServiceProvider
             throw $e;
         }
     }
-    
+
     /**
      * Configura explicitamente o time e a role do usuário
      */
@@ -208,38 +208,38 @@ private function setupTeamAndRole($user, $data)
     try {
         // Determinar lotação
         $lotacao = "Sem Lotação";
-        
-        if (isset($data['lotacao_principal']) && 
-            is_array($data['lotacao_principal']) && 
+
+        if (isset($data['lotacao_principal']) &&
+            is_array($data['lotacao_principal']) &&
             !empty($data['lotacao_principal']['unidade_lotacao'])) {
             $lotacao = trim($data['lotacao_principal']['unidade_lotacao']);
         } elseif (!empty($data['unidade_lotacao'])) {
             $lotacao = trim($data['unidade_lotacao']);
         }
-        
+
         Log::info('Lotação da API: ' . $lotacao);
-        
+
         // Verificar se é Super Admin
         if ($user->matricula === '0000001') {
             // Lógica especial para Super Admin
             $this->setupSuperAdminTeam($user);
             return;
         }
-        
+
         // Buscar ou criar team de forma inteligente
         $team = $this->findOrCreateTeam($lotacao, $user);
-        
+
         if (!$team) {
             Log::error('Erro: Team não foi criado ou encontrado');
             return;
         }
-        
+
         // Verificar se o usuário já está no team
         $teamUser = DB::table('team_user')
             ->where('team_id', $team->id)
             ->where('user_id', $user->id)
             ->first();
-        
+
         if (!$teamUser) {
             // Adicionar o usuário ao team
             DB::table('team_user')->insert([
@@ -249,33 +249,33 @@ private function setupTeamAndRole($user, $data)
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
-            
+
             Log::info('Usuário adicionado ao team', [
                 'team_id' => $team->id,
                 'team_name' => $team->name,
                 'user_id' => $user->id,
                 'role' => 'admin'
             ]);
-        } else if ($teamUser->role !== 'admin') {
+        } /* else if ($teamUser->role !== 'admin') {
             // Atualizar a role para admin
             DB::table('team_user')
                 ->where('team_id', $team->id)
                 ->where('user_id', $user->id)
                 ->update(['role' => 'admin']);
-            
+
             Log::info('Role do usuário atualizada para admin');
-        }
-        
+        } */
+
         // Definir o team como atual do usuário
         $user->current_team_id = $team->id;
         $user->save();
-        
+
         Log::info('Team atual do usuário definido', [
             'team_id' => $team->id,
             'team_name' => $team->name,
             'user_id' => $user->id
         ]);
-        
+
     } catch (\Exception $e) {
         Log::error('Erro ao configurar team e role: ' . $e->getMessage(), [
             'user_id' => $user->id,
@@ -291,7 +291,7 @@ private function normalizeString($string)
 {
     $string = trim($string);
     $string = mb_strtolower($string, 'UTF-8');
-    
+
     $replacements = [
         'á' => 'a', 'à' => 'a', 'ã' => 'a', 'â' => 'a', 'ä' => 'a',
         'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
@@ -301,7 +301,7 @@ private function normalizeString($string)
         'ç' => 'c', 'ñ' => 'n',
         'ª' => 'a', 'º' => 'o'
     ];
-    
+
     return strtr($string, $replacements);
 }
 
@@ -311,43 +311,43 @@ private function normalizeString($string)
 private function findOrCreateTeam($lotacao, $user)
 {
     Log::info('Buscando team para lotação: ' . $lotacao);
-    
+
     // Primeiro: busca exata
     $team = Team::where('name', $lotacao)->first();
-    
+
     if ($team) {
         Log::info('Team encontrado com nome exato: ' . $lotacao);
         return $team;
     }
-    
+
     // Segunda tentativa: busca por similaridade (sem acentos)
     $lotacaoNormalizada = $this->normalizeString($lotacao);
-    
+
     $teams = Team::all();
     foreach ($teams as $candidateTeam) {
         $nomeNormalizado = $this->normalizeString($candidateTeam->name);
         if ($nomeNormalizado === $lotacaoNormalizada) {
             Log::info("Team encontrado com busca normalizada: {$candidateTeam->name} para lotação: {$lotacao}");
-            
+
             // Atualizar o nome do team para usar os acentos da API
             if ($candidateTeam->name !== $lotacao) {
                 $nomeAnterior = $candidateTeam->name;
                 $candidateTeam->name = $lotacao;
                 $candidateTeam->save();
-                
+
                 Log::info("Nome do team atualizado com acentos da API", [
                     'team_id' => $candidateTeam->id,
                     'nome_anterior' => $nomeAnterior,
                     'nome_novo' => $lotacao
                 ]);
-                
+
                 // Atualizar nome na tabela unidades se existir
                 $unidade = \App\Models\Unidade::where('team_id', $candidateTeam->id)->first();
                 if ($unidade && $unidade->nome !== $lotacao) {
                     $unidadeNomeAnterior = $unidade->nome;
                     $unidade->nome = $lotacao;
                     $unidade->save();
-                    
+
                     Log::info("Nome da unidade também atualizado", [
                         'unidade_id' => $unidade->id,
                         'team_id' => $candidateTeam->id,
@@ -361,27 +361,27 @@ private function findOrCreateTeam($lotacao, $user)
                     'nome' => $lotacao
                 ]);
             }
-            
+
             return $candidateTeam;
         }
     }
-    
+
     // Se não encontrou, criar novo com o nome original da API
     $superAdmin = User::where('matricula', '0000001')->first();
-    
+
     if (!$superAdmin) {
         $superAdmin = $user;
         Log::warning('Super Admin não encontrado, usando usuário atual como dono do time');
     }
-    
+
     $team = Team::create([
         'name' => $lotacao, // Nome original da API (com acentos)
         'user_id' => $superAdmin->id,
         'personal_team' => false,
     ]);
-    
+
     Log::info("Team criado com nome da API: {$lotacao}, ID: {$team->id}");
-    
+
     return $team;
 }
 
@@ -390,23 +390,23 @@ private function setupSuperAdminTeam($user)
     try {
         // Verificar se o team DITI já existe
         $team = Team::where('name', 'DITI')->first();
-        
+
         if (!$team) {
             $team = Team::create([
                 'name' => 'DITI',
                 'user_id' => $user->id,
                 'personal_team' => true,
             ]);
-            
+
             Log::info('Team DITI criado para Super Admin');
         }
-        
+
         // Verificar se o Super Admin já está no team
         $teamUser = DB::table('team_user')
             ->where('team_id', $team->id)
             ->where('user_id', $user->id)
             ->first();
-        
+
         if (!$teamUser) {
             DB::table('team_user')->insert([
                 'team_id' => $team->id,
@@ -415,16 +415,16 @@ private function setupSuperAdminTeam($user)
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
-            
+
             Log::info('Super Admin adicionado ao team DITI');
         }
-        
+
         // Definir o team como atual
         $user->current_team_id = $team->id;
         $user->save();
-        
+
         Log::info('Team DITI definido como atual para Super Admin');
-        
+
     } catch (\Exception $e) {
         Log::error('Erro ao configurar Super Admin: ' . $e->getMessage());
     }

@@ -61,7 +61,7 @@ class UnidadeController extends Controller
                 ->orderBy('nome')
                 ->get(),
             'permissions' => [
-                'canUpdateTeam' => auth()->user()->hasTeamPermission($team, 'update'),
+                'canUpdateTeam' => auth()->user()->isSuperAdmin || auth()->user()->hasTeamPermission($team, 'update'),
             ],
         ]);
     }
@@ -96,13 +96,13 @@ class UnidadeController extends Controller
                 ->orderBy('nome')
                 ->get()->toArray(),
             'permissions' => [
-                'canUpdateTeam' => $user->hasTeamPermission($unidade->team, 'update'),
+                'canUpdateTeam' => auth()->user()->isSuperAdmin || auth()->user()->hasTeamPermission($team, 'update'),
                 'isAdmin' => $isAdmin,
-                'canDeleteTeam' => $user->hasTeamPermission($unidade->team, 'delete'),
+                'canDeleteTeam' => $user->isSuperAdmin || $user->hasTeamPermission($unidade->team, 'delete'),
             ],
             'availableRoles' => config('roles.available_roles', []),
             'userPermissions' => [
-                'canManageTeamMembers' => $user->hasTeamPermission($unidade->team, 'manage-members'),
+                'canManageTeamMembers' => $user->isSuperAdmin || $user->hasTeamPermission($unidade->team, 'manage-members'),
             ],
         ]);
     }
@@ -135,7 +135,7 @@ class UnidadeController extends Controller
             'numero_medidor_energia' => 'nullable|string|max:50',
         ]);
 
-        if (!auth()->user()->hasTeamPermission($team, 'update')) {
+        if (!auth()->user()->isSuperAdmin && !auth()->user()->hasTeamPermission($team, 'update')) {
             return redirect()->back()->with('error', 'Você não tem permissão para atualizar esta unidade.');
         }
 
@@ -195,7 +195,7 @@ class UnidadeController extends Controller
             'longitude' => 'required|numeric',
         ]);
 
-        if (!auth()->user()->hasTeamPermission($team, 'update')) {
+        if (!auth()->user()->isSuperAdmin && !auth()->user()->hasTeamPermission($team, 'update')) {
             return redirect()->back()->with('error', 'Você não tem permissão para atualizar esta unidade.');
         }
 
@@ -228,7 +228,7 @@ class UnidadeController extends Controller
 
         $unidade = Unidade::findOrFail($validated['unidade_id']);
         $team = Team::findOrFail($unidade->team_id);
-        if (!auth()->user()->hasTeamPermission($team, 'update')) {
+        if (!auth()->user()->isSuperAdmin && !auth()->user()->hasTeamPermission($team, 'update')) {
             return redirect()->back()->with('error', 'Você não tem permissão para atualizar esta unidade.');
         }
 
@@ -329,7 +329,7 @@ class UnidadeController extends Controller
 
         $unidade = Unidade::findOrFail($request->unidade_id);
         $team = Team::findOrFail($unidade->team_id);
-        if (!auth()->user()->hasTeamPermission($team, 'update')) {
+        if (!auth()->user()->isSuperAdmin && !auth()->user()->hasTeamPermission($team, 'update')) {
             return redirect()->back()->with('error', 'Você não tem permissão para atualizar esta unidade.');
         }
 
@@ -356,16 +356,16 @@ class UnidadeController extends Controller
         }
 
         // Verificar se todas as mídias obrigatórias existem
-        $tiposObrigatorios = ['foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos', 
+        $tiposObrigatorios = ['foto_frente', 'foto_lateral_1', 'foto_lateral_2', 'foto_fundos',
                               'foto_medidor_agua', 'foto_medidor_energia'];
-        
+
         $tiposExistentes = $unidade->midias()
             ->join('midia_tipos', 'midias.midia_tipo_id', '=', 'midia_tipos.id')
             ->pluck('midia_tipos.nome')
             ->toArray();
-        
+
         $tiposFaltantes = array_diff($tiposObrigatorios, $tiposExistentes);
-        
+
         if (!empty($tiposFaltantes)) {
             return redirect()->back()->with('error', 'Faltam fotos obrigatórias: ' . implode(', ', $tiposFaltantes));
         }
@@ -406,7 +406,7 @@ class UnidadeController extends Controller
                 ->orderBy('nome')
                 ->get(),
             'permissions' => [
-                'canUpdateTeam' => auth()->user()->hasTeamPermission($team, 'update'),
+                'canUpdateTeam' => auth()->user()->isSuperAdmin || auth()->user()->hasTeamPermission($team, 'update'),
             ],
         ]);
     }

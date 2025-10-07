@@ -23,15 +23,15 @@ const applyFilters = () => {
     isLoading.value = true;
     searchTimeout = setTimeout(() => {
         const normalizedSearch = searchQuery.value.trim().toLowerCase();
-        
+
         router.get(
             route('admin.unidades.index'),
-            { 
-                search: normalizedSearch, 
+            {
+                search: normalizedSearch,
                 status: statusFilter.value,
                 nota: notaFilter.value,
             },
-            { 
+            {
                 preserveState: true,
                 replace: true,
                 preserveScroll: true,
@@ -114,40 +114,41 @@ const getNotaTooltip = (nota) => {
 };
 
 // Função para determinar o link e texto do botão baseado no status da unidade
-const getActionButton = (unidade) => {
-    if (!unidade.team) return null;
-    
+const getActionButtons = (unidade) => {
+    if (!unidade.team) return [];
+
+    const buttons = [];
+
     // Se is_draft for true ou status for null/undefined (sem cadastro)
     if (unidade.is_draft || !unidade.status) {
-        return {
+        buttons.push({
             href: route('admin.unidades.create', unidade.team.id),
             text: unidade.is_draft ? 'Continuar Cadastro' : 'Cadastrar Unidade',
             icon: PlusIcon,
             class: 'bg-[#bea55a] hover:bg-[#d4bf7a] text-black'
-        };
+        });
+        return buttons;
     }
-    
-    // Se status for aprovada, só pode visualizar
-    if (unidade.status === 'aprovada') {
-        return {
-            href: route('admin.unidades.show', unidade.id),
-            text: 'Visualizar',
-            icon: EyeIcon,
-            class: 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-        };
-    }
-    
+
+    // Se status for aprovada, pode visualizar
+    buttons.push({
+        href: route('admin.unidades.show', unidade.id),
+        text: 'Visualizar',
+        icon: EyeIcon,
+        class: 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+    });
+
     // Se status for pendente_avaliacao, reprovada ou em_revisao, pode editar
     if (['pendente_avaliacao', 'reprovada', 'em_revisao'].includes(unidade.status)) {
-        return {
+        buttons.push({
             href: route('admin.unidades.edit', { team: unidade.team.id, unidade: unidade.id }),
             text: 'Editar',
             icon: PencilIcon,
             class: 'bg-blue-100 hover:bg-blue-200 text-blue-700'
-        };
+        });
     }
-    
-    return null;
+
+    return buttons;
 };
 </script>
 
@@ -184,11 +185,11 @@ const getActionButton = (unidade) => {
                                     <MagnifyingGlassIcon class="h-5 w-5 text-gray-400 mr-2" />
                                     Pesquisar
                                 </label>
-                                <input 
-                                    id="search" 
-                                    v-model="searchQuery" 
-                                    type="text" 
-                                    placeholder="Buscar por nome, cidade, unidade gestora..." 
+                                <input
+                                    id="search"
+                                    v-model="searchQuery"
+                                    type="text"
+                                    placeholder="Buscar por nome, cidade, unidade gestora..."
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#bea55a] focus:ring-[#bea55a] text-base"
                                 />
                                 <div v-if="isLoading" class="absolute right-3 top-10 text-gray-500">
@@ -203,9 +204,9 @@ const getActionButton = (unidade) => {
                                     <FunnelIcon class="h-5 w-5 text-gray-400 mr-2" />
                                     Status Formulário
                                 </label>
-                                <select 
-                                    id="status" 
-                                    v-model="statusFilter" 
+                                <select
+                                    id="status"
+                                    v-model="statusFilter"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#bea55a] focus:ring-[#bea55a] text-base"
                                 >
                                     <option v-for="option in statusOptions" :key="option.key" :value="option.key">
@@ -218,9 +219,9 @@ const getActionButton = (unidade) => {
                                     <FunnelIcon class="h-5 w-5 text-gray-400 mr-2" />
                                     Nota Geral
                                 </label>
-                                <select 
-                                    id="nota" 
-                                    v-model="notaFilter" 
+                                <select
+                                    id="nota"
+                                    v-model="notaFilter"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#bea55a] focus:ring-[#bea55a] text-base"
                                 >
                                     <option v-for="option in notaOptions" :key="option.key" :value="option.key">
@@ -229,21 +230,21 @@ const getActionButton = (unidade) => {
                                 </select>
                             </div>
                             <div class="flex flex-wrap items-end gap-2">
-                                <button 
+                                <button
                                     @click="clearFilters"
                                     class="mt-1 px-4 py-2 bg-gray-100 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 uppercase tracking-widest hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition ease-in-out duration-150 flex items-center whitespace-nowrap"
                                 >
                                     <XMarkIcon class="h-5 w-5 mr-2" />
                                     Limpar Filtros
                                 </button>
-                                <button 
+                                <button
                                     @click="downloadReport('pdf')"
                                     class="mt-1 px-4 py-2 bg-[#bea55a] border border-[#bea55a] rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-[#d4bf7a] focus:outline-none focus:ring-2 focus:ring-[#bea55a] transition ease-in-out duration-150 flex items-center whitespace-nowrap"
                                 >
                                     <DocumentArrowDownIcon class="h-5 w-5 mr-2" />
                                     PDF
                                 </button>
-                                <button 
+                                <button
                                     @click="downloadReport('excel')"
                                     class="mt-1 px-4 py-2 bg-[#bea55a] border border-[#bea55a] rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-[#d4bf7a] focus:outline-none focus:ring-2 focus:ring-[#bea55a] transition ease-in-out duration-150 flex items-center whitespace-nowrap"
                                 >
@@ -279,7 +280,7 @@ const getActionButton = (unidade) => {
                                                     <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
                                                         Nota Geral
                                                     </th>
-                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[240px]">
                                                         Ações
                                                     </th>
                                                 </tr>
@@ -294,28 +295,28 @@ const getActionButton = (unidade) => {
                                                             </Link>
                                                         </div>
                                                     </td>
-                                                    
+
                                                     <!-- Cidade -->
                                                     <td class="px-4 py-4">
                                                         <div class="text-base text-gray-900 break-words min-w-[100px]">
                                                             {{ unidade.cidade }}
                                                         </div>
                                                     </td>
-                                                    
+
                                                     <!-- Unidade Gestora -->
                                                     <td class="px-4 py-4">
                                                         <div class="text-base text-gray-900 break-words min-w-[120px]">
                                                             {{ unidade.srpc }}
                                                         </div>
                                                     </td>
-                                                    
+
                                                     <!-- Unidade Sub-Gestora -->
                                                     <td class="px-4 py-4">
                                                         <div class="text-base text-gray-900 break-words min-w-[120px]">
                                                             {{ unidade.dspc }}
                                                         </div>
                                                     </td>
-                                                    
+
                                                     <!-- Status -->
                                                     <td class="px-4 py-4">
                                                         <div class="min-w-[130px]">
@@ -324,13 +325,13 @@ const getActionButton = (unidade) => {
                                                             </span>
                                                         </div>
                                                     </td>
-                                                    
+
                                                     <!-- Nota Geral -->
                                                     <td class="px-4 py-4">
                                                         <div class="min-w-[100px]">
-                                                            <span 
-                                                                v-if="unidade.nota_geral" 
-                                                                class="px-2 py-1 inline-flex text-sm leading-5 font-semibold rounded-full whitespace-nowrap" 
+                                                            <span
+                                                                v-if="unidade.nota_geral"
+                                                                class="px-2 py-1 inline-flex text-sm leading-5 font-semibold rounded-full whitespace-nowrap"
                                                                 :class="getNotaClass(unidade.nota_geral)"
                                                                 :title="getNotaTooltip(unidade.nota_geral)"
                                                             >
@@ -341,25 +342,28 @@ const getActionButton = (unidade) => {
                                                             </span>
                                                         </div>
                                                     </td>
-                                                    
+
                                                     <!-- Ações -->
                                                     <td class="px-4 py-4">
-                                                        <div class="min-w-[160px]">
-                                                            <Link 
-                                                                v-if="getActionButton(unidade)"
-                                                                :href="getActionButton(unidade).href"
-                                                                :class="['inline-flex items-center px-3 py-2 border border-transparent rounded-md font-medium text-sm transition ease-in-out duration-150 whitespace-nowrap', getActionButton(unidade).class]"
-                                                            >
-                                                                <component :is="getActionButton(unidade).icon" class="h-4 w-4 mr-1 flex-shrink-0" />
-                                                                <span class="truncate">{{ getActionButton(unidade).text }}</span>
-                                                            </Link>
+                                                        <div class="min-w-[200px] flex flex-wrap gap-2">
+                                                            <template v-if="getActionButtons(unidade).length > 0">
+                                                                <Link
+                                                                    v-for="(button, index) in getActionButtons(unidade)"
+                                                                    :key="index"
+                                                                    :href="button.href"
+                                                                    :class="['inline-flex items-center px-3 py-2 border border-transparent rounded-md font-medium text-sm transition ease-in-out duration-150 whitespace-nowrap', button.class]"
+                                                                >
+                                                                    <component :is="button.icon" class="h-4 w-4 mr-1 flex-shrink-0" />
+                                                                    <span class="truncate">{{ button.text }}</span>
+                                                                </Link>
+                                                            </template>
                                                             <span v-else class="text-gray-400 text-sm whitespace-nowrap">
                                                                 Sem ações
                                                             </span>
                                                         </div>
                                                     </td>
                                                 </tr>
-                                                
+
                                                 <!-- Linha de "nenhuma unidade encontrada" -->
                                                 <tr v-if="unidades.data.length === 0" class="transition-opacity duration-300" :class="{ 'opacity-50': isLoading }">
                                                     <td colspan="7" class="px-4 py-8 text-center text-gray-500">
@@ -389,12 +393,12 @@ const getActionButton = (unidade) => {
                                             </Link>
                                             <p class="text-sm text-gray-600 mt-1">{{ unidade.cidade }}</p>
                                         </div>
-                                        
+
                                         <!-- Nota Geral -->
                                         <div class="ml-3 flex-shrink-0">
-                                            <span 
-                                                v-if="unidade.nota_geral" 
-                                                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" 
+                                            <span
+                                                v-if="unidade.nota_geral"
+                                                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
                                                 :class="getNotaClass(unidade.nota_geral)"
                                                 :title="getNotaTooltip(unidade.nota_geral)"
                                             >
@@ -405,7 +409,7 @@ const getActionButton = (unidade) => {
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Informações principais -->
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                                         <div>
@@ -417,7 +421,7 @@ const getActionButton = (unidade) => {
                                             <p class="text-base text-gray-900 font-medium">{{ unidade.dspc }}</p>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Status e Ações -->
                                     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
                                         <div>
@@ -426,23 +430,26 @@ const getActionButton = (unidade) => {
                                                 {{ unidade.status_formatado || 'Sem Status' }}
                                             </span>
                                         </div>
-                                        
-                                        <div class="flex-shrink-0">
-                                            <Link 
-                                                v-if="getActionButton(unidade)"
-                                                :href="getActionButton(unidade).href"
-                                                :class="['inline-flex items-center px-3 py-2 border border-transparent rounded-md font-medium text-sm transition ease-in-out duration-150', getActionButton(unidade).class]"
-                                            >
-                                                <component :is="getActionButton(unidade).icon" class="h-4 w-4 mr-1" />
-                                                {{ getActionButton(unidade).text }}
-                                            </Link>
+
+                                        <div class="flex-shrink-0 flex flex-wrap gap-2 justify-end">
+                                            <template v-if="getActionButtons(unidade).length > 0">
+                                                <Link
+                                                    v-for="(button, index) in getActionButtons(unidade)"
+                                                    :key="index"
+                                                    :href="button.href"
+                                                    :class="['inline-flex items-center px-3 py-2 border border-transparent rounded-md font-medium text-sm transition ease-in-out duration-150', button.class]"
+                                                >
+                                                    <component :is="button.icon" class="h-4 w-4 mr-1" />
+                                                    {{ button.text }}
+                                                </Link>
+                                            </template>
                                             <span v-else class="text-gray-400 text-sm">
                                                 Sem ações
                                             </span>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Card de "nenhuma unidade encontrada" -->
                                 <div v-if="unidades.data.length === 0" class="bg-white border border-gray-200 rounded-lg shadow-sm p-8 text-center">
                                     <BuildingOfficeIcon class="h-12 w-12 text-gray-300 mx-auto mb-3" />
@@ -476,21 +483,21 @@ const getActionButton = (unidade) => {
         scrollbar-width: thin;
         scrollbar-color: #bea55a #f1f5f9;
     }
-    
+
     .overflow-x-auto::-webkit-scrollbar {
         height: 6px;
     }
-    
+
     .overflow-x-auto::-webkit-scrollbar-track {
         background: #f1f5f9;
         border-radius: 3px;
     }
-    
+
     .overflow-x-auto::-webkit-scrollbar-thumb {
         background: #bea55a;
         border-radius: 3px;
     }
-    
+
     .overflow-x-auto::-webkit-scrollbar-thumb:hover {
         background: #a89043;
     }
@@ -537,11 +544,11 @@ const getActionButton = (unidade) => {
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .sm\:items-center {
         align-items: stretch;
     }
-    
+
     .sm\:justify-between {
         justify-content: flex-start;
     }
