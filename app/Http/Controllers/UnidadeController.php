@@ -69,6 +69,7 @@ class UnidadeController extends Controller
     public function show($team, $unidade)
     {
         $unidade = Unidade::with([
+            'team',
             'acessibilidade',
             'informacoes',
             'midias.midiaTipo',
@@ -79,9 +80,12 @@ class UnidadeController extends Controller
         $user = auth()->user();
         $isAdmin = $user->isAdmin;
 
+        // objeto Team carregado
+        $teamObject = $unidade->team;
+
         // Converte explicitamente para array, incluindo a relação
         $unidadeData = $unidade->toArray();
-        $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray(); // Força a inclusão
+        $unidadeData['orgaosCompartilhados'] = $unidade->orgaosCompartilhados->toArray();
         $unidadeData['unidadesCompartilhadas'] = $unidade->unidadesCompartilhadas->toArray();
 
         return Inertia::render('Unidades/Show', [
@@ -92,17 +96,16 @@ class UnidadeController extends Controller
             'midias' => $unidade->midias->toArray(),
             'orgaos' => Orgao::all()->toArray(),
             'unidades' => Unidade::select('id', 'nome')
-                ->where('id', '!=', $unidade->id) // Excluir a própria unidade
+                ->where('id', '!=', $unidade->id)
                 ->orderBy('nome')
                 ->get()->toArray(),
             'permissions' => [
-                'canUpdateTeam' => auth()->user()->isSuperAdmin || auth()->user()->hasTeamPermission($team, 'update'),
+                'canUpdateTeam' => $user->isSuperAdmin || $user->hasTeamPermission($teamObject, 'update'),
                 'isAdmin' => $isAdmin,
-                'canDeleteTeam' => $user->isSuperAdmin || $user->hasTeamPermission($unidade->team, 'delete'),
+                'canDeleteTeam' => $user->isSuperAdmin || $user->hasTeamPermission($teamObject, 'delete'),
             ],
-            'availableRoles' => config('roles.available_roles', []),
             'userPermissions' => [
-                'canManageTeamMembers' => $user->isSuperAdmin || $user->hasTeamPermission($unidade->team, 'manage-members'),
+                'canManageTeamMembers' => $user->isSuperAdmin || $user->hasTeamPermission($teamObject, 'manage-members'),
             ],
         ]);
     }
