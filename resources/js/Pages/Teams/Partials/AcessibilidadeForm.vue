@@ -1,11 +1,11 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
-import ActionMessage from '@/Components/ActionMessage.vue';
-import FormSection from '@/Components/FormSection.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import Checkbox from '@/Components/Checkbox.vue';
+import { useForm } from "@inertiajs/vue3";
+import ActionMessage from "@/Components/ActionMessage.vue";
+import FormSection from "@/Components/FormSection.vue";
+import InputError from "@/Components/InputError.vue";
+import InputLabel from "@/Components/InputLabel.vue";
+import PrimaryButton from "@/Components/PrimaryButton.vue";
+import Checkbox from "@/Components/Checkbox.vue";
 
 const props = defineProps({
     team: Object,
@@ -23,18 +23,18 @@ const form = useForm({
     banheiro_adaptado: props.acessibilidade?.banheiro_adaptado || false,
     elevador: props.acessibilidade?.elevador || false,
     sinalizacao_braile: props.acessibilidade?.sinalizacao_braile || false,
-    observacoes: props.acessibilidade?.observacoes || '',
+    observacoes: props.acessibilidade?.observacoes || "",
 });
 
 const updateAcessibilidade = () => {
     if (props.isNew) {
-        form.post(route('acessibilidade.store'), {
-            errorBag: 'updateAcessibilidade',
+        form.post(route("acessibilidade.store"), {
+            errorBag: "updateAcessibilidade",
             preserveScroll: true,
         });
     } else {
-        form.put(route('acessibilidade.update', props.acessibilidade.id), {
-            errorBag: 'updateAcessibilidade',
+        form.put(route("acessibilidade.update", props.acessibilidade.id), {
+            errorBag: "updateAcessibilidade",
             preserveScroll: true,
         });
     }
@@ -43,9 +43,7 @@ const updateAcessibilidade = () => {
 
 <template>
     <FormSection @submitted="updateAcessibilidade">
-        <template #title>
-            Acessibilidade
-        </template>
+        <template #title> Acessibilidade </template>
 
         <template #description>
             Atualize as informações de acessibilidade desta unidade policial.
@@ -53,8 +51,13 @@ const updateAcessibilidade = () => {
 
         <template #form>
             <div class="col-span-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Recursos de Acessibilidade</h3>
-                <p class="text-sm text-gray-600 mb-4">Selecione todos os recursos de acessibilidade disponíveis nesta unidade policial.</p>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    Recursos de Acessibilidade
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Selecione todos os recursos de acessibilidade disponíveis
+                    nesta unidade policial.
+                </p>
             </div>
 
             <!-- Rampa de Acesso -->
@@ -65,7 +68,11 @@ const updateAcessibilidade = () => {
                         v-model:checked="form.rampa_acesso"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="rampa_acesso" value="Rampa de Acesso" class="ml-2" />
+                    <InputLabel
+                        for="rampa_acesso"
+                        value="Rampa de Acesso"
+                        class="ml-2"
+                    />
                 </div>
             </div>
 
@@ -89,7 +96,11 @@ const updateAcessibilidade = () => {
                         v-model:checked="form.piso_tatil"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="piso_tatil" value="Piso Tátil" class="ml-2" />
+                    <InputLabel
+                        for="piso_tatil"
+                        value="Piso Tátil"
+                        class="ml-2"
+                    />
                 </div>
             </div>
 
@@ -101,7 +112,11 @@ const updateAcessibilidade = () => {
                         v-model:checked="form.banheiro_adaptado"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="banheiro_adaptado" value="Banheiro Adaptado" class="ml-2" />
+                    <InputLabel
+                        for="banheiro_adaptado"
+                        value="Banheiro Adaptado"
+                        class="ml-2"
+                    />
                 </div>
             </div>
 
@@ -125,13 +140,20 @@ const updateAcessibilidade = () => {
                         v-model:checked="form.sinalizacao_braile"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="sinalizacao_braile" value="Sinalização em Braile" class="ml-2" />
+                    <InputLabel
+                        for="sinalizacao_braile"
+                        value="Sinalização em Braile"
+                        class="ml-2"
+                    />
                 </div>
             </div>
 
             <!-- Observações -->
             <div class="col-span-6 mt-6">
-                <InputLabel for="observacoes" value="Observações sobre Acessibilidade" />
+                <InputLabel
+                    for="observacoes"
+                    value="Observações sobre Acessibilidade"
+                />
                 <textarea
                     id="observacoes"
                     v-model="form.observacoes"
@@ -149,7 +171,10 @@ const updateAcessibilidade = () => {
                 Salvo.
             </ActionMessage>
 
-            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing || !permissions.canUpdateTeam">
+            <PrimaryButton
+                :class="{ 'opacity-25': form.processing }"
+                :disabled="form.processing || !permissions.canUpdateTeam"
+            >
                 Salvar
             </PrimaryButton>
         </template>

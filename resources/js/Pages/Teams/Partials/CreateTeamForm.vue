@@ -1,46 +1,44 @@
 <script setup>
-import { useForm, usePage } from '@inertiajs/vue3';
-import FormSection from '@/Components/FormSection.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import { useForm, usePage } from "@inertiajs/vue3";
+import FormSection from "@/Components/FormSection.vue";
+import InputError from "@/Components/InputError.vue";
+import InputLabel from "@/Components/InputLabel.vue";
+import PrimaryButton from "@/Components/PrimaryButton.vue";
+import TextInput from "@/Components/TextInput.vue";
 
 const page = usePage();
 const form = useForm({
-    nome: '',
-    codigo: '',
-    tipo_estrutural: '',
-    cep: '',
-    rua: '',
-    numero: '',
-    bairro: '',
-    complemento: '',
+    nome: "",
+    codigo: "",
+    tipo_estrutural: "",
+    cep: "",
+    rua: "",
+    numero: "",
+    bairro: "",
+    complemento: "",
 });
 
 const submitForm = () => {
     const teamId = page.props.auth.user.current_team_id;
 
     // Enviar para a rota de unidades
-    form.post(route('unidades.store', { team_id: teamId }), {
-        errorBag: 'createUnidade',
+    form.post(route("unidades.store", { team_id: teamId }), {
+        errorBag: "createUnidade",
         preserveScroll: false, //Permite que a página faça redirecionamento
         onSuccess: () => {
             //O redirecionamento será tratado pelo controller
         },
     });
 };
-
 </script>
 
 <template>
     <FormSection @submitted="submitForm">
-        <template #title>
-            Dados da Unidade Policial
-        </template>
+        <template #title> Dados da Unidade Policial </template>
 
         <template #description>
-            Cadastre uma nova unidade policial no sistema para o censo anual da engenharia.
+            Cadastre uma nova unidade policial no sistema para o censo anual da
+            engenharia.
         </template>
 
         <template #form>
@@ -48,10 +46,16 @@ const submitForm = () => {
                 <InputLabel value="Responsável pelo Cadastro" />
 
                 <div class="flex items-center mt-2">
-                    <img class="object-cover size-12 rounded-full" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name">
+                    <img
+                        class="object-cover size-12 rounded-full"
+                        :src="$page.props.auth.user.profile_photo_url"
+                        :alt="$page.props.auth.user.name"
+                    />
 
                     <div class="ms-4 leading-tight">
-                        <div class="text-gray-900">{{ $page.props.auth.user.name }}</div>
+                        <div class="text-gray-900">
+                            {{ $page.props.auth.user.name }}
+                        </div>
                         <div class="text-sm text-gray-700">
                             {{ $page.props.auth.user.email }}
                         </div>
@@ -90,7 +94,10 @@ const submitForm = () => {
                     type="text"
                     class="block w-full mt-1"
                 />
-                <InputError :message="form.errors.tipo_estrutural" class="mt-2" />
+                <InputError
+                    :message="form.errors.tipo_estrutural"
+                    class="mt-2"
+                />
             </div>
 
             <div class="col-span-6 sm:col-span-4">
@@ -150,7 +157,10 @@ const submitForm = () => {
         </template>
 
         <template #actions>
-            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+            <PrimaryButton
+                :class="{ 'opacity-25': form.processing }"
+                :disabled="form.processing"
+            >
                 Cadastrar Unidade
             </PrimaryButton>
         </template>

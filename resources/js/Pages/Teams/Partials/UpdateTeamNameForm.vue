@@ -1,27 +1,27 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
-import ActionMessage from '@/Components/ActionMessage.vue';
-import FormSection from '@/Components/FormSection.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { computed } from 'vue';
+import { useForm } from "@inertiajs/vue3";
+import ActionMessage from "@/Components/ActionMessage.vue";
+import FormSection from "@/Components/FormSection.vue";
+import InputError from "@/Components/InputError.vue";
+import InputLabel from "@/Components/InputLabel.vue";
+import PrimaryButton from "@/Components/PrimaryButton.vue";
+import TextInput from "@/Components/TextInput.vue";
+import { computed } from "vue";
 
 const props = defineProps({
     team: Object,
     permissions: Object,
 });
 
-const teamName = computed(() => props.team?.name || '');
+const teamName = computed(() => props.team?.name || "");
 
 const form = useForm({
     name: teamName.value,
 });
 
 const updateTeamName = () => {
-    form.put(route('teams.update', props.team), {
-        errorBag: 'updateTeamName',
+    form.put(route("teams.update", props.team), {
+        errorBag: "updateTeamName",
         preserveScroll: true,
     });
 };
@@ -29,9 +29,7 @@ const updateTeamName = () => {
 
 <template>
     <FormSection @submitted="updateTeamName">
-        <template #title>
-            Nome da Equipe
-        </template>
+        <template #title> Nome da Equipe </template>
 
         <template #description>
             O nome da equipe e as informações do proprietário.
@@ -45,14 +43,19 @@ const updateTeamName = () => {
                 <div v-if="team" class="flex items-center mt-2">
                     <img
                         class="size-12 rounded-full object-cover"
-                        :src="team.owner?.profile_photo_url || '/images/default-avatar.png'"
+                        :src="
+                            team.owner?.profile_photo_url ||
+                            '/images/default-avatar.png'
+                        "
                         :alt="team.owner?.name || 'Carregando...'"
-                    >
+                    />
 
                     <div class="ms-4 leading-tight">
-                        <div class="text-gray-900">{{ team.owner?.name || 'Carregando...' }}</div>
+                        <div class="text-gray-900">
+                            {{ team.owner?.name || "Carregando..." }}
+                        </div>
                         <div class="text-gray-700 text-sm">
-                            {{ team.owner?.email || 'Carregando...' }}
+                            {{ team.owner?.email || "Carregando..." }}
                         </div>
                     </div>
                 </div>
@@ -82,7 +85,10 @@ const updateTeamName = () => {
                 Salvo.
             </ActionMessage>
 
-            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+            <PrimaryButton
+                :class="{ 'opacity-25': form.processing }"
+                :disabled="form.processing"
+            >
                 Salvar
             </PrimaryButton>
         </template>

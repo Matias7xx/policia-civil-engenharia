@@ -1,12 +1,12 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
-import ActionMessage from '@/Components/ActionMessage.vue';
-import FormSection from '@/Components/FormSection.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import Checkbox from '@/Components/Checkbox.vue';
+import { useForm } from "@inertiajs/vue3";
+import ActionMessage from "@/Components/ActionMessage.vue";
+import FormSection from "@/Components/FormSection.vue";
+import InputError from "@/Components/InputError.vue";
+import InputLabel from "@/Components/InputLabel.vue";
+import PrimaryButton from "@/Components/PrimaryButton.vue";
+import TextInput from "@/Components/TextInput.vue";
+import Checkbox from "@/Components/Checkbox.vue";
 
 const props = defineProps({
     team: Object,
@@ -18,39 +18,39 @@ const props = defineProps({
 const form = useForm({
     team_id: props.team.id,
     nome: props.unidade?.nome || props.team.name,
-    codigo: props.unidade?.codigo || '',
-    tipo_estrutural: props.unidade?.tipo_estrutural || '',
-    srpc: props.unidade?.srpc || '',
-    dspc: props.unidade?.dspc || '',
-    nivel: props.unidade?.nivel || '',
+    codigo: props.unidade?.codigo || "",
+    tipo_estrutural: props.unidade?.tipo_estrutural || "",
+    srpc: props.unidade?.srpc || "",
+    dspc: props.unidade?.dspc || "",
+    nivel: props.unidade?.nivel || "",
     sede: props.unidade?.sede || false,
-    cidade_id: props.unidade?.cidade_id || '',
-    cep: props.unidade?.cep || '',
-    rua: props.unidade?.rua || '',
-    numero: props.unidade?.numero || '',
-    bairro: props.unidade?.bairro || '',
-    complemento: props.unidade?.complemento || '',
-    email: props.unidade?.email || '',
-    telefone_1: props.unidade?.telefone_1 || '',
-    telefone_2: props.unidade?.telefone_2 || '',
-    latitude: props.unidade?.latitude || '',
-    longitude: props.unidade?.longitude || '',
-    tipo_judicial: props.unidade?.tipo_judicial || '',
-    status: props.unidade?.status || 'pendente_avaliacao',
-    observacoes: props.unidade?.observacoes || '',
-    numero_medidor_agua: props.unidade?.numero_medidor_agua || '',
-    numero_medidor_energia: props.unidade?.numero_medidor_energia || '',
+    cidade_id: props.unidade?.cidade_id || "",
+    cep: props.unidade?.cep || "",
+    rua: props.unidade?.rua || "",
+    numero: props.unidade?.numero || "",
+    bairro: props.unidade?.bairro || "",
+    complemento: props.unidade?.complemento || "",
+    email: props.unidade?.email || "",
+    telefone_1: props.unidade?.telefone_1 || "",
+    telefone_2: props.unidade?.telefone_2 || "",
+    latitude: props.unidade?.latitude || "",
+    longitude: props.unidade?.longitude || "",
+    tipo_judicial: props.unidade?.tipo_judicial || "",
+    status: props.unidade?.status || "pendente_avaliacao",
+    observacoes: props.unidade?.observacoes || "",
+    numero_medidor_agua: props.unidade?.numero_medidor_agua || "",
+    numero_medidor_energia: props.unidade?.numero_medidor_energia || "",
 });
 
 const updateUnidadeInformation = () => {
     if (props.isNew) {
-        form.post(route('unidades.store'), {
-            errorBag: 'updateUnidadeInformation',
+        form.post(route("unidades.store"), {
+            errorBag: "updateUnidadeInformation",
             preserveScroll: true,
         });
     } else {
-        form.put(route('unidades.update', props.unidade.id), {
-            errorBag: 'updateUnidadeInformation',
+        form.put(route("unidades.update", props.unidade.id), {
+            errorBag: "updateUnidadeInformation",
             preserveScroll: true,
         });
     }
@@ -59,9 +59,7 @@ const updateUnidadeInformation = () => {
 
 <template>
     <FormSection @submitted="updateUnidadeInformation">
-        <template #title>
-            Informações da Unidade
-        </template>
+        <template #title> Informações da Unidade </template>
 
         <template #description>
             Atualize as informações gerais desta unidade policial.
@@ -104,12 +102,18 @@ const updateUnidadeInformation = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.tipo_estrutural" class="mt-2" />
+                <InputError
+                    :message="form.errors.tipo_estrutural"
+                    class="mt-2"
+                />
             </div>
 
             <!-- SRPC -->
             <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="srpc" value="Superintendência Regional de Polícia Civil (SRPC)" />
+                <InputLabel
+                    for="srpc"
+                    value="Superintendência Regional de Polícia Civil (SRPC)"
+                />
                 <TextInput
                     id="srpc"
                     v-model="form.srpc"
@@ -122,7 +126,10 @@ const updateUnidadeInformation = () => {
 
             <!-- DSPC -->
             <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="dspc" value="Delegacia Seccional de Polícia Civil (DSPC)" />
+                <InputLabel
+                    for="dspc"
+                    value="Delegacia Seccional de Polícia Civil (DSPC)"
+                />
                 <TextInput
                     id="dspc"
                     v-model="form.dspc"
@@ -272,7 +279,9 @@ const updateUnidadeInformation = () => {
             </div>
 
             <div class="col-span-6 pt-4 border-t border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Informações Complementares</h3>
+                <h3 class="text-lg font-medium text-gray-900">
+                    Informações Complementares
+                </h3>
             </div>
 
             <!-- Tipo Judicial -->
@@ -285,13 +294,18 @@ const updateUnidadeInformation = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <p class="mt-1 text-sm text-gray-500">Próprio, locado, cedido, etc.</p>
+                <p class="mt-1 text-sm text-gray-500">
+                    Próprio, locado, cedido, etc.
+                </p>
                 <InputError :message="form.errors.tipo_judicial" class="mt-2" />
             </div>
 
             <!-- Número Medidor Água -->
             <div class="col-span-6 sm:col-span-3">
-                <InputLabel for="numero_medidor_agua" value="Número do Medidor de Água" />
+                <InputLabel
+                    for="numero_medidor_agua"
+                    value="Número do Medidor de Água"
+                />
                 <TextInput
                     id="numero_medidor_agua"
                     v-model="form.numero_medidor_agua"
@@ -299,12 +313,18 @@ const updateUnidadeInformation = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.numero_medidor_agua" class="mt-2" />
+                <InputError
+                    :message="form.errors.numero_medidor_agua"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Número Medidor Energia -->
             <div class="col-span-6 sm:col-span-3">
-                <InputLabel for="numero_medidor_energia" value="Número do Medidor de Energia" />
+                <InputLabel
+                    for="numero_medidor_energia"
+                    value="Número do Medidor de Energia"
+                />
                 <TextInput
                     id="numero_medidor_energia"
                     v-model="form.numero_medidor_energia"
@@ -312,7 +332,10 @@ const updateUnidadeInformation = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.numero_medidor_energia" class="mt-2" />
+                <InputError
+                    :message="form.errors.numero_medidor_energia"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Observações -->
@@ -334,7 +357,10 @@ const updateUnidadeInformation = () => {
                 Salvo.
             </ActionMessage>
 
-            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing || !permissions.canUpdateTeam">
+            <PrimaryButton
+                :class="{ 'opacity-25': form.processing }"
+                :disabled="form.processing || !permissions.canUpdateTeam"
+            >
                 Salvar
             </PrimaryButton>
         </template>

@@ -1,12 +1,12 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
-import ActionMessage from '@/Components/ActionMessage.vue';
-import FormSection from '@/Components/FormSection.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import Checkbox from '@/Components/Checkbox.vue';
+import { useForm } from "@inertiajs/vue3";
+import ActionMessage from "@/Components/ActionMessage.vue";
+import FormSection from "@/Components/FormSection.vue";
+import InputError from "@/Components/InputError.vue";
+import InputLabel from "@/Components/InputLabel.vue";
+import PrimaryButton from "@/Components/PrimaryButton.vue";
+import TextInput from "@/Components/TextInput.vue";
+import Checkbox from "@/Components/Checkbox.vue";
 
 const props = defineProps({
     team: Object,
@@ -18,34 +18,35 @@ const props = defineProps({
 const form = useForm({
     team_id: props.team.id,
     unidade_id: props.informacoes?.unidade_id || props.team.id,
-    
+
     // Características da via e serviços
-    pavimentacao_rua: props.informacoes?.pavimentacao_rua || '',
-    padrao_energia: props.informacoes?.padrao_energia || '',
-    subestacao: props.informacoes?.subestacao || '',
-    gerador_energia: props.informacoes?.gerador_energia || '',
-    para_raio: props.informacoes?.para_raio || '',
-    caixa_dagua: props.informacoes?.caixa_dagua || '',
-    internet_cabeada: props.informacoes?.internet_cabeada || '',
-    internet_provedor: props.informacoes?.internet_provedor || '',
-    telefone_fixo: props.informacoes?.telefone_fixo || '',
-    telefone_movel: props.informacoes?.telefone_movel || '',
-    
+    pavimentacao_rua: props.informacoes?.pavimentacao_rua || "",
+    padrao_energia: props.informacoes?.padrao_energia || "",
+    subestacao: props.informacoes?.subestacao || "",
+    gerador_energia: props.informacoes?.gerador_energia || "",
+    para_raio: props.informacoes?.para_raio || "",
+    caixa_dagua: props.informacoes?.caixa_dagua || "",
+    internet_cabeada: props.informacoes?.internet_cabeada || "",
+    internet_provedor: props.informacoes?.internet_provedor || "",
+    telefone_fixo: props.informacoes?.telefone_fixo || "",
+    telefone_movel: props.informacoes?.telefone_movel || "",
+
     // Características do imóvel
-    tipo_imovel: props.informacoes?.tipo_imovel || '',
-    contrato_locacao_id: props.informacoes?.contrato_locacao_id || '',
-    responsavel_locacao_cessao: props.informacoes?.responsavel_locacao_cessao || '',
-    escritura_publica: props.informacoes?.escritura_publica || '',
-    
+    tipo_imovel: props.informacoes?.tipo_imovel || "",
+    contrato_locacao_id: props.informacoes?.contrato_locacao_id || "",
+    responsavel_locacao_cessao:
+        props.informacoes?.responsavel_locacao_cessao || "",
+    escritura_publica: props.informacoes?.escritura_publica || "",
+
     // Características estruturais
-    qtd_pavimentos: props.informacoes?.qtd_pavimentos || '',
+    qtd_pavimentos: props.informacoes?.qtd_pavimentos || "",
     cercado_muros: props.informacoes?.cercado_muros || false,
     estacionamento_interno: props.informacoes?.estacionamento_interno || false,
     estacionamento_externo: props.informacoes?.estacionamento_externo || false,
-    recuo_frontal: props.informacoes?.recuo_frontal || '',
-    recuo_lateral: props.informacoes?.recuo_lateral || '',
-    recuo_fundos: props.informacoes?.recuo_fundos || '',
-    
+    recuo_frontal: props.informacoes?.recuo_frontal || "",
+    recuo_lateral: props.informacoes?.recuo_lateral || "",
+    recuo_fundos: props.informacoes?.recuo_fundos || "",
+
     // Quantitativos de espaços e instalações
     qtd_recepcao: props.informacoes?.qtd_recepcao || 0,
     qtd_wc_publico: props.informacoes?.qtd_wc_publico || 0,
@@ -53,48 +54,55 @@ const form = useForm({
     qtd_sala_oitiva: props.informacoes?.qtd_sala_oitiva || 0,
     qtd_wc_servidores: props.informacoes?.qtd_wc_servidores || 0,
     qtd_alojamento_masculino: props.informacoes?.qtd_alojamento_masculino || 0,
-    qtd_wc_alojamento_masculino: props.informacoes?.qtd_wc_alojamento_masculino || 0,
+    qtd_wc_alojamento_masculino:
+        props.informacoes?.qtd_wc_alojamento_masculino || 0,
     qtd_alojamento_feminino: props.informacoes?.qtd_alojamento_feminino || 0,
-    qtd_wc_alojamento_feminino: props.informacoes?.qtd_wc_alojamento_feminino || 0,
+    qtd_wc_alojamento_feminino:
+        props.informacoes?.qtd_wc_alojamento_feminino || 0,
     qtd_celas_carceragem: props.informacoes?.qtd_celas_carceragem || 0,
     qtd_sala_identificacao: props.informacoes?.qtd_sala_identificacao || 0,
     qtd_cozinha: props.informacoes?.qtd_cozinha || 0,
     qtd_area_servico: props.informacoes?.qtd_area_servico || 0,
     qtd_deposito_apreensao: props.informacoes?.qtd_deposito_apreensao || 0,
-    
+
     // Suficiência de instalações
     tomadas_suficientes: props.informacoes?.tomadas_suficientes || false,
     luminarias_suficientes: props.informacoes?.luminarias_suficientes || false,
-    pontos_rede_suficientes: props.informacoes?.pontos_rede_suficientes || false,
-    pontos_telefone_suficientes: props.informacoes?.pontos_telefone_suficientes || false,
-    pontos_ar_condicionado_suficientes: props.informacoes?.pontos_ar_condicionado_suficientes || false,
-    pontos_hidraulicos_suficientes: props.informacoes?.pontos_hidraulicos_suficientes || false,
-    pontos_sanitarios_suficientes: props.informacoes?.pontos_sanitarios_suficientes || false,
-    
+    pontos_rede_suficientes:
+        props.informacoes?.pontos_rede_suficientes || false,
+    pontos_telefone_suficientes:
+        props.informacoes?.pontos_telefone_suficientes || false,
+    pontos_ar_condicionado_suficientes:
+        props.informacoes?.pontos_ar_condicionado_suficientes || false,
+    pontos_hidraulicos_suficientes:
+        props.informacoes?.pontos_hidraulicos_suficientes || false,
+    pontos_sanitarios_suficientes:
+        props.informacoes?.pontos_sanitarios_suficientes || false,
+
     // Acabamentos
-    piso: props.informacoes?.piso || '',
-    parede: props.informacoes?.parede || '',
-    esquadrias: props.informacoes?.esquadrias || '',
-    loucas_metais: props.informacoes?.loucas_metais || '',
-    forro_lage: props.informacoes?.forro_lage || '',
-    cobertura: props.informacoes?.cobertura || '',
-    pintura: props.informacoes?.pintura || '',
-    
+    piso: props.informacoes?.piso || "",
+    parede: props.informacoes?.parede || "",
+    esquadrias: props.informacoes?.esquadrias || "",
+    loucas_metais: props.informacoes?.loucas_metais || "",
+    forro_lage: props.informacoes?.forro_lage || "",
+    cobertura: props.informacoes?.cobertura || "",
+    pintura: props.informacoes?.pintura || "",
+
     // Equipamentos de segurança
-    extintor_po_quimico: props.informacoes?.extintor_po_quimico || '',
-    extintor_co2: props.informacoes?.extintor_co2 || '',
-    extintor_agua: props.informacoes?.extintor_agua || '',
+    extintor_po_quimico: props.informacoes?.extintor_po_quimico || "",
+    extintor_co2: props.informacoes?.extintor_co2 || "",
+    extintor_agua: props.informacoes?.extintor_agua || "",
 });
 
 const updateInformacoes = () => {
     if (props.isNew) {
-        form.post(route('informacoes-unidade.store'), {
-            errorBag: 'updateInformacoesUnidade',
+        form.post(route("informacoes-unidade.store"), {
+            errorBag: "updateInformacoesUnidade",
             preserveScroll: true,
         });
     } else {
-        form.put(route('informacoes-unidade.update', props.informacoes.id), {
-            errorBag: 'updateInformacoesUnidade',
+        form.put(route("informacoes-unidade.update", props.informacoes.id), {
+            errorBag: "updateInformacoesUnidade",
             preserveScroll: true,
         });
     }
@@ -103,9 +111,7 @@ const updateInformacoes = () => {
 
 <template>
     <FormSection @submitted="updateInformacoes">
-        <template #title>
-            Informações Estruturais
-        </template>
+        <template #title> Informações Estruturais </template>
 
         <template #description>
             Atualize as informações estruturais desta unidade policial.
@@ -114,12 +120,17 @@ const updateInformacoes = () => {
         <template #form>
             <!-- Seção: Características da via e serviços -->
             <div class="col-span-6 border-b pb-4 mb-4">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Características da Via e Serviços</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    Características da Via e Serviços
+                </h3>
             </div>
 
             <!-- Pavimentação da Rua -->
             <div class="col-span-6 sm:col-span-3">
-                <InputLabel for="pavimentacao_rua" value="Pavimentação da Rua" />
+                <InputLabel
+                    for="pavimentacao_rua"
+                    value="Pavimentação da Rua"
+                />
                 <TextInput
                     id="pavimentacao_rua"
                     v-model="form.pavimentacao_rua"
@@ -127,7 +138,10 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.pavimentacao_rua" class="mt-2" />
+                <InputError
+                    :message="form.errors.pavimentacao_rua"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Padrão de Energia -->
@@ -140,7 +154,10 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.padrao_energia" class="mt-2" />
+                <InputError
+                    :message="form.errors.padrao_energia"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Subestação -->
@@ -166,7 +183,10 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.gerador_energia" class="mt-2" />
+                <InputError
+                    :message="form.errors.gerador_energia"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Para-raio -->
@@ -205,12 +225,18 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.internet_cabeada" class="mt-2" />
+                <InputError
+                    :message="form.errors.internet_cabeada"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Internet Provedor -->
             <div class="col-span-6 sm:col-span-3">
-                <InputLabel for="internet_provedor" value="Provedor de Internet" />
+                <InputLabel
+                    for="internet_provedor"
+                    value="Provedor de Internet"
+                />
                 <TextInput
                     id="internet_provedor"
                     v-model="form.internet_provedor"
@@ -218,12 +244,17 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.internet_provedor" class="mt-2" />
+                <InputError
+                    :message="form.errors.internet_provedor"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Seção: Características do imóvel -->
             <div class="col-span-6 border-b pb-4 mb-4 mt-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Características do Imóvel</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    Características do Imóvel
+                </h3>
             </div>
 
             <!-- Tipo do Imóvel -->
@@ -241,7 +272,10 @@ const updateInformacoes = () => {
 
             <!-- Responsável pela Locação/Cessão -->
             <div class="col-span-6 sm:col-span-3">
-                <InputLabel for="responsavel_locacao_cessao" value="Responsável pela Locação/Cessão" />
+                <InputLabel
+                    for="responsavel_locacao_cessao"
+                    value="Responsável pela Locação/Cessão"
+                />
                 <TextInput
                     id="responsavel_locacao_cessao"
                     v-model="form.responsavel_locacao_cessao"
@@ -249,7 +283,10 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.responsavel_locacao_cessao" class="mt-2" />
+                <InputError
+                    :message="form.errors.responsavel_locacao_cessao"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Escritura Pública -->
@@ -262,17 +299,25 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.escritura_publica" class="mt-2" />
+                <InputError
+                    :message="form.errors.escritura_publica"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Seção: Características estruturais -->
             <div class="col-span-6 border-b pb-4 mb-4 mt-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Características Estruturais</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    Características Estruturais
+                </h3>
             </div>
 
             <!-- Quantidade de Pavimentos -->
             <div class="col-span-6 sm:col-span-3">
-                <InputLabel for="qtd_pavimentos" value="Quantidade de Pavimentos" />
+                <InputLabel
+                    for="qtd_pavimentos"
+                    value="Quantidade de Pavimentos"
+                />
                 <TextInput
                     id="qtd_pavimentos"
                     v-model="form.qtd_pavimentos"
@@ -281,7 +326,10 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.qtd_pavimentos" class="mt-2" />
+                <InputError
+                    :message="form.errors.qtd_pavimentos"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Cercado/Muros -->
@@ -292,7 +340,11 @@ const updateInformacoes = () => {
                         v-model:checked="form.cercado_muros"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="cercado_muros" value="Cercado/Muros" class="ml-2" />
+                    <InputLabel
+                        for="cercado_muros"
+                        value="Cercado/Muros"
+                        class="ml-2"
+                    />
                 </div>
                 <InputError :message="form.errors.cercado_muros" class="mt-2" />
             </div>
@@ -305,9 +357,16 @@ const updateInformacoes = () => {
                         v-model:checked="form.estacionamento_interno"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="estacionamento_interno" value="Estacionamento Interno" class="ml-2" />
+                    <InputLabel
+                        for="estacionamento_interno"
+                        value="Estacionamento Interno"
+                        class="ml-2"
+                    />
                 </div>
-                <InputError :message="form.errors.estacionamento_interno" class="mt-2" />
+                <InputError
+                    :message="form.errors.estacionamento_interno"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Estacionamento Externo -->
@@ -318,9 +377,16 @@ const updateInformacoes = () => {
                         v-model:checked="form.estacionamento_externo"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="estacionamento_externo" value="Estacionamento Externo" class="ml-2" />
+                    <InputLabel
+                        for="estacionamento_externo"
+                        value="Estacionamento Externo"
+                        class="ml-2"
+                    />
                 </div>
-                <InputError :message="form.errors.estacionamento_externo" class="mt-2" />
+                <InputError
+                    :message="form.errors.estacionamento_externo"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Recuo Frontal -->
@@ -367,7 +433,9 @@ const updateInformacoes = () => {
 
             <!-- Seção: Quantitativos de espaços e instalações -->
             <div class="col-span-6 border-b pb-4 mb-4 mt-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Quantitativos de Espaços e Instalações</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    Quantitativos de Espaços e Instalações
+                </h3>
             </div>
 
             <!-- Qtd Recepção -->
@@ -395,7 +463,10 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.qtd_wc_publico" class="mt-2" />
+                <InputError
+                    :message="form.errors.qtd_wc_publico"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Qtd Gabinetes -->
@@ -414,7 +485,10 @@ const updateInformacoes = () => {
 
             <!-- Qtd Sala de Oitiva -->
             <div class="col-span-6 sm:col-span-2">
-                <InputLabel for="qtd_sala_oitiva" value="Sala de Oitiva (Qtd)" />
+                <InputLabel
+                    for="qtd_sala_oitiva"
+                    value="Sala de Oitiva (Qtd)"
+                />
                 <TextInput
                     id="qtd_sala_oitiva"
                     v-model="form.qtd_sala_oitiva"
@@ -423,12 +497,18 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.qtd_sala_oitiva" class="mt-2" />
+                <InputError
+                    :message="form.errors.qtd_sala_oitiva"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Qtd WC Servidores -->
             <div class="col-span-6 sm:col-span-2">
-                <InputLabel for="qtd_wc_servidores" value="WC Servidores (Qtd)" />
+                <InputLabel
+                    for="qtd_wc_servidores"
+                    value="WC Servidores (Qtd)"
+                />
                 <TextInput
                     id="qtd_wc_servidores"
                     v-model="form.qtd_wc_servidores"
@@ -437,12 +517,18 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.qtd_wc_servidores" class="mt-2" />
+                <InputError
+                    :message="form.errors.qtd_wc_servidores"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Qtd Alojamento Masculino -->
             <div class="col-span-6 sm:col-span-2">
-                <InputLabel for="qtd_alojamento_masculino" value="Alojamento Masculino (Qtd)" />
+                <InputLabel
+                    for="qtd_alojamento_masculino"
+                    value="Alojamento Masculino (Qtd)"
+                />
                 <TextInput
                     id="qtd_alojamento_masculino"
                     v-model="form.qtd_alojamento_masculino"
@@ -451,12 +537,17 @@ const updateInformacoes = () => {
                     class="mt-1 block w-full"
                     :disabled="!permissions.canUpdateTeam"
                 />
-                <InputError :message="form.errors.qtd_alojamento_masculino" class="mt-2" />
+                <InputError
+                    :message="form.errors.qtd_alojamento_masculino"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Seção: Acabamentos -->
             <div class="col-span-6 border-b pb-4 mb-4 mt-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Acabamentos</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    Acabamentos
+                </h3>
             </div>
 
             <!-- Piso -->
@@ -487,7 +578,9 @@ const updateInformacoes = () => {
 
             <!-- Seção: Suficiência de instalações -->
             <div class="col-span-6 border-b pb-4 mb-4 mt-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Suficiência de Instalações</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    Suficiência de Instalações
+                </h3>
             </div>
 
             <!-- Tomadas Suficientes -->
@@ -498,9 +591,16 @@ const updateInformacoes = () => {
                         v-model:checked="form.tomadas_suficientes"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="tomadas_suficientes" value="Tomadas Suficientes" class="ml-2" />
+                    <InputLabel
+                        for="tomadas_suficientes"
+                        value="Tomadas Suficientes"
+                        class="ml-2"
+                    />
                 </div>
-                <InputError :message="form.errors.tomadas_suficientes" class="mt-2" />
+                <InputError
+                    :message="form.errors.tomadas_suficientes"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Luminárias Suficientes -->
@@ -511,9 +611,16 @@ const updateInformacoes = () => {
                         v-model:checked="form.luminarias_suficientes"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="luminarias_suficientes" value="Luminárias Suficientes" class="ml-2" />
+                    <InputLabel
+                        for="luminarias_suficientes"
+                        value="Luminárias Suficientes"
+                        class="ml-2"
+                    />
                 </div>
-                <InputError :message="form.errors.luminarias_suficientes" class="mt-2" />
+                <InputError
+                    :message="form.errors.luminarias_suficientes"
+                    class="mt-2"
+                />
             </div>
 
             <!-- Pontos de Rede Suficientes -->
@@ -524,9 +631,16 @@ const updateInformacoes = () => {
                         v-model:checked="form.pontos_rede_suficientes"
                         :disabled="!permissions.canUpdateTeam"
                     />
-                    <InputLabel for="pontos_rede_suficientes" value="Pontos de Rede Suficientes" class="ml-2" />
+                    <InputLabel
+                        for="pontos_rede_suficientes"
+                        value="Pontos de Rede Suficientes"
+                        class="ml-2"
+                    />
                 </div>
-                <InputError :message="form.errors.pontos_rede_suficientes" class="mt-2" />
+                <InputError
+                    :message="form.errors.pontos_rede_suficientes"
+                    class="mt-2"
+                />
             </div>
         </template>
 
@@ -535,7 +649,10 @@ const updateInformacoes = () => {
                 Salvo.
             </ActionMessage>
 
-            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing || !permissions.canUpdateTeam">
+            <PrimaryButton
+                :class="{ 'opacity-25': form.processing }"
+                :disabled="form.processing || !permissions.canUpdateTeam"
+            >
                 Salvar
             </PrimaryButton>
         </template>

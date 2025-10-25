@@ -54,7 +54,7 @@ return [
             'region' => env('AWS_DEFAULT_REGION'),
             'bucket' => env('AWS_BUCKET', 'engenharia'),
             'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT', 'http://172.16.7.61:9002'),
+            'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', true),
             'throw' => false,
             'report' => false,
