@@ -7,7 +7,7 @@ import PrimaryButton from "@/Components/PrimaryButton.vue";
 import TextInput from "@/Components/TextInput.vue";
 import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import axios from "axios";
-import { debounce } from "lodash";
+import { debounce } from "lodash-es";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useToast } from "@/Composables/useToast";

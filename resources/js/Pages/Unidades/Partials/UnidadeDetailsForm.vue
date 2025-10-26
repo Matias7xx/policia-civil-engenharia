@@ -8,7 +8,7 @@ import SelectInput from "@/Components/SelectInput.vue";
 import TextInput from "@/Components/TextInput.vue";
 import Checkbox from "@/Components/Checkbox.vue";
 import { ref, onMounted, watch, computed, nextTick } from "vue";
-import { debounce } from "lodash";
+import { debounce } from "lodash-es";
 import { useToast } from "@/Composables/useToast";
 
 const toast = useToast();

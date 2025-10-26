@@ -19,9 +19,7 @@ const initializeCsrfToken = async () => {
     try {
         await axios.get("/sanctum/csrf-cookie");
         csrfTokenInitialized = true;
-        console.log("CSRF token configurado com sucesso");
     } catch (error) {
-        console.error("Erro ao configurar o token CSRF:", error);
         // Tentar novamente após 3 segundos
         setTimeout(initializeCsrfToken, 3000);
     }
@@ -129,14 +127,6 @@ createInertiaApp({
         app.config.errorHandler = (error, vm, info) => {
             console.error("Erro na aplicação Vue:", error, info);
         };
-
-        // Debug para verificar se Ziggy está configurado
-        console.log("🔍 Verificando Ziggy:", {
-            "window.Ziggy": window.Ziggy,
-            "props.ziggy": props.initialPage?.props?.ziggy,
-            "route function": typeof window.route,
-            "props structure": props,
-        });
 
         // Montagem da aplicação
         app.mount(el);

@@ -15,12 +15,6 @@ window.axios.defaults.headers.common["Accept"] = "application/json";
 const updateOnlineStatus = () => {
     const status = navigator.onLine ? "online" : "offline";
     document.documentElement.setAttribute("data-connection", status);
-
-    if (!navigator.onLine) {
-        console.warn(
-            "Aplicação offline - algumas funcionalidades podem não estar disponíveis",
-        );
-    }
 };
 
 window.addEventListener("online", updateOnlineStatus);
@@ -36,13 +30,6 @@ document.documentElement.setAttribute(
     "data-device",
     isMobile ? "mobile" : "desktop",
 );
-
-// Configuração para debug condicional
-window.debug = (message, ...args) => {
-    if (import.meta.env.DEV) {
-        console.log(`[DEBUG] ${message}`, ...args);
-    }
-};
 
 // Utilitário para formatação de dados
 window.formatters = {
@@ -60,5 +47,3 @@ window.formatters = {
 if (navigator.language) {
     document.documentElement.setAttribute("lang", navigator.language);
 }
-
-console.log(`🚀 Aplicação inicializada (${import.meta.env.MODE})`);

@@ -52,10 +52,8 @@ const handleSubmit = () => {
 </script>
 
 <template>
-    <Head title="Entrar" />
-
     <div
-        class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gradient-to-b from-gray-50 to-gray-200"
+        class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gradient-to-b from-neutral-50 to-neutral-200"
     >
         <!-- Background elements decorativos -->
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
@@ -79,7 +77,7 @@ const handleSubmit = () => {
             />
             <div class="mt-3 text-center">
                 <h1 class="text-xl sm:text-2xl font-bold text-gray-800">
-                    Censo de Imóveis
+                    Censo Imobiliário
                 </h1>
                 <div class="mt-1 text-sm text-gray-600">
                     Diretoria de Engenharia e Recursos Imobiliários
@@ -90,15 +88,8 @@ const handleSubmit = () => {
         <!-- Card de Login -->
         <div
             ref="cardRef"
-            class="w-full max-w-md px-6 py-8 bg-white shadow-xl overflow-hidden sm:rounded-lg relative z-10 border border-gray-200"
+            class="w-full max-w-sm sm:max-w-md px-4 sm:px-6 py-6 sm:py-8 bg-white shadow-xl sm:rounded-lg relative z-10 border border-neutral-200"
         >
-            <div
-                class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#bea55a] to-[#d4bf7a]"
-            ></div>
-
-            <h1 class="text-2xl font-bold text-center text-gray-800 mb-8">
-                Acesso ao Sistema
-            </h1>
 
             <div
                 v-if="status"
@@ -113,9 +104,9 @@ const handleSubmit = () => {
                     <InputLabel
                         for="matricula"
                         value="Matrícula"
-                        class="text-gray-700"
+                        class="block text-sm font-medium text-neutral-700 mb-2"
                     />
-                    <div class="mt-1 relative">
+                    <div class="relative">
                         <div
                             class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                         >
@@ -138,7 +129,7 @@ const handleSubmit = () => {
                             id="matricula"
                             v-model="form.matricula"
                             type="text"
-                            class="pl-10 pr-4 block w-full border-gray-300 focus:border-[#bea55a] focus:ring-[#bea55a] rounded-md shadow-sm transition-colors duration-200"
+                            class="pl-10 pr-4 block w-full border-gray-300 rounded-md shadow-sm transition-colors duration-200"
                             required
                             autofocus
                             autocomplete="matricula"
@@ -180,7 +171,7 @@ const handleSubmit = () => {
                             id="password"
                             v-model="form.password"
                             :type="showPassword ? 'text' : 'password'"
-                            class="pl-10 pr-10 block w-full border-gray-300 focus:border-[#bea55a] focus:ring-[#bea55a] rounded-md shadow-sm transition-colors duration-200"
+                            class="pl-10 pr-10 block w-full border-gray-300 rounded-md shadow-sm transition-colors duration-200"
                             required
                             autocomplete="current-password"
                             placeholder="••••••••"
@@ -259,7 +250,7 @@ const handleSubmit = () => {
                     </Link>
 
                     <PrimaryButton
-                        class="w-full sm:w-auto flex items-center justify-center space-x-2"
+                        class="w-full flex items-center justify-center space-x-2 px-6 py-2 sm:py-3 bg-[#c1a85a] text-white font-normal rounded-md focus:outline-none transition-all duration-200 text-sm sm:text-base"
                         :class="{
                             'opacity-75 cursor-not-allowed':
                                 isLoading || form.processing,
@@ -288,7 +279,7 @@ const handleSubmit = () => {
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             ></path>
                         </svg>
-                        <span>{{ isLoading ? "Entrando..." : "Entrar" }}</span>
+                        <span>{{ isLoading ? "ENTRANDO..." : "ENTRAR" }}</span>
                     </PrimaryButton>
                 </div>
             </form>
@@ -296,7 +287,7 @@ const handleSubmit = () => {
 
         <!-- Rodapé -->
         <div ref="formElements" class="mt-8 text-center">
-            <div class="text-sm text-gray-600">
+            <div class="text-sm text-neutral-600">
                 © {{ currentYear }} Polícia Civil - Todos os direitos
                 reservados
             </div>
@@ -336,6 +327,7 @@ button {
 a:hover,
 button:hover {
     transform: translateY(-1px);
+    background-color: #a8924e;
 }
 
 /* Responsividade adicional */
@@ -347,14 +339,14 @@ button:hover {
 
 /* Estilização de foco acessível */
 :focus {
-    outline: 2px solid rgba(190, 165, 90, 0.5);
-    outline-offset: 2px;
+    outline: 2px solid rgba(0, 0, 0, 0.5);
+    outline-offset: 1px;
 }
 
 /* Melhoria visual para campos de formulário */
 input.border-gray-300:focus {
-    border-color: #bea55a;
-    box-shadow: 0 0 0 2px rgba(190, 165, 90, 0.25);
+    border-color: #000000;
+    box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
