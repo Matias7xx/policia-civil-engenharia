@@ -5,8 +5,7 @@ import "leaflet/dist/leaflet.css";
 
 // Configuração global do axios
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL =
-    import.meta.env.VITE_APP_URL || "http://localhost:8000";
+axios.defaults.baseURL = window.location.origin;
 axios.defaults.timeout = 90000; // 90 segundos de timeout
 
 // Cache do token CSRF para evitar requisições desnecessárias
