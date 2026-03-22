@@ -86,6 +86,7 @@ import { createInertiaApp } from "@inertiajs/vue3";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { IMaskDirective } from "vue-imask";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy";
+//import { ZiggyVue } from "ziggy-js";
 
 // Nome da aplicação
 const appName =

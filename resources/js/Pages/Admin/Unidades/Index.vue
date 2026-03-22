@@ -455,7 +455,7 @@ const getActionButtons = (unidade) => {
                                                     </td>
 
                                                     <!-- Status -->
-                                                    <td class="px-4 py-4">
+                                                    <td class="px-3 py-4">
                                                         <div
                                                             class="min-w-[130px]"
                                                         >
@@ -475,7 +475,7 @@ const getActionButtons = (unidade) => {
                                                     </td>
 
                                                     <!-- Nota Geral -->
-                                                    <td class="px-4 py-4">
+                                                    <td class="px-3 py-4">
                                                         <div
                                                             class="min-w-[100px]"
                                                         >
@@ -511,7 +511,7 @@ const getActionButtons = (unidade) => {
                                                     </td>
 
                                                     <!-- Ações -->
-                                                    <td class="px-4 py-4">
+                                                    <td class="px-2 py-4">
                                                         <div
                                                             class="min-w-[200px] flex flex-wrap gap-2"
                                                         >
