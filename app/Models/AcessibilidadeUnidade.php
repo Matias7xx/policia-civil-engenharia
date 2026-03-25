@@ -12,18 +12,8 @@ class AcessibilidadeUnidade extends Model implements Auditable
 {
     use HasFactory, AuditableTrait;
 
-    /**
-     * A tabela associada ao model.
-     *
-     * @var string
-     */
     protected $table = 'acessibilidade_unidade';
 
-    /**
-     * Os atributos que são atribuíveis em massa.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'unidade_id',
         'rampa_acesso',
@@ -35,21 +25,15 @@ class AcessibilidadeUnidade extends Model implements Auditable
         'observacoes',
     ];
 
-    /**
-     * Os atributos que devem ser convertidos.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
-        'rampa_acesso' => 'boolean',
-        'corrimao' => 'boolean',
-        'piso_tatil' => 'boolean',
-        'banheiro_adaptado' => 'boolean',
-        'elevador' => 'boolean',
-        'sinalizacao_braile' => 'boolean',
+        'rampa_acesso'        => 'boolean',
+        'corrimao'            => 'boolean',
+        'piso_tatil'          => 'boolean',
+        'banheiro_adaptado'   => 'boolean',
+        'elevador'            => 'boolean',
+        'sinalizacao_braile'  => 'boolean',
     ];
 
-    // Configuração de auditoria
     protected $auditInclude = [
         'rampa_acesso',
         'corrimao',
@@ -60,11 +44,7 @@ class AcessibilidadeUnidade extends Model implements Auditable
         'observacoes',
     ];
 
-    protected $auditEvents = [
-        'created',
-        'updated',
-        'deleted',
-    ];
+    protected $auditEvents = ['created', 'updated', 'deleted'];
 
     public function getAuditableType(): string
     {
@@ -88,9 +68,6 @@ class AcessibilidadeUnidade extends Model implements Auditable
         return $tags;
     }
 
-    /**
-     * Obtém a unidade associada a este registro de acessibilidade.
-     */
     public function unidade(): BelongsTo
     {
         return $this->belongsTo(Unidade::class);

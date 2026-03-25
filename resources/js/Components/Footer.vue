@@ -7,7 +7,7 @@
                     <span class="text-[#bea55a] font-semibold"
                         >Sistema de Censo de Imóveis</span
                     >
-                    - 2025 -
+                    - 2026 -
                     <span class="font-serif">Polícia Civil da Paraíba</span>
                 </p>
                 <p class="text-xs font-sans mt-1 text-gray-300">

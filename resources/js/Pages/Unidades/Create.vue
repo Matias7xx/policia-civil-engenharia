@@ -14,62 +14,55 @@ const toast = useToast();
 
 // Inicializa o completedTabs com base nos dados existentes
 const initializeCompletedTabs = () => {
-    // Aba "Dados Gerais": Verifica se todos os campos obrigatórios estão preenchidos
+    const telefoneOk = props.unidade?.sem_telefone || !!props.unidade?.telefone_1;
     const dadosGeraisCompleted =
         props.unidade?.id &&
         props.unidade?.nome &&
         props.unidade?.tipo_estrutural &&
-        props.unidade?.tipo_judicial;
-
+        props.unidade?.tipo_judicial &&
+        telefoneOk &&
+        props.unidade?.numero_medidor_agua &&
+        props.unidade?.numero_medidor_energia;
     completedTabs.value["dados-gerais"] = !!dadosGeraisCompleted;
-
-    // Aba "Localização": Verifica se todos os campos obrigatórios estão preenchidos
+ 
     const localizacaoCompleted =
         props.unidade?.id &&
         props.unidade?.cidade &&
         props.unidade?.cep &&
         props.unidade?.rua &&
+        props.unidade?.numero &&
         props.unidade?.bairro &&
         props.unidade?.latitude &&
         props.unidade?.longitude;
-
     completedTabs.value["localizacao"] = !!localizacaoCompleted;
-
-    // Aba "Acessibilidade": Verifica se todos os campos obrigatórios estão preenchidos
+ 
+    const accFieldOk = (v) => typeof v === "boolean" || v === null;
     const acessibilidadeCompleted =
         props.acessibilidade?.id &&
-        typeof props.acessibilidade.rampa_acesso === "boolean" &&
-        typeof props.acessibilidade.corrimao === "boolean" &&
-        typeof props.acessibilidade.piso_tatil === "boolean" &&
-        typeof props.acessibilidade.banheiro_adaptado === "boolean" &&
-        typeof props.acessibilidade.elevador === "boolean" &&
-        typeof props.acessibilidade.sinalizacao_braile === "boolean";
-
+        accFieldOk(props.acessibilidade.rampa_acesso) &&
+        accFieldOk(props.acessibilidade.corrimao) &&
+        accFieldOk(props.acessibilidade.piso_tatil) &&
+        accFieldOk(props.acessibilidade.banheiro_adaptado) &&
+        accFieldOk(props.acessibilidade.elevador) &&
+        accFieldOk(props.acessibilidade.sinalizacao_braile);
     completedTabs.value["acessibilidade"] = !!acessibilidadeCompleted;
-
-    // Aba "Estruturais": Verifica se os campos obrigatórios estão preenchidos
+ 
+    const inf = props.informacoes;
     const informacoesCompleted =
-        props.informacoes?.id && props.informacoes?.pavimentacao_rua;
-
+        inf?.id &&
+        inf?.pavimentacao_rua &&
+        (inf?.sem_caixa_dagua      || inf?.caixa_dagua      !== undefined) &&
+        (inf?.sem_internet_cabeada || inf?.internet_cabeada !== undefined) &&
+        (inf?.sem_telefone_fixo    || inf?.telefone_fixo    !== undefined);
     completedTabs.value["informacoes"] = !!informacoesCompleted;
-
-    // Aba "Mídias": Verifica se as mídias obrigatórias estão presentes
+ 
     const requiredMediaTypes = [
-        "foto_frente",
-        "foto_lateral_1",
-        "foto_lateral_2",
-        "foto_fundos",
-        "foto_medidor_agua",
-        "foto_medidor_energia",
+        "foto_frente","foto_lateral_1","foto_lateral_2",
+        "foto_fundos","foto_medidor_agua","foto_medidor_energia",
     ];
-    const existingMediaTypes =
-        props.midias?.map((midia) => midia.midia_tipo?.nome) || [];
-    const allRequiredMediaPresent = requiredMediaTypes.every((type) =>
-        existingMediaTypes.includes(type),
-    );
-
-    completedTabs.value["midias"] =
-        props.midias?.length > 0 && allRequiredMediaPresent;
+    const existingMediaTypes = props.midias?.map((m) => m.midia_tipo?.nome) || [];
+    const allRequiredMediaPresent = requiredMediaTypes.every((t) => existingMediaTypes.includes(t));
+    completedTabs.value["midias"] = props.midias?.length > 0 && allRequiredMediaPresent;
 };
 
 onMounted(() => {

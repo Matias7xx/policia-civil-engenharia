@@ -1,6 +1,6 @@
 <script setup>
 import { useForm } from "@inertiajs/vue3";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import ActionMessage from "@/Components/ActionMessage.vue";
 import FormSection from "@/Components/FormSection.vue";
 import InputError from "@/Components/InputError.vue";
@@ -157,13 +157,12 @@ const form = useForm({
     extintor_co2: props.informacoes?.extintor_co2 || "",
     extintor_agua: props.informacoes?.extintor_agua || "",
     placa_incendio: props.informacoes?.placa_incendio || "",
-    porta_principal_abre_fora:
-        props.informacoes?.porta_principal_abre_fora || "",
-    possui_luminarias_emergencia:
-        props.informacoes?.possui_luminarias_emergencia || "",
-    escada_possui_corrimao: props.informacoes?.escada_possui_corrimao || "",
-    demarcacao_piso_extintor: props.informacoes?.demarcacao_piso_extintor || "",
+    porta_principal_abre_fora: props.informacoes?.porta_principal_abre_fora ?? "",
+    possui_luminarias_emergencia: props.informacoes?.possui_luminarias_emergencia ?? "",
+    escada_possui_corrimao:        props.informacoes?.escada_possui_corrimao        ?? "",
+    demarcacao_piso_extintor: props.informacoes?.demarcacao_piso_extintor ?? "",
 });
+
 
 const methods = {
     updateField: (field, value) => {
@@ -175,87 +174,71 @@ const methods = {
 };
 
 const saveInformacoesEstruturais = () => {
-    // Validação client-side
-    form.errors = {}; // Limpar erros anteriores
+    form.errors = {};
+    const errors = {};
 
-    // Campos obrigatórios
-    const requiredFields = {
-        pavimentacao_rua: "A pavimentação da rua é obrigatória.",
-    };
+    if (!form.pavimentacao_rua)
+        errors.pavimentacao_rua = "A pavimentação da rua é obrigatória.";
 
-    Object.entries(requiredFields).forEach(([field, message]) => {
-        if (!form[field]) {
-            form.errors[field] = message;
+    if (!form.caixa_dagua)
+        errors.caixa_dagua = "A Caixa d'Água é obrigatória.";
+    if (!form.internet_cabeada)
+        errors.internet_cabeada = "A Internet Cabeada é obrigatória.";
+    if (!form.telefone_fixo)
+        errors.telefone_fixo = "O Telefone Fixo é obrigatório.";
+
+    // Quantitativos obrigatórios
+    [
+        { f: "qtd_recepcao",                label: "Recepção" },
+        { f: "qtd_wc_publico",              label: "WCs Públicos" },
+        { f: "qtd_gabinetes",               label: "Gabinetes" },
+        { f: "qtd_sala_oitiva",             label: "Salas de Oitiva" },
+        { f: "qtd_wc_servidores",           label: "WCs Servidores" },
+        { f: "qtd_alojamento_masculino",    label: "Aloj. Masculino" },
+        { f: "qtd_wc_alojamento_masculino", label: "WC Aloj. Masc." },
+        { f: "qtd_alojamento_feminino",     label: "Aloj. Feminino" },
+        { f: "qtd_wc_alojamento_feminino",  label: "WC Aloj. Fem." },
+        { f: "qtd_xadrez_masculino",        label: "Xadrez Masculino" },
+        { f: "qtd_xadrez_feminino",         label: "Xadrez Feminino" },
+        { f: "qtd_sala_identificacao",      label: "Sala de Identificação" },
+        { f: "qtd_cozinha",                 label: "Cozinha" },
+        { f: "qtd_area_servico",            label: "Área de Serviço" },
+        { f: "qtd_deposito_apreensao",      label: "Depósito de Apreensão" },
+    ].forEach(({ f, label }) => {
+        if (form[f] === "" || form[f] === null || form[f] === undefined)
+            errors[f] = `${label} é obrigatório.`;
+    });
+
+    // Equipamentos de segurança obrigatórios
+    [
+        { f: "extintor_po_quimico",          label: "Extintor de Pó Químico" },
+        { f: "extintor_co2",                 label: "Extintor de CO2" },
+        { f: "extintor_agua",                label: "Extintor de Água" },
+        { f: "placa_incendio",               label: "Placas de Incêndio" },
+        { f: "demarcacao_piso_extintor",     label: "Demarcação no piso abaixo do extintor" },
+        { f: "porta_principal_abre_fora",    label: "Porta principal abre para fora" },
+        { f: "possui_luminarias_emergencia", label: "Luminárias de Emergência" },
+        { f: "escada_possui_corrimao",       label: "Corrimão na Escada" },
+    ].forEach(({ f, label }) => {
+        if (!form[f]) errors[f] = `${label} é obrigatório.`;
+    });
+
+    // Normalizar numéricos
+    ["qtd_recepcao","qtd_wc_publico","qtd_gabinetes","qtd_sala_oitiva",
+     "qtd_wc_servidores","qtd_alojamento_masculino","qtd_wc_alojamento_masculino",
+     "qtd_alojamento_feminino","qtd_wc_alojamento_feminino","qtd_xadrez_masculino",
+     "qtd_xadrez_feminino","qtd_sala_identificacao","qtd_cozinha",
+     "qtd_area_servico","qtd_deposito_apreensao"].forEach((f) => {
+        if (form[f] !== "" && form[f] !== null) {
+            const n = parseInt(form[f], 10);
+            if (!isNaN(n) && n >= 0) form[f] = n.toString();
         }
     });
 
-    // Normalizar campos numéricos antes da validação
-    const numericFields = [
-        "qtd_recepcao",
-        "qtd_wc_publico",
-        "qtd_gabinetes",
-        "qtd_sala_oitiva",
-        "qtd_wc_servidores",
-        "qtd_alojamento_masculino",
-        "qtd_wc_alojamento_masculino",
-        "qtd_alojamento_feminino",
-        "qtd_wc_alojamento_feminino",
-        "qtd_xadrez_masculino",
-        "qtd_xadrez_feminino",
-        "qtd_sala_identificacao",
-        "qtd_cozinha",
-        "qtd_area_servico",
-        "qtd_deposito_apreensao",
-        "qtd_max_veiculos_automovel",
-    ];
-
-    // Normalizar valores numéricos (converter "01" para 1, "09" para 9, etc.)
-    numericFields.forEach((field) => {
-        if (form[field] && form[field] !== "") {
-            // remove zeros à esquerda automaticamente
-            const numericValue = parseInt(form[field], 10);
-            if (!isNaN(numericValue) && numericValue >= 0) {
-                form[field] = numericValue.toString();
-            } else if (form[field] !== "0" && form[field] !== 0) {
-                form.errors[field] =
-                    "Deve ser um número válido maior ou igual a zero.";
-            }
-        }
-    });
-
-    // Campos decimais (áreas, recuos)
-    const decimalFields = [
-        "area_aproximada_unidade",
-        "area_aproximada_terreno",
-        "qtd_pavimentos",
-        "recuo_frontal",
-        "recuo_lateral",
-        "recuo_fundos",
-        "area_xadrez_masculino",
-        "area_xadrez_feminino",
-    ];
-
-    decimalFields.forEach((field) => {
-        if (form[field] && form[field] !== "") {
-            const numericValue = parseFloat(form[field]);
-            if (!isNaN(numericValue) && numericValue >= 0) {
-                form[field] = numericValue.toString();
-            } else {
-                form.errors[field] =
-                    "Deve ser um número válido maior ou igual a zero.";
-            }
-        }
-    });
-
-    if (Object.keys(form.errors).length > 0) {
-        // Rola até o primeiro erro
-        const firstErrorField = document.querySelector(".text-red-600");
-        if (firstErrorField) {
-            firstErrorField.scrollIntoView({
-                behavior: "smooth",
-                block: "center",
-            });
-        }
+    if (Object.keys(errors).length > 0) {
+        Object.assign(form.errors, errors);
+        const el = document.querySelector(".text-red-600");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
         toast.warning("Verifique os campos obrigatórios.", { duration: 6000 });
         return;
     }
@@ -265,23 +248,13 @@ const saveInformacoesEstruturais = () => {
         preserveScroll: true,
         onSuccess: () => {
             toast.success("Dados estruturais salvos com sucesso!");
-            emit("saved"); // Emite apenas 'saved' para sucesso, sem forçar transição de aba
+            emit("saved");
         },
-        onError: (errors) => {
-            emit(
-                "saved",
-                "Erro ao salvar as informações estruturais. Verifique os campos.",
-            );
-
-            // Rola até o primeiro erro
+        onError: () => {
+            emit("saved", "Erro ao salvar as informações estruturais. Verifique os campos.");
             setTimeout(() => {
-                const firstErrorField = document.querySelector(".text-red-600");
-                if (firstErrorField) {
-                    firstErrorField.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center",
-                    });
-                }
+                const el = document.querySelector(".text-red-600");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
             }, 100);
         },
     });
@@ -302,6 +275,8 @@ const opcoesSegurancaVeiculos = [
     { value: "nao", label: "Não" },
     { value: "parcial", label: "Parcial" },
 ];
+
+
 </script>
 
 <template>
@@ -480,50 +455,26 @@ const opcoesSegurancaVeiculos = [
                             />
                         </div>
 
+                            <!-- Caixa D'Água * -->
                         <div>
-                            <InputLabel
-                                for="caixa_dagua"
-                                value="Caixa d'Água"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="caixa_dagua"
-                                v-model="form.caixa_dagua"
-                                type="text"
+                            <InputLabel class="text-sm" for="caixa_dagua" value="Caixa D'Água *" />
+                            <TextInput id="caixa_dagua" v-model="form.caixa_dagua" type="text"
                                 class="mt-1 block w-full"
-                                placeholder="Sim/Não/Especificações"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
-                            <InputError
-                                :message="form.errors.caixa_dagua"
-                                class="mt-1 text-xs"
-                            />
+                               
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="Ex: 5000L" />
+                            <InputError :message="form.errors.caixa_dagua" class="mt-1 text-xs" />
                         </div>
 
+                        <!-- Internet Cabeada * -->
                         <div>
-                            <InputLabel
-                                for="internet_cabeada"
-                                value="Internet Cabeada"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="internet_cabeada"
-                                v-model="form.internet_cabeada"
-                                type="text"
+                            <InputLabel class="text-sm" for="internet_cabeada" value="Internet Cabeada *" />
+                            <TextInput id="internet_cabeada" v-model="form.internet_cabeada" type="text"
                                 class="mt-1 block w-full"
-                                placeholder="Possui/Não Possui"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
-                            <InputError
-                                :message="form.errors.internet_cabeada"
-                                class="mt-1 text-xs"
-                            />
+                               
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="Ex: Fibra óptica" />
+                            <InputError :message="form.errors.internet_cabeada" class="mt-1 text-xs" />
                         </div>
 
                         <div>
@@ -549,27 +500,15 @@ const opcoesSegurancaVeiculos = [
                             />
                         </div>
 
+                        <!-- Telefone Fixo * -->
                         <div>
-                            <InputLabel
-                                for="telefone_fixo"
-                                value="Telefone Fixo"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="telefone_fixo"
-                                v-model="form.telefone_fixo"
-                                type="text"
-                                placeholder="Possui/Não Possui"
+                            <InputLabel class="text-sm" for="telefone_fixo" value="Telefone Fixo *" />
+                            <TextInput id="telefone_fixo" v-model="form.telefone_fixo" type="text"
                                 class="mt-1 block w-full"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
-                            <InputError
-                                :message="form.errors.telefone_fixo"
-                                class="mt-1 text-xs"
-                            />
+                               
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="(83) 3333-3333" />
+                            <InputError :message="form.errors.telefone_fixo" class="mt-1 text-xs" />
                         </div>
 
                         <div>
@@ -1062,67 +1001,34 @@ const opcoesSegurancaVeiculos = [
                             <div
                                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
                             >
+                                    <!-- qtd_recepcao -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_recepcao"
-                                        value="Recepções"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_recepcao"
-                                        v-model="form.qtd_recepcao"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_recepcao" value="Recepções *" />
+                                    <TextInput id="qtd_recepcao" v-model="form.qtd_recepcao" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_recepcao" class="mt-1 text-xs" />
                                 </div>
 
+                                    <!-- qtd_wc_publico -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_wc_publico"
-                                        value="WCs Públicos"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_wc_publico"
-                                        v-model="form.qtd_wc_publico"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_wc_publico" value="WCs Públicos *" />
+                                    <TextInput id="qtd_wc_publico" v-model="form.qtd_wc_publico" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_wc_publico" class="mt-1 text-xs" />
                                 </div>
 
+                                <!-- qtd_sala_oitiva -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_sala_oitiva"
-                                        value="Salas de Oitiva"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_sala_oitiva"
-                                        v-model="form.qtd_sala_oitiva"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_sala_oitiva" value="Salas de Oitiva *" />
+                                    <TextInput id="qtd_sala_oitiva" v-model="form.qtd_sala_oitiva" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_sala_oitiva" class="mt-1 text-xs" />
                                 </div>
                             </div>
                         </div>
@@ -1137,68 +1043,35 @@ const opcoesSegurancaVeiculos = [
                             <div
                                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
                             >
+                                <!-- qtd_gabinetes -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_gabinetes"
-                                        value="Gabinetes"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_gabinetes"
-                                        v-model="form.qtd_gabinetes"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_gabinetes" value="Gabinetes *" />
+                                    <TextInput id="qtd_gabinetes" v-model="form.qtd_gabinetes" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_gabinetes" class="mt-1 text-xs" />
                                 </div>
 
+                                <!-- qtd_wc_servidores -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_wc_servidores"
-                                        value="WCs Servidores"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_wc_servidores"
-                                        v-model="form.qtd_wc_servidores"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_wc_servidores" value="WCs Servidores *" />
+                                    <TextInput id="qtd_wc_servidores" v-model="form.qtd_wc_servidores" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_wc_servidores" class="mt-1 text-xs" />
                                 </div>
 
-                                <div>
-                                    <InputLabel
-                                        for="qtd_sala_identificacao"
-                                        value="Salas de Identificação"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_sala_identificacao"
-                                        v-model="form.qtd_sala_identificacao"
-                                        type="number"
-                                        min="0"
-                                        class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
-                                </div>
+                            <!-- qtd_sala_identificacao -->
+                            <div>
+                                <InputLabel class="text-sm" for="qtd_sala_identificacao" value="Sala de Identificação *" />
+                                <TextInput id="qtd_sala_identificacao" v-model="form.qtd_sala_identificacao" type="number" min="0"
+                                    class="mt-1 block w-full"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                    placeholder="Quantidade" />
+                                <InputError :message="form.errors.qtd_sala_identificacao" class="mt-1 text-xs" />
+                            </div>
                             </div>
                         </div>
 
@@ -1212,93 +1085,45 @@ const opcoesSegurancaVeiculos = [
                             <div
                                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"
                             >
+                                <!-- qtd_alojamento_masculino -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_alojamento_masculino"
-                                        value="Alojamento Masculino"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_alojamento_masculino"
-                                        v-model="form.qtd_alojamento_masculino"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_alojamento_masculino" value="Alojamento Masculino *" />
+                                    <TextInput id="qtd_alojamento_masculino" v-model="form.qtd_alojamento_masculino" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_alojamento_masculino" class="mt-1 text-xs" />
                                 </div>
 
+                                <!-- qtd_wc_alojamento_masculino -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_wc_alojamento_masculino"
-                                        value="WCs Aloj. Masculino"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_wc_alojamento_masculino"
-                                        v-model="
-                                            form.qtd_wc_alojamento_masculino
-                                        "
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_wc_alojamento_masculino" value="WC Aloj. Masculino *" />
+                                    <TextInput id="qtd_wc_alojamento_masculino" v-model="form.qtd_wc_alojamento_masculino" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_wc_alojamento_masculino" class="mt-1 text-xs" />
                                 </div>
 
+                                <!-- qtd_alojamento_feminino -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_alojamento_feminino"
-                                        value="Alojamento Feminino"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_alojamento_feminino"
-                                        v-model="form.qtd_alojamento_feminino"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_alojamento_feminino" value="Alojamento Feminino *" />
+                                    <TextInput id="qtd_alojamento_feminino" v-model="form.qtd_alojamento_feminino" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_alojamento_feminino" class="mt-1 text-xs" />
                                 </div>
 
-                                <div>
-                                    <InputLabel
-                                        for="qtd_wc_alojamento_feminino"
-                                        value="WCs Aloj. Feminino"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_wc_alojamento_feminino"
-                                        v-model="
-                                            form.qtd_wc_alojamento_feminino
-                                        "
-                                        type="number"
-                                        min="0"
-                                        class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
-                                </div>
+                            <!-- qtd_wc_alojamento_feminino -->
+                            <div>
+                                <InputLabel class="text-sm" for="qtd_wc_alojamento_feminino" value="WC Aloj. Feminino *" />
+                                <TextInput id="qtd_wc_alojamento_feminino" v-model="form.qtd_wc_alojamento_feminino" type="number" min="0"
+                                    class="mt-1 block w-full"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                    placeholder="Quantidade" />
+                                <InputError :message="form.errors.qtd_wc_alojamento_feminino" class="mt-1 text-xs" />
+                            </div>
                             </div>
                         </div>
 
@@ -1311,26 +1136,16 @@ const opcoesSegurancaVeiculos = [
                             </h3>
                             <div
                                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"
-                            >
+                            >  
+
+                                <!-- qtd_xadrez_masculino -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_xadrez_masculino"
-                                        value="Xadrez Masculino"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_xadrez_masculino"
-                                        v-model="form.qtd_xadrez_masculino"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_xadrez_masculino" value="Xadrez Masculino *" />
+                                    <TextInput id="qtd_xadrez_masculino" v-model="form.qtd_xadrez_masculino" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_xadrez_masculino" class="mt-1 text-xs" />
                                 </div>
 
                                 <div>
@@ -1361,25 +1176,14 @@ const opcoesSegurancaVeiculos = [
                                     />
                                 </div>
 
+                                <!-- qtd_xadrez_feminino -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_xadrez_feminino"
-                                        value="Xadrez Feminino"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_xadrez_feminino"
-                                        v-model="form.qtd_xadrez_feminino"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_xadrez_feminino" value="Xadrez Feminino *" />
+                                    <TextInput id="qtd_xadrez_feminino" v-model="form.qtd_xadrez_feminino" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_xadrez_feminino" class="mt-1 text-xs" />
                                 </div>
 
                                 <div>
@@ -1410,68 +1214,35 @@ const opcoesSegurancaVeiculos = [
                                     />
                                 </div>
 
+                                <!-- qtd_cozinha -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_cozinha"
-                                        value="Cozinha"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_cozinha"
-                                        v-model="form.qtd_cozinha"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_cozinha" value="Cozinha *" />
+                                    <TextInput id="qtd_cozinha" v-model="form.qtd_cozinha" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_cozinha" class="mt-1 text-xs" />
                                 </div>
 
+                                <!-- qtd_area_servico -->
                                 <div>
-                                    <InputLabel
-                                        for="qtd_area_servico"
-                                        value="Áreas de Serviço"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_area_servico"
-                                        v-model="form.qtd_area_servico"
-                                        type="number"
-                                        min="0"
+                                    <InputLabel class="text-sm" for="qtd_area_servico" value="Áreas de Serviço *" />
+                                    <TextInput id="qtd_area_servico" v-model="form.qtd_area_servico" type="number" min="0"
                                         class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
+                                        :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                        placeholder="Quantidade" />
+                                    <InputError :message="form.errors.qtd_area_servico" class="mt-1 text-xs" />
                                 </div>
 
-                                <div>
-                                    <InputLabel
-                                        for="qtd_deposito_apreensao"
-                                        value="Depósito Apreensão"
-                                        class="text-sm"
-                                    />
-                                    <TextInput
-                                        id="qtd_deposito_apreensao"
-                                        v-model="form.qtd_deposito_apreensao"
-                                        type="number"
-                                        min="0"
-                                        class="mt-1 block w-full"
-                                        placeholder="Quantidade"
-                                        :disabled="
-                                            !permissions?.canUpdateTeam ||
-                                            (isNew &&
-                                                unidade?.is_draft === false)
-                                        "
-                                    />
-                                </div>
+                            <!-- qtd_deposito_apreensao -->
+                            <div>
+                                <InputLabel class="text-sm" for="qtd_deposito_apreensao" value="Depósito Apreensão *" />
+                                <TextInput id="qtd_deposito_apreensao" v-model="form.qtd_deposito_apreensao" type="number" min="0"
+                                    class="mt-1 block w-full"
+                                    :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                    placeholder="Quantidade" />
+                                <InputError :message="form.errors.qtd_deposito_apreensao" class="mt-1 text-xs" />
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -1795,157 +1566,83 @@ const opcoesSegurancaVeiculos = [
                     class="p-4 border border-gray-200 rounded-b-lg mb-4 bg-white shadow-sm transition-all duration-300"
                 >
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <!-- extintor_po_quimico -->
                         <div>
-                            <InputLabel
-                                for="extintor_po_quimico"
-                                value="Extintor de Pó Químico"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="extintor_po_quimico"
-                                v-model="form.extintor_po_quimico"
-                                type="text"
+                            <InputLabel class="text-sm" for="extintor_po_quimico" value="Extintor de Pó Químico *" />
+                            <TextInput id="extintor_po_quimico" v-model="form.extintor_po_quimico" type="text"
                                 class="mt-1 block w-full"
-                                placeholder="Quantidade/Capacidade"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="Quantidade/Capacidade" />
+                            <InputError :message="form.errors.extintor_po_quimico" class="mt-1 text-xs" />
+                        </div>
+
+                        <!-- extintor_co2 -->
+                        <div>
+                            <InputLabel class="text-sm" for="extintor_co2" value="Extintor de CO2 *" />
+                            <TextInput id="extintor_co2" v-model="form.extintor_co2" type="text"
+                                class="mt-1 block w-full"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="Quantidade/Capacidade" />
+                            <InputError :message="form.errors.extintor_co2" class="mt-1 text-xs" />
+                        </div>
+
+                        <!-- extintor_agua -->
+                        <div>
+                            <InputLabel class="text-sm" for="extintor_agua" value="Extintor de Água *" />
+                            <TextInput id="extintor_agua" v-model="form.extintor_agua" type="text"
+                                class="mt-1 block w-full"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="Quantidade/Capacidade" />
+                            <InputError :message="form.errors.extintor_agua" class="mt-1 text-xs" />
                         </div>
 
                         <div>
-                            <InputLabel
-                                for="extintor_co2"
-                                value="Extintor de CO2"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="extintor_co2"
-                                v-model="form.extintor_co2"
-                                type="text"
+                            <InputLabel class="text-sm" for="demarcacao_piso_extintor" value="Demarcação no piso abaixo do extintor? *" />
+                            <TextInput id="demarcacao_piso_extintor" v-model="form.demarcacao_piso_extintor" type="text"
                                 class="mt-1 block w-full"
-                                placeholder="Quantidade/Capacidade"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="Sim/Não" />
+                            <InputError :message="form.errors.demarcacao_piso_extintor" class="mt-1 text-xs" />
+                        </div>
+
+                        <!-- placa_incendio -->
+                        <div>
+                            <InputLabel class="text-sm" for="placa_incendio" value="Placas de Emergência p/ Incêndio *" />
+                            <TextInput id="placa_incendio" v-model="form.placa_incendio" type="text"
+                                class="mt-1 block w-full"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="Sim/Não/Quantidade" />
+                            <InputError :message="form.errors.placa_incendio" class="mt-1 text-xs" />
+                        </div>
+
+                        <!-- possui_luminarias_emergencia -->
+                        <div>
+                            <InputLabel class="text-sm" for="possui_luminarias_emergencia" value="Luminárias de Emergência p/ Incêndio *" />
+                            <TextInput id="possui_luminarias_emergencia" v-model="form.possui_luminarias_emergencia" type="text"
+                                class="mt-1 block w-full"
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="Ex: 4 luminárias" />
+                            <InputError :message="form.errors.possui_luminarias_emergencia" class="mt-1 text-xs" />
                         </div>
 
                         <div>
-                            <InputLabel
-                                for="extintor_agua"
-                                value="Extintor de Água"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="extintor_agua"
-                                v-model="form.extintor_agua"
-                                type="text"
+                            <InputLabel class="text-sm" for="porta_principal_abre_fora" value="Porta principal abre para fora? *" />
+                            <TextInput id="porta_principal_abre_fora" v-model="form.porta_principal_abre_fora" type="text"
                                 class="mt-1 block w-full"
-                                placeholder="Quantidade/Capacidade"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
+                                :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                                placeholder="Sim/Não" />
+                            <InputError :message="form.errors.porta_principal_abre_fora" class="mt-1 text-xs" />
                         </div>
 
-                        <div>
-                            <InputLabel
-                                for="demarcacao_piso_extintor"
-                                value="No piso, abaixo do(s) extintor(es), existe demarcação?"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="demarcacao_piso_extintor"
-                                v-model="form.demarcacao_piso_extintor"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Sim/Não"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
-                        </div>
-
-                        <div>
-                            <InputLabel
-                                for="placa_incendio"
-                                value="Possui placas de sinalização de emergência para incêndio?"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="placa_incendio"
-                                v-model="form.placa_incendio"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Sim/Não"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
-                        </div>
-
-                        <div>
-                            <InputLabel
-                                for="possui_luminarias_emergencia"
-                                value="A unidade policial possui luminárias de emergência?"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="possui_luminarias_emergencia"
-                                v-model="form.possui_luminarias_emergencia"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Sim/Não"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
-                        </div>
-
-                        <div>
-                            <InputLabel
-                                for="porta_principal_abre_fora"
-                                value="A porta principal da unidade abre para fora?"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="porta_principal_abre_fora"
-                                v-model="form.porta_principal_abre_fora"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Sim/Não"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
-                        </div>
-
-                        <div>
-                            <InputLabel
-                                for="escada_possui_corrimao"
-                                value="A escada de acesso à unidade policial possui corrimão?"
-                                class="text-sm"
-                            />
-                            <TextInput
-                                id="escada_possui_corrimao"
-                                v-model="form.escada_possui_corrimao"
-                                type="text"
-                                class="mt-1 block w-full"
-                                placeholder="Sim/Não"
-                                :disabled="
-                                    !permissions?.canUpdateTeam ||
-                                    (isNew && unidade?.is_draft === false)
-                                "
-                            />
-                        </div>
+                    <!-- escada_possui_corrimao -->
+                    <div>
+                        <InputLabel class="text-sm" for="escada_possui_corrimao" value="Corrimão na Escada *" />
+                        <TextInput id="escada_possui_corrimao" v-model="form.escada_possui_corrimao" type="text"
+                            class="mt-1 block w-full"
+                            :disabled="!permissions?.canUpdateTeam || (isNew && unidade?.is_draft === false)"
+                            placeholder="Sim/Não" />
+                        <InputError :message="form.errors.escada_possui_corrimao" class="mt-1 text-xs" />
+                    </div>
                     </div>
                 </div>
             </div>

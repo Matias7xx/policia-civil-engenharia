@@ -37,21 +37,29 @@ class DashboardController extends Controller
 
         // Dados para Super Administrador
         if ($isSuperAdmin) {
-            $unidadesCount = Unidade::get()->count();
-            //$unidadesPendentes = Unidade::where('status', 'pendente_avaliacao')->where('is_draft', false)->count();
+    $unidadesCount     = Unidade::count();
+    $unidadesPendentes = Unidade::where('status', 'pendente_avaliacao')->where('is_draft', false)->count();
+    $unidadesAprovadas = Unidade::where('status', 'aprovada')->count();
+    $unidadesReprovadas = Unidade::where('status', 'reprovada')->count();
+    $unidadesEmRevisao  = Unidade::where('status', 'em_revisao')->count();
+    $unidadesSemCadastro = Unidade::where('is_draft', true)->count();
 
-            return Inertia::render('Dashboard', [
-                'isSuperAdmin' => true,
-                'isAdmin' => false,
-                'isServidor' => false,
-                'unidadesCount' => $unidadesCount,
-                //'unidadesPendentes' => $unidadesPendentes,
-                'unidadeCadastrada' => $unidadeCadastrada,
-                'unidadeStatus' => $unidadeStatus,
-                'rejectionReason' => $rejectionReason,
-                'isDraft' => $isDraft,
-            ]);
-        }
+    return Inertia::render('Dashboard', [
+        'isSuperAdmin'       => true,
+        'isAdmin'            => false,
+        'isServidor'         => false,
+        'unidadesCount'      => $unidadesCount,
+        'unidadesPendentes'  => $unidadesPendentes,
+        'unidadesAprovadas'  => $unidadesAprovadas,
+        'unidadesReprovadas' => $unidadesReprovadas,
+        'unidadesEmRevisao'  => $unidadesEmRevisao,
+        'unidadesSemCadastro' => $unidadesSemCadastro,
+        'unidadeCadastrada'  => $unidadeCadastrada,
+        'unidadeStatus'      => $unidadeStatus,
+        'rejectionReason'    => $rejectionReason,
+        'isDraft'            => $isDraft,
+    ]);
+}
         // Dados para Administrador
         elseif ($isAdmin) {
             return Inertia::render('Dashboard', [

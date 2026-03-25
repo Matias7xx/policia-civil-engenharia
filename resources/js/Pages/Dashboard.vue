@@ -52,6 +52,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    unidadesAprovadas:  { type: Number, default: 0 },
+    unidadesReprovadas: { type: Number, default: 0 },
+    unidadesEmRevisao:  { type: Number, default: 0 },
+    unidadesSemCadastro: { type: Number, default: 0 },
 });
 
 const page = usePage();
@@ -61,10 +65,10 @@ const welcomeMessage = computed(() => {
         return "Bem-vindo(a) ao Painel de Administração";
     } else if (props.isAdmin) {
         return props.unidadeCadastrada
-            ? "Obrigado por participar do Censo de Imóveis da DIERI-PCPB"
-            : "Bem-vindo(a) ao Censo de Imóveis da DIERI-PCPB";
+            ? "Obrigado por participar do Censo de Imóveis"
+            : "Bem-vindo(a) ao Censo de Imóveis";
     } else {
-        return "Bem-vindo(a) ao Censo de Imóveis da DIERI-PCPB";
+        return "Bem-vindo(a) ao Censo de Imóveis";
     }
 });
 
@@ -203,7 +207,7 @@ const statusInfo = computed(() => {
                     class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 transition-all duration-300"
                 >
                     <h1
-                        class="text-2xl font-bold text-gray-900 mb-4 flex items-center"
+                        class="text-3xl font-bold text-gray-900 mb-4 flex items-center"
                     >
                         <BuildingOfficeIcon
                             class="h-6 w-6 text-[#bea55a] mr-2"
@@ -213,39 +217,32 @@ const statusInfo = computed(() => {
 
                     <!-- Conteúdo para Super Administradores -->
                     <div v-if="isSuperAdmin" class="mb-6">
-                        <p class="text-lg mb-6 font-medium text-gray-900">
-                            Resumo do Sistema:
+                        <p class="text-xl mb-6 font-medium text-gray-900">
+                            Resumo das Unidades:
                         </p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div
                                 ref="statCards"
-                                class="bg-gray-50 p-6 rounded-lg shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
+                                class="bg-gray-50 p-6 rounded-lg shadow-sm flex flex-col items-center text-center gap-3 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
                             >
                                 <div>
-                                    <p class="text-gray-600 font-semibold">
-                                        Total de Unidades:
+                                    <p class="text-gray-600 font-semibold flex items-center justify-center">
+                                        Total de Unidades
                                     </p>
                                     <p
-                                        class="text-3xl font-bold text-gray-900 mt-2"
+                                        class="text-3xl font-bold text-gray-900 mt-2 text-center"
                                     >
                                         {{ unidadesCount }}
                                     </p>
                                 </div>
-                                <div
-                                    class="h-14 w-14 bg-[#f5e6b8] rounded-lg flex items-center justify-center"
-                                >
-                                    <BuildingOfficeIcon
-                                        class="h-8 w-8 text-[#816d33]"
-                                    />
-                                </div>
                             </div>
                             <div
                                 ref="statCards"
-                                class="bg-amber-50 p-6 rounded-lg shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
+                                class="bg-amber-50 p-6 rounded-lg shadow-sm flex flex-col items-center text-center gap-3 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
                             >
                                 <div>
                                     <p class="text-amber-800 font-semibold">
-                                        Pendentes de Avaliação:
+                                        Pendente(s) de Avaliação
                                     </p>
                                     <p
                                         class="text-3xl font-bold text-amber-900 mt-2"
@@ -253,12 +250,35 @@ const statusInfo = computed(() => {
                                         {{ unidadesPendentes }}
                                     </p>
                                 </div>
-                                <div
-                                    class="h-14 w-14 bg-amber-200 rounded-lg flex items-center justify-center"
-                                >
-                                    <ExclamationTriangleIcon
-                                        class="h-8 w-8 text-amber-600"
-                                    />
+                            </div>
+                            <!-- Aprovadas -->
+                            <div class="bg-green-50 p-6 rounded-lg shadow-sm flex flex-col items-center text-center gap-3 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                                <div>
+                                    <p class="text-green-800 font-semibold">Aprovadas</p>
+                                    <p class="text-3xl font-bold text-green-900 mt-2">{{ unidadesAprovadas }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Reprovadas -->
+                            <div class="bg-red-50 p-6 rounded-lg shadow-sm fflex flex-col items-center text-center gap-3 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                                <div>
+                                    <p class="text-red-800 font-semibold">Reprovadas</p>
+                                    <p class="text-3xl font-bold text-red-900 mt-2">{{ unidadesReprovadas }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Em Revisão -->
+                            <div class="bg-blue-50 p-6 rounded-lg shadow-sm flex flex-col items-center text-center gap-3 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                                <div>
+                                    <p class="text-blue-800 font-semibold">Em Revisão</p>
+                                    <p class="text-3xl font-bold text-blue-900 mt-2">{{ unidadesEmRevisao }}</p>
+                                </div>
+                            </div>
+                            <!-- Sem Cadastro -->
+                            <div class="bg-gray-100 p-6 rounded-lg shadow-sm flex flex-col items-center text-center gap-3 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                                <div>
+                                    <p class="text-gray-600 font-semibold">Sem Cadastro</p>
+                                    <p class="text-3xl font-bold text-gray-700 mt-2">{{ unidadesSemCadastro }}</p>
                                 </div>
                             </div>
                         </div>

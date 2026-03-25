@@ -102,7 +102,7 @@ const sendEmailVerification = () => {
             </div>
 
             <!-- Telefone -->
-            <div class="col-span-6 sm:col-span-4">
+            <!-- <div class="col-span-6 sm:col-span-4">
                 <InputLabel for="telefone" value="Telefone" />
                 <TextInput
                     id="telefone"
@@ -114,7 +114,7 @@ const sendEmailVerification = () => {
                     disabled
                 />
                 <InputError :message="form.errors.telefone" class="mt-2" />
-            </div>
+            </div> -->
         </template>
 
         <template #actions>

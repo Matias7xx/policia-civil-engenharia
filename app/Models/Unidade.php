@@ -43,6 +43,7 @@ class Unidade extends Model implements Auditable
         'complemento',
         'email',
         'telefone_1',
+        'sem_telefone',
         'telefone_2',
         'latitude',
         'longitude',
@@ -140,6 +141,7 @@ class Unidade extends Model implements Auditable
      */
     protected $casts = [
         'sede' => 'boolean',
+        'sem_telefone' => 'boolean',
         'imovel_compartilhado_unidades' => 'boolean',
         'imovel_compartilhado_orgao' => 'boolean',
         'latitude' => 'decimal:8',

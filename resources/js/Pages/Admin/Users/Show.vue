@@ -51,14 +51,14 @@ const formatRole = (role) => {
                 <!-- Card Principal -->
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                     <!-- Cabeçalho do Card -->
-                    <div class="bg-amber-50 border-b border-gray-200 px-6 py-4">
+                    <div class="bg-white border-b border-gray-200 px-6 py-4">
                         <h3
                             class="text-lg font-semibold text-gray-900 flex items-center"
                         >
                             <UserIcon class="h-6 w-6 text-[#bea55a] mr-2" />
                             {{ user.name }}
                         </h3>
-                        <p class="mt-1 text-sm text-gray-600">
+                        <p class="mt-1 text-sm text-gray-800">
                             Detalhes do usuário e informações associadas
                         </p>
                     </div>

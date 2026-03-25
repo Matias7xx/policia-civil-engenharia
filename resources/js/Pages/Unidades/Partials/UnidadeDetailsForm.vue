@@ -77,6 +77,7 @@ const form = useForm({
     imovel_compartilhado_orgao: false,
     imovel_compartilhado_orgao_ids: [],
     imovel_compartilhado_unidades_ids: [],
+    sem_telefone: props.unidade?.sem_telefone || false,
 });
 
 // Estados para dropdowns
@@ -274,6 +275,22 @@ const saveDadosGerais = () => {
         return;
     }
 
+    // Validação: telefone obrigatório OU sem_telefone marcado
+    if (!form.sem_telefone && !form.telefone_1) {
+        toast.error('Informe o Telefone ou marque "Esta unidade não possui telefone".');
+        errors.push('Telefone obrigatório.');
+    }
+    
+    // Validação: medidores obrigatórios
+    if (!form.numero_medidor_agua) {
+        toast.error('O número do Medidor de Água é obrigatório.');
+        errors.push('Medidor de Água obrigatório.');
+    }
+    if (!form.numero_medidor_energia) {
+        toast.error('O número do Medidor de Energia é obrigatório.');
+        errors.push('Medidor de Energia obrigatório.');
+    }
+
     // SINCRONIZAR ESTADO PERSISTENTE COM FORM ANTES DA VALIDAÇÃO (PARA OS SELECTS)
     form.imovel_compartilhado_orgao =
         persistentState.value.imovel_compartilhado_orgao;
@@ -467,7 +484,7 @@ const saveDadosGerais = () => {
                     Informações de Contato
                 </h3>
                 <div
-                    class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 mb-6"
+                    class="grid grid-cols-1 gap-4 sm:grid-cols-3 md:grid-cols-2 mb-6"
                 >
                     <div>
                         <InputLabel
@@ -487,36 +504,27 @@ const saveDadosGerais = () => {
                         />
                         <InputError :message="form.errors.email" class="mt-1" />
                     </div>
-                    <div>
+                    
+                    <!-- Campos de telefone (desabilitados quando sem_telefone = true) -->
+                    <div :class="{ 'opacity-50 pointer-events-none': form.sem_telefone }">
                         <InputLabel
                             for="telefone_1"
-                            value="Telefone 1"
+                            :value="'Telefone' + (form.sem_telefone ? '' : ' *')"
                             class="text-sm font-medium text-gray-700"
                         />
                         <TextInput
                             id="telefone_1"
-                            :value="form.telefone_1"
+                            v-model="form.telefone_1"
                             type="text"
-                            v-imask="{
-                                mask: '{(00) }0000[0]-0000',
-                                lazy: false,
-                                overwrite: true,
-                            }"
-                            placeholder="(11) 98765-4321"
                             class="mt-1 block w-full"
-                            :disabled="
-                                !isEditable || !permissions?.canUpdateTeam
-                            "
-                            @update:modelValue="
-                                methods.updateField('telefone_1', $event)
-                            "
+                            :disabled="!isEditable || !permissions?.canUpdateTeam || form.sem_telefone"
+                            placeholder="(83) 99999-9999"
+                            v-mask="['(##) ####-####', '(##) #####-####']"
                         />
-                        <InputError
-                            :message="form.errors.telefone_1"
-                            class="mt-1"
-                        />
+                        <InputError :message="form.errors.telefone_1" class="mt-1" />
                     </div>
-                    <div>
+                    
+                    <div :class="{ 'opacity-50 pointer-events-none': form.sem_telefone }">
                         <InputLabel
                             for="telefone_2"
                             value="Telefone 2"
@@ -524,28 +532,31 @@ const saveDadosGerais = () => {
                         />
                         <TextInput
                             id="telefone_2"
-                            :value="form.telefone_2"
+                            v-model="form.telefone_2"
                             type="text"
-                            v-imask="{
-                                mask: '{(00) }0000[0]-0000',
-                                lazy: false,
-                                overwrite: true,
-                            }"
-                            placeholder="(11) 98765-4321"
                             class="mt-1 block w-full"
-                            :disabled="
-                                !isEditable || !permissions?.canUpdateTeam
-                            "
-                            @update:modelValue="
-                                methods.updateField('telefone_2', $event)
-                            "
+                            :disabled="!isEditable || !permissions?.canUpdateTeam || form.sem_telefone"
+                            placeholder="(83) 99999-9999"
+                            v-mask="['(##) ####-####', '(##) #####-####']"
                         />
-                        <InputError
-                            :message="form.errors.telefone_2"
-                            class="mt-1"
-                        />
+                        <InputError :message="form.errors.telefone_2" class="mt-1" />
+                    </div>
+
+                    <!-- Checkbox "Não Possui Telefone" -->
+                    <div class="flex items-center gap-2 mt-5 ">
+                            <Checkbox
+                                id="sem_telefone"
+                                v-model:checked="form.sem_telefone"
+                                :disabled="!isEditable || !permissions?.canUpdateTeam"
+                            />
+                            <InputLabel
+                                for="sem_telefone"
+                                value="Esta unidade não possui telefone"
+                                class="text-sm text-gray-600 cursor-pointer"
+                            />
                     </div>
                 </div>
+                
 
                 <!-- Informações Técnicas -->
                 <h3 class="text-lg font-medium text-gray-900 mb-4">
@@ -581,7 +592,7 @@ const saveDadosGerais = () => {
                     <div>
                         <InputLabel
                             for="numero_medidor_agua"
-                            value="Medidor de Água"
+                            value="Medidor de Água *"
                             class="text-sm font-medium text-gray-700"
                         />
                         <TextInput
@@ -602,7 +613,7 @@ const saveDadosGerais = () => {
                     <div>
                         <InputLabel
                             for="numero_medidor_energia"
-                            value="Medidor de Energia"
+                            value="Medidor de Energia *"
                             class="text-sm font-medium text-gray-700"
                         />
                         <TextInput

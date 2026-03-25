@@ -53,6 +53,7 @@ const hasRequiredFields = computed(() => {
         form.cidade &&
         form.cep &&
         form.rua &&
+        form.numero &&
         form.bairro &&
         form.latitude &&
         form.longitude
@@ -320,6 +321,7 @@ const saveLocalizacao = () => {
         { field: "cidade", name: "Cidade" },
         { field: "cep", name: "CEP" },
         { field: "rua", name: "Rua" },
+        { field: "numero", name: "Número" },
         { field: "bairro", name: "Bairro" },
         { field: "latitude", name: "Latitude" },
         { field: "longitude", name: "Longitude" },
@@ -684,7 +686,7 @@ const saveLocalizacao = () => {
                             <div>
                                 <InputLabel
                                     for="numero"
-                                    value="Número"
+                                    value="Número *"
                                     class="text-sm font-medium text-gray-700"
                                 />
                                 <TextInput

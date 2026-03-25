@@ -114,72 +114,71 @@ class UnidadeController extends Controller
     {
         $team = auth()->user()->currentTeam;
         $validated = $request->validate([
-            'team_id' => 'required|exists:teams,id',
-            'nome' => 'required|string|max:255',
-            'codigo' => 'nullable|string|max:50',
-            'tipo_estrutural' => 'required|string|in:delegacia,especializada,instituto,academia,superintendencia,outra',
-            'srpc' => 'nullable|string|max:255',
-            'dspc' => 'nullable|string|max:255',
-            'nivel' => 'nullable|string|max:50',
-            'sede' => 'boolean',
-            'email' => 'nullable|email|max:255',
-            'telefone_1' => 'nullable|string|max:20',
-            'telefone_2' => 'nullable|string|max:20',
-            'tipo_judicial' => 'required|string|in:proprio,locado,cedido',
-            'imovel_compartilhado_unidades' => 'boolean',
-            'imovel_compartilhado_unidades_texto' => 'nullable|string',
-            'imovel_compartilhado_unidades_ids' => 'nullable|array',
-            'imovel_compartilhado_unidades_ids.*' => 'exists:unidades,id',
-            'imovel_compartilhado_orgao' => 'boolean',
-            'imovel_compartilhado_orgao_ids' => 'nullable|array',
-            'imovel_compartilhado_orgao_ids.*' => 'exists:orgaos,id',
-            'observacoes' => 'nullable|string',
-            'numero_medidor_agua' => 'nullable|string|max:50',
-            'numero_medidor_energia' => 'nullable|string|max:50',
+            'team_id'                            => 'required|exists:teams,id',
+            'nome'                               => 'required|string|max:255',
+            'codigo'                             => 'nullable|string|max:50',
+            'tipo_estrutural'                    => 'required|string|in:delegacia,especializada,instituto,academia,superintendencia,outra',
+            'srpc'                               => 'nullable|string|max:255',
+            'dspc'                               => 'nullable|string|max:255',
+            'nivel'                              => 'nullable|string|max:50',
+            'sede'                               => 'boolean',
+            'email'                              => 'nullable|email|max:255',
+            'sem_telefone'                       => 'required|boolean',
+            'telefone_1'                         => 'required_if:sem_telefone,false|nullable|string|max:20',
+            'telefone_2'                         => 'nullable|string|max:20',
+            'tipo_judicial'                      => 'required|string|in:proprio,locado,cedido',
+            'imovel_compartilhado_unidades'      => 'boolean',
+            'imovel_compartilhado_unidades_texto'=> 'nullable|string',
+            'imovel_compartilhado_unidades_ids'  => 'nullable|array',
+            'imovel_compartilhado_unidades_ids.*'=> 'exists:unidades,id',
+            'imovel_compartilhado_orgao'         => 'boolean',
+            'imovel_compartilhado_orgao_ids'     => 'nullable|array',
+            'imovel_compartilhado_orgao_ids.*'   => 'exists:orgaos,id',
+            'observacoes'                        => 'nullable|string',
+            'numero_medidor_agua'                => 'required|string|max:50',
+            'numero_medidor_energia'             => 'required|string|max:50',
+        ], [
+            'telefone_1.required_if'         => 'Informe o Telefone ou marque "Não Possui".',
+            'numero_medidor_agua.required'   => 'O Medidor de Água é obrigatório.',
+            'numero_medidor_energia.required'=> 'O Medidor de Energia é obrigatório.',
         ]);
-
+    
         if (!auth()->user()->isSuperAdmin && !auth()->user()->hasTeamPermission($team, 'update')) {
             return redirect()->back()->with('error', 'Você não tem permissão para atualizar esta unidade.');
         }
-
+    
         $unidadeData = $validated;
         unset($unidadeData['imovel_compartilhado_orgao_ids']);
         unset($unidadeData['imovel_compartilhado_unidades_ids']);
-
-        // Limpar o texto de unidades compartilhadas se o checkbox não estiver marcado
+    
         if (!$validated['imovel_compartilhado_unidades']) {
             $unidadeData['imovel_compartilhado_unidades_texto'] = null;
         }
-
-        // Verificar se o status é 'reprovada' e alterar para 'pendente_avaliacao'
+        if ($validated['sem_telefone']) {
+            $unidadeData['telefone_1'] = null;
+            $unidadeData['telefone_2'] = null;
+        }
+    
         $unidade = Unidade::where('team_id', $request->team_id)->first();
         if ($unidade && $unidade->status === 'reprovada') {
             $unidadeData['status'] = 'pendente_avaliacao';
         }
-
-        $unidade = Unidade::updateOrCreate(
-            ['team_id' => $request->team_id],
-            $unidadeData
-        );
-
-        // Sincronizar órgãos compartilhados
+    
+        $unidade = Unidade::updateOrCreate(['team_id' => $request->team_id], $unidadeData);
+    
         if ($validated['imovel_compartilhado_orgao'] && !empty($validated['imovel_compartilhado_orgao_ids'])) {
             $unidade->orgaosCompartilhados()->sync($validated['imovel_compartilhado_orgao_ids']);
         } else {
             $unidade->orgaosCompartilhados()->detach();
         }
-
-        // Sincronizar unidades compartilhadas
+    
         if ($validated['imovel_compartilhado_unidades'] && !empty($validated['imovel_compartilhado_unidades_ids'])) {
-            // Filtrar unidades para não incluir a própria unidade
-            $unidadesIds = array_filter($validated['imovel_compartilhado_unidades_ids'], function($id) use ($unidade) {
-                return $id != $unidade->id;
-            });
-            $unidade->unidadesCompartilhadas()->sync($unidadesIds);
+            $ids = array_filter($validated['imovel_compartilhado_unidades_ids'], fn($id) => $id != $unidade->id);
+            $unidade->unidadesCompartilhadas()->sync($ids);
         } else {
             $unidade->unidadesCompartilhadas()->detach();
         }
-
+    
         return redirect()->back()->with('success', 'Dados gerais salvos com sucesso.');
     }
 
@@ -187,165 +186,175 @@ class UnidadeController extends Controller
     {
         $team = auth()->user()->currentTeam;
         $validated = $request->validate([
-            'team_id' => 'required|exists:teams,id',
-            'cidade' => 'required|string|max:255',
-            'cep' => 'required|string|min:8|max:9',
-            'rua' => 'required|string|max:255',
-            'numero' => 'nullable|string|max:50',
-            'bairro' => 'required|string|max:255',
+            'team_id'     => 'required|exists:teams,id',
+            'cidade'      => 'required|string|max:255',
+            'cep'         => 'required|string|min:8|max:9',
+            'rua'         => 'required|string|max:255',
+            'numero'      => 'required|string|max:50',
+            'bairro'      => 'required|string|max:255',
             'complemento' => 'nullable|string|max:255',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
+            'latitude'    => 'required|numeric',
+            'longitude'   => 'required|numeric',
+        ], [
+            'numero.required' => 'O número do imóvel é obrigatório.',
         ]);
-
-        if (!auth()->user()->isSuperAdmin && !auth()->user()->hasTeamPermission($team, 'update')) {
+    
+        if (!auth()->user()->hasTeamPermission($team, 'update')) {
             return redirect()->back()->with('error', 'Você não tem permissão para atualizar esta unidade.');
         }
-
-        // Verificar se o status é 'reprovada' e alterar para 'pendente_avaliacao'
+    
         $unidade = Unidade::where('team_id', $request->team_id)->first();
         if ($unidade && $unidade->status === 'reprovada') {
             $validated['status'] = 'pendente_avaliacao';
         }
-
-        $unidade = Unidade::updateOrCreate(
-            ['team_id' => $request->team_id],
-            $validated
-        );
-
+    
+        Unidade::updateOrCreate(['team_id' => $request->team_id], $validated);
+    
         return redirect()->back()->with('success', 'Dados de localização salvos com sucesso.');
     }
 
     public function saveAcessibilidade(Request $request)
     {
         $validated = $request->validate([
-            'unidade_id' => 'required|exists:unidades,id',
-            'rampa_acesso' => 'required|boolean',
-            'corrimao' => 'required|boolean',
-            'piso_tatil' => 'required|boolean',
-            'banheiro_adaptado' => 'required|boolean',
-            'elevador' => 'required|boolean',
-            'sinalizacao_braile' => 'required|boolean',
-            'observacoes' => 'nullable|string|max:1000',
+            'unidade_id'        => 'required|exists:unidades,id',
+            'rampa_acesso'       => 'present|nullable|boolean',
+            'corrimao'           => 'present|nullable|boolean',
+            'piso_tatil'         => 'present|nullable|boolean',
+            'banheiro_adaptado'  => 'present|nullable|boolean',
+            'elevador'           => 'present|nullable|boolean',
+            'sinalizacao_braile' => 'present|nullable|boolean',
+            'observacoes'        => 'nullable|string|max:1000',
+        ], [
+            'rampa_acesso.present'       => 'Informe a Rampa de Acesso ou marque "Não Possui".',
+            'corrimao.present'           => 'Informe o Corrimão ou marque "Não Possui".',
+            'piso_tatil.present'         => 'Informe o Piso Tátil ou marque "Não Possui".',
+            'banheiro_adaptado.present'  => 'Informe o Banheiro Adaptado ou marque "Não Possui".',
+            'elevador.present'           => 'Informe o Elevador ou marque "Não Possui".',
+            'sinalizacao_braile.present' => 'Informe a Sinalização em Braille ou marque "Não Possui".',
         ]);
-
+    
         $unidade = Unidade::findOrFail($validated['unidade_id']);
-        $team = Team::findOrFail($unidade->team_id);
-        if (!auth()->user()->isSuperAdmin && !auth()->user()->hasTeamPermission($team, 'update')) {
+        $team    = Team::findOrFail($unidade->team_id);
+    
+        if (!auth()->user()->hasTeamPermission($team, 'update')) {
             return redirect()->back()->with('error', 'Você não tem permissão para atualizar esta unidade.');
         }
-
-        // Verificar se o status é 'reprovada' e alterar para 'pendente_avaliacao'
+    
         if ($unidade->status === 'reprovada') {
             $unidade->update(['status' => 'pendente_avaliacao']);
         }
-
+    
         AcessibilidadeUnidade::updateOrCreate(
             ['unidade_id' => $unidade->id],
             [
-                'rampa_acesso' => $validated['rampa_acesso'],
-                'corrimao' => $validated['corrimao'],
-                'piso_tatil' => $validated['piso_tatil'],
-                'banheiro_adaptado' => $validated['banheiro_adaptado'],
-                'elevador' => $validated['elevador'],
+                'rampa_acesso'       => $validated['rampa_acesso'],       // null, true ou false
+                'corrimao'           => $validated['corrimao'],
+                'piso_tatil'         => $validated['piso_tatil'],
+                'banheiro_adaptado'  => $validated['banheiro_adaptado'],
+                'elevador'           => $validated['elevador'],
                 'sinalizacao_braile' => $validated['sinalizacao_braile'],
-                'observacoes' => $validated['observacoes'],
+                'observacoes'        => $validated['observacoes'],
             ]
         );
-
+    
         return redirect()->back()->with('success', 'Informações de acessibilidade salvas com sucesso.');
     }
 
     public function saveInformacoesEstruturais(Request $request)
     {
         $validated = $request->validate([
-            'unidade_id' => 'required|exists:unidades,id',
-            'pavimentacao_rua' => 'required|string|max:255',
-            'padrao_energia' => 'nullable|string|max:255',
-            'subestacao' => 'nullable|string|max:255',
-            'gerador_energia' => 'nullable|string|max:255',
-            'para_raio' => 'nullable|string|max:255',
-            'caixa_dagua' => 'nullable|string|max:255',
-            'internet_cabeada' => 'nullable|string|max:255',
-            'internet_provedor' => 'nullable|string|max:255',
-            'telefone_fixo' => 'nullable|string|max:20',
-            'telefone_movel' => 'nullable|string|max:20',
-            'tipo_imovel' => 'nullable|string|max:255',
+            'unidade_id'        => 'required|exists:unidades,id',
+            'pavimentacao_rua'  => 'required|string|max:255',
+            'padrao_energia'    => 'nullable|string|max:255',
+            'subestacao'        => 'nullable|string|max:255',
+            'gerador_energia'   => 'nullable|string|max:255',
+            'para_raio'         => 'nullable|string|max:255',
+            'caixa_dagua'       => 'required|string|max:255',
+            'internet_cabeada'  => 'required|string|max:255',
+            'internet_provedor'    => 'nullable|string|max:255',
+            'telefone_fixo'     => 'required|string|max:20',
+            'telefone_movel'    => 'nullable|string|max:20',
+            'tipo_imovel'                => 'nullable|string|max:255',
             'responsavel_locacao_cessao' => 'nullable|string|max:255',
-            'escritura_publica' => 'nullable|string|max:255',
-            'area_aproximada_unidade' => 'nullable|numeric',
-            'area_aproximada_terreno' => 'nullable|numeric',
-            'qtd_pavimentos' => 'nullable|numeric',
-            'cercado_muros' => 'boolean',
-            'estacionamento_interno' => 'boolean',
-            'estacionamento_externo' => 'boolean',
-            'recuo_frontal' => 'nullable|numeric',
-            'recuo_lateral' => 'nullable|numeric',
-            'recuo_fundos' => 'nullable|numeric',
-            'qtd_recepcao' => 'nullable|integer',
-            'qtd_wc_publico' => 'nullable|integer',
-            'qtd_gabinetes' => 'nullable|integer',
-            'qtd_sala_oitiva' => 'nullable|integer',
-            'qtd_wc_servidores' => 'nullable|integer',
-            'qtd_alojamento_masculino' => 'nullable|integer',
-            'qtd_wc_alojamento_masculino' => 'nullable|integer',
-            'qtd_alojamento_feminino' => 'nullable|integer',
-            'qtd_wc_alojamento_feminino' => 'nullable|integer',
-            'qtd_xadrez_masculino' => 'nullable|integer',
-            'area_xadrez_masculino' => 'nullable|numeric',
-            'qtd_xadrez_feminino' => 'nullable|integer',
-            'area_xadrez_feminino' => 'nullable|numeric',
-            'qtd_sala_identificacao' => 'nullable|integer',
-            'qtd_cozinha' => 'nullable|integer',
-            'qtd_area_servico' => 'nullable|integer',
-            'qtd_deposito_apreensao' => 'nullable|integer',
-            'ponto_energia_agua' => 'nullable|string',
-            'tomadas_suficientes' => 'boolean',
-            'luminarias_suficientes' => 'boolean',
-            'pontos_rede_suficientes' => 'boolean',
-            'pontos_telefone_suficientes' => 'boolean',
+            'escritura_publica'          => 'nullable|string|max:255',
+            'area_aproximada_unidade'    => 'nullable|numeric',
+            'area_aproximada_terreno'    => 'nullable|numeric',
+            'qtd_pavimentos'             => 'nullable|numeric',
+            'cercado_muros'              => 'boolean',
+            'estacionamento_interno'     => 'boolean',
+            'estacionamento_externo'     => 'boolean',
+            'recuo_frontal'              => 'nullable|numeric',
+            'recuo_lateral'              => 'nullable|numeric',
+            'recuo_fundos'               => 'nullable|numeric',
+            'ponto_energia_agua'         => 'nullable|string',
+            'qtd_recepcao'                => 'required|integer|min:0',
+            'qtd_wc_publico'              => 'required|integer|min:0',
+            'qtd_gabinetes'               => 'required|integer|min:0',
+            'qtd_sala_oitiva'             => 'required|integer|min:0',
+            'qtd_wc_servidores'           => 'required|integer|min:0',
+            'qtd_alojamento_masculino'    => 'required|integer|min:0',
+            'qtd_wc_alojamento_masculino' => 'required|integer|min:0',
+            'qtd_alojamento_feminino'     => 'required|integer|min:0',
+            'qtd_wc_alojamento_feminino'  => 'required|integer|min:0',
+            'qtd_xadrez_masculino'        => 'required|integer|min:0',
+            'area_xadrez_masculino'       => 'nullable|numeric',
+            'qtd_xadrez_feminino'         => 'required|integer|min:0',
+            'area_xadrez_feminino'        => 'nullable|numeric',
+            'qtd_sala_identificacao'      => 'required|integer|min:0',
+            'qtd_cozinha'                 => 'required|integer|min:0',
+            'qtd_area_servico'            => 'required|integer|min:0',
+            'qtd_deposito_apreensao'      => 'required|integer|min:0',
+            // Suficiência
+            'tomadas_suficientes'                => 'boolean',
+            'luminarias_suficientes'             => 'boolean',
+            'pontos_rede_suficientes'            => 'boolean',
+            'pontos_telefone_suficientes'        => 'boolean',
             'pontos_ar_condicionado_suficientes' => 'boolean',
-            'pontos_hidraulicos_suficientes' => 'boolean',
-            'pontos_sanitarios_suficientes' => 'boolean',
-            'piso' => 'nullable|string|max:255',
-            'parede' => 'nullable|string|max:255',
-            'esquadrias' => 'nullable|string|max:255',
-            'loucas_metais' => 'nullable|string|max:255',
-            'forro_lage' => 'nullable|string|max:255',
-            'cobertura' => 'nullable|string|max:255',
+            'pontos_hidraulicos_suficientes'     => 'boolean',
+            'pontos_sanitarios_suficientes'      => 'boolean',
+            // Acabamentos
+            'piso' => 'nullable|string|max:255', 'parede' => 'nullable|string|max:255',
+            'esquadrias' => 'nullable|string|max:255', 'loucas_metais' => 'nullable|string|max:255',
+            'forro_lage' => 'nullable|string|max:255', 'cobertura' => 'nullable|string|max:255',
             'pintura' => 'nullable|string|max:255',
-            'extintor_po_quimico' => 'nullable|string|max:255',
-            'extintor_co2' => 'nullable|string|max:255',
-            'extintor_agua' => 'nullable|string|max:255',
-            'placa_incendio' => 'nullable|string|max:255',
-            'tem_espaco_veiculos_apreendidos' => 'boolean',
-            'qtd_max_veiculos_automovel' => 'nullable|integer|min:0',
-            'seguranca_local_veiculos' => 'nullable|string|in:sim,nao,parcial',
-            'historico_invasao_veiculo' => 'boolean',
+            'extintor_po_quimico' => 'required|string|max:255',
+            'extintor_co2'        => 'required|string|max:255',
+            'extintor_agua'       => 'required|string|max:255',
+            'placa_incendio'      => 'required|string|max:255',
+            'demarcacao_piso_extintor'     => 'required|string|max:255',
+            'porta_principal_abre_fora'    => 'required|string|max:255',
+            'possui_luminarias_emergencia' => 'required|string|max:255',
+            'escada_possui_corrimao'       => 'required|string|max:255',
+            // Veículos
+            'tem_espaco_veiculos_apreendidos'  => 'nullable|boolean',
+            'qtd_max_veiculos_automovel'       => 'nullable|integer',
+            'seguranca_local_veiculos'         => 'nullable|string|max:255',
+            'historico_invasao_veiculo'        => 'nullable|boolean',
             'observacoes_veiculos_apreendidos' => 'nullable|string|max:1000',
-
-            'porta_principal_abre_fora' => 'nullable|string|max:255',
-            'possui_luminarias_emergencia' => 'nullable|string|max:255',
-            'escada_possui_corrimao' => 'nullable|string|max:255',
-            'demarcacao_piso_extintor' => 'nullable|string|max:255'
+        ], [
         ]);
-
-        $unidade = Unidade::findOrFail($request->unidade_id);
-        $team = Team::findOrFail($unidade->team_id);
-        if (!auth()->user()->isSuperAdmin && !auth()->user()->hasTeamPermission($team, 'update')) {
+    
+        $unidade = Unidade::findOrFail($validated['unidade_id']);
+        $team    = Team::findOrFail($unidade->team_id);
+    
+        if (!auth()->user()->hasTeamPermission($team, 'update')) {
             return redirect()->back()->with('error', 'Você não tem permissão para atualizar esta unidade.');
         }
+    
 
-        // Verificar se o status é 'reprovada' e alterar para 'pendente_avaliacao'
-        if ($unidade->status === 'reprovada') {
+    
+        $existing = InformacoesUnidade::where('unidade_id', $unidade->id)->first();
+        if ($existing) {
+            $existing->update($validated);
+        } else {
+            $validated['unidade_id'] = $unidade->id;
+            InformacoesUnidade::create($validated);
+        }
+    
+        if (!auth()->user()->hasTeamRole($team, 'admin') && $unidade->status === 'reprovada') {
             $unidade->update(['status' => 'pendente_avaliacao']);
         }
-
-        InformacoesUnidade::updateOrCreate(
-            ['unidade_id' => $unidade->id],
-            $validated
-        );
-
+    
         return redirect()->back()->with('success', 'Informações estruturais salvas com sucesso.');
     }
 

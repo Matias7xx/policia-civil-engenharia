@@ -27,7 +27,8 @@ RUN echo "curl.cainfo=/etc/ssl/certs/ca-certificates.crt" >> /usr/local/etc/php/
 # Instale uma versão mais recente do Node.js (v22)
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g npm@latest
+    && node --version \
+    && npm --version
 
 # Habilite o módulo de reescrita do Apache
 RUN a2enmod rewrite

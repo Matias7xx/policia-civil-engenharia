@@ -47,6 +47,21 @@ const midiasReais = computed(() => {
     });
 });
 
+const informacoesExiste = computed(() => !!props.informacoes?.id);
+
+// Exibe "Não Possui" se o registro existe e o campo é null
+// Exibe "Não informado" se o registro ainda não foi salvo
+const exibirCampo = (valor) => {
+    if (!informacoesExiste.value) return "Não informado";
+    return valor === null || valor === undefined ? null : valor; // null = "Não Possui"
+};
+
+const acessibilidadeLabel = (valor) => {
+    if (!acessibilidade?.id) return "Não informado";
+    if (valor === null || valor === undefined) return null; // null = "Não Possui"
+    return valor ? "Sim" : "Não";
+};
+
 const ambientesNaoPossui = computed(() => {
     if (!props.midias || !Array.isArray(props.midias)) {
         return [];
@@ -1007,16 +1022,17 @@ const salvarCessao = () => {
                                             <span v-else>Não informado</span>
                                         </dd>
                                     </div>
-                                    <div
-                                        class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Telefones:
-                                        </dt>
-                                        <dd class="mt-1">
-                                            {{ formatarTelefones }}
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Telefone</dt>
+                                        <dd class="mt-1 text-gray-900">
+                                            <span v-if="unidade.sem_telefone"
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                                                Não Possui
+                                            </span>
+                                            <template v-else>
+                                                {{ unidade.telefone_1 || "Não informado" }}
+                                                <span v-if="unidade.telefone_2" class="ml-2 text-gray-400">/ {{ unidade.telefone_2 }}</span>
+                                            </template>
                                         </dd>
                                     </div>
                                     <div
@@ -1671,6 +1687,12 @@ const salvarCessao = () => {
                             v-if="activeTab === 'acessibilidade'"
                             class="grid grid-cols-1 md:grid-cols-2 gap-6"
                         >
+
+                        <div v-if="acessibilidade?.sem_recursos_acessibilidade"
+                            class="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+                            Esta unidade declarou não possuir recursos de acessibilidade
+                        </div>
+
                             <div
                                 class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-full"
                             >
@@ -1684,118 +1706,25 @@ const salvarCessao = () => {
                                     v-if="acessibilidade"
                                     class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
                                 >
-                                    <div
+                                    <div v-for="(label, campo) in {
+                                        rampa_acesso: 'Rampa de Acesso',
+                                        corrimao: 'Corrimão',
+                                        piso_tatil: 'Piso Tátil',
+                                        banheiro_adaptado: 'Banheiro Adaptado',
+                                        elevador: 'Elevador',
+                                        sinalizacao_braile: 'Sinalização em Braille'
+                                    }" :key="campo"
                                         class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
                                     >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Rampa de Acesso:
-                                        </dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i
-                                                :class="`fas ${acessibilidade.rampa_acesso ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"
-                                            ></i>
-                                            {{
-                                                acessibilidade.rampa_acesso
-                                                    ? "Sim"
-                                                    : "Não"
-                                            }}
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Corrimão:
-                                        </dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i
-                                                :class="`fas ${acessibilidade.corrimao ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"
-                                            ></i>
-                                            {{
-                                                acessibilidade.corrimao
-                                                    ? "Sim"
-                                                    : "Não"
-                                            }}
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Piso Tátil:
-                                        </dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i
-                                                :class="`fas ${acessibilidade.piso_tatil ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"
-                                            ></i>
-                                            {{
-                                                acessibilidade.piso_tatil
-                                                    ? "Sim"
-                                                    : "Não"
-                                            }}
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Banheiro Adaptado:
-                                        </dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i
-                                                :class="`fas ${acessibilidade.banheiro_adaptado ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"
-                                            ></i>
-                                            {{
-                                                acessibilidade.banheiro_adaptado
-                                                    ? "Sim"
-                                                    : "Não"
-                                            }}
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Elevador:
-                                        </dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i
-                                                :class="`fas ${acessibilidade.elevador ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"
-                                            ></i>
-                                            {{
-                                                acessibilidade.elevador
-                                                    ? "Sim"
-                                                    : "Não"
-                                            }}
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Sinalização em Braille:
-                                        </dt>
-                                        <dd class="mt-1 flex items-center">
-                                            <i
-                                                :class="`fas ${acessibilidade.sinalizacao_braile ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-2`"
-                                            ></i>
-                                            {{
-                                                acessibilidade.sinalizacao_braile
-                                                    ? "Sim"
-                                                    : "Não"
-                                            }}
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">{{ label }}:</dt>
+                                        <dd class="mt-1 flex items-center gap-2">
+                                            <template v-if="acessibilidade[campo] === null">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">Não Possui</span>
+                                            </template>
+                                            <template v-else>
+                                                <i :class="`fas ${acessibilidade[campo] ? 'fa-check text-green-500' : 'fa-times text-red-500'} mr-1`"></i>
+                                                {{ acessibilidade[campo] ? "Sim" : "Não" }}
+                                            </template>
                                         </dd>
                                     </div>
                                 </div>
@@ -1923,19 +1852,10 @@ const salvarCessao = () => {
                                             }}
                                         </dd>
                                     </div>
-                                    <div
-                                        class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Caixa d'Água:
-                                        </dt>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Caixa D'Água</dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.caixa_dagua ||
-                                                "Não informado"
-                                            }}
+                                            {{ informacoes.caixa_dagua || "Não informado" }}
                                         </dd>
                                     </div>
                                 </div>
@@ -1971,19 +1891,10 @@ const salvarCessao = () => {
                                 <div
                                     class="grid grid-cols-1 sm:grid-cols-2 gap-4"
                                 >
-                                    <div
-                                        class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Internet Cabeada:
-                                        </dt>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Internet Cabeada</dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.internet_cabeada ||
-                                                "Não informado"
-                                            }}
+                                            {{ informacoes.internet_cabeada || "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2001,19 +1912,10 @@ const salvarCessao = () => {
                                             }}
                                         </dd>
                                     </div>
-                                    <div
-                                        class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <dt
-                                            class="font-medium text-gray-600 text-xs uppercase tracking-wider"
-                                        >
-                                            Telefone Fixo:
-                                        </dt>
+                                    <div class="bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow">
+                                        <dt class="font-medium text-gray-600 text-xs uppercase tracking-wider">Telefone Fixo</dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.telefone_fixo ||
-                                                "Não informado"
-                                            }}
+                                            {{ informacoes.telefone_fixo || "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2241,9 +2143,7 @@ const salvarCessao = () => {
                                             Recepções:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_recepcao || "0"
-                                            }}
+                                            {{ informacoes.qtd_recepcao ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2255,10 +2155,7 @@ const salvarCessao = () => {
                                             WCs Públicos:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_wc_publico ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_wc_publico ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2270,9 +2167,7 @@ const salvarCessao = () => {
                                             Gabinetes:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_gabinetes || "0"
-                                            }}
+                                            {{ informacoes.qtd_gabinetes ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2284,10 +2179,7 @@ const salvarCessao = () => {
                                             Salas de Oitiva:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_sala_oitiva ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_sala_oitiva ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2299,10 +2191,7 @@ const salvarCessao = () => {
                                             WCs Servidores:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_wc_servidores ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_wc_servidores ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2314,10 +2203,7 @@ const salvarCessao = () => {
                                             Alojamentos M:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_alojamento_masculino ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_alojamento_masculino ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2329,10 +2215,7 @@ const salvarCessao = () => {
                                             WCs Aloj. M:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_wc_alojamento_masculino ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_wc_alojamento_masculino ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2344,10 +2227,7 @@ const salvarCessao = () => {
                                             Alojamentos F:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_alojamento_feminino ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_alojamento_feminino ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2359,10 +2239,7 @@ const salvarCessao = () => {
                                             WCs Aloj. F:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_wc_alojamento_feminino ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_wc_alojamento_feminino ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2374,10 +2251,7 @@ const salvarCessao = () => {
                                             Xadrez masculino:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_xadrez_masculino ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_xadrez_masculino ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2405,10 +2279,7 @@ const salvarCessao = () => {
                                             Xadrez feminino:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_xadrez_feminino ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_xadrez_feminino ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2436,10 +2307,7 @@ const salvarCessao = () => {
                                             Salas Identificação:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_sala_identificacao ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_sala_identificacao ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2451,7 +2319,7 @@ const salvarCessao = () => {
                                             Cozinhas:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{ informacoes.qtd_cozinha || "0" }}
+                                            {{ informacoes.qtd_cozinha ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2463,10 +2331,7 @@ const salvarCessao = () => {
                                             Áreas de Serviço:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_area_servico ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_area_servico ?? "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2478,10 +2343,7 @@ const salvarCessao = () => {
                                             Depósitos Apreensão:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.qtd_deposito_apreensao ||
-                                                "0"
-                                            }}
+                                            {{ informacoes.qtd_deposito_apreensao ?? "Não informado" }}
                                         </dd>
                                     </div>
                                 </div>
@@ -2691,10 +2553,7 @@ const salvarCessao = () => {
                                             Extintor Pó Químico:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.extintor_po_quimico ||
-                                                "Não informado"
-                                            }}
+                                            {{ informacoes.extintor_po_quimico || "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2706,10 +2565,7 @@ const salvarCessao = () => {
                                             Extintor CO2:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.extintor_co2 ||
-                                                "Não informado"
-                                            }}
+                                            {{ informacoes.extintor_co2 || "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2721,10 +2577,7 @@ const salvarCessao = () => {
                                             Extintor Água:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.extintor_agua ||
-                                                "Não informado"
-                                            }}
+                                            {{ informacoes.extintor_agua || "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2752,10 +2605,7 @@ const salvarCessao = () => {
                                             Placas de Emergência Para Incêndio:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.placa_incendio ||
-                                                "Não informado"
-                                            }}
+                                            {{ informacoes.placa_incendio || "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2767,10 +2617,7 @@ const salvarCessao = () => {
                                             Possui luminárias de emergência:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.possui_luminarias_emergencia ||
-                                                "Não informado"
-                                            }}
+                                            {{ informacoes.possui_luminarias_emergencia || "Não informado" }}
                                         </dd>
                                     </div>
                                     <div
@@ -2797,10 +2644,7 @@ const salvarCessao = () => {
                                             Escada de acesso possui corrimão:
                                         </dt>
                                         <dd class="mt-1">
-                                            {{
-                                                informacoes.escada_possui_corrimao ||
-                                                "Não informado"
-                                            }}
+                                            {{ informacoes.escada_possui_corrimao || "Não informado" }}
                                         </dd>
                                     </div>
                                 </div>

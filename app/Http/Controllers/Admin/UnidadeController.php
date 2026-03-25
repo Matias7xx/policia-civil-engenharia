@@ -80,7 +80,15 @@ class UnidadeController extends Controller
     }
 
     // Ordenar e paginar
-    $unidades = $unidadesQuery->orderBy('unidades.nome')
+    $unidades = $unidadesQuery
+    ->orderByRaw("CASE 
+    WHEN unidades.status = 'pendente_avaliacao' THEN 0
+    WHEN unidades.status = 'em_revisao'         THEN 1
+    WHEN unidades.status = 'reprovada'           THEN 2
+    WHEN unidades.status = 'aprovada'            THEN 3
+    ELSE 4
+    END")
+    ->orderBy('unidades.nome')
         ->paginate(10)
         ->through(function ($unidade) {
             return [
