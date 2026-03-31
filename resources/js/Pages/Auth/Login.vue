@@ -98,6 +98,21 @@ const handleSubmit = () => {
                 {{ status }}
             </div>
 
+            <!-- Aviso: credenciais do RH -->
+            <div class="mb-6 px-3 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-sm text-center text-gray-600">
+                <svg class="inline h-4 w-4 text-blue-400 mr-1 mb-0.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Utilize as mesmas credenciais do
+                <a
+                    href="https://sistemas.pc.pb.gov.br/rh/template/index.php"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-600 font-semibold hover:underline whitespace-nowrap"
+                >Sistema de Recursos Humanos
+                </a>
+            </div>
+
             <form @submit.prevent="handleSubmit" class="space-y-6">
                 <!-- Matrícula -->
                 <div ref="formElements" class="relative">
@@ -327,7 +342,6 @@ button {
 a:hover,
 button:hover {
     transform: translateY(-1px);
-    background-color: #a8924e;
 }
 
 /* Responsividade adicional */
